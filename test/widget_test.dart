@@ -1,30 +1,15 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:yeobaek/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Part D screens hub smoke test', (WidgetTester tester) async {
+    // YeobaekApp 렌더링
+    await tester.pumpWidget(const YeobaekApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // 초기 타이틀 확인
+    expect(find.text('여백 — 담당 D 화면 테스트'), findsOneWidget);
+    expect(find.text('S07. 전문가 해석 대조'), findsOneWidget);
+    expect(find.text('S08. 모두의 대화 목록'), findsOneWidget);
+    expect(find.text('S12. 내 프로필 (내 선반)'), findsOneWidget);
   });
 }
