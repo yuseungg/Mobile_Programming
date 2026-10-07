@@ -11,13 +11,12 @@ class SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trailingWidget = trailing;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
           Expanded(child: Text(text, style: AppText.label)),
-          if (trailingWidget != null) trailingWidget,
+          ?trailing,
         ],
       ),
     );

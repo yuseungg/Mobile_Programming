@@ -70,7 +70,7 @@ class AppTextField extends StatelessWidget {
             suffixIcon: showCounter && isSingleLine
                 ? Padding(
                     padding: const EdgeInsets.only(right: 14),
-                    child: CharCounter(controller: textController!, max: max!),
+                    child: CharCounter(controller: textController, max: max),
                   )
                 : null,
             suffixIconConstraints:
@@ -87,7 +87,7 @@ class AppTextField extends StatelessWidget {
             padding: const EdgeInsets.only(top: 6),
             child: Align(
               alignment: Alignment.centerRight,
-              child: CharCounter(controller: textController!, max: max!),
+              child: CharCounter(controller: textController, max: max),
             ),
           ),
       ],
