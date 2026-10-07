@@ -9,6 +9,8 @@ class PublicConversation {
     required this.summary,
     required this.interpretation,
     required this.empathyCount,
+    this.evidenceLines = const [],
+    required this.createdAt,
   });
 
   final String conversationId;
@@ -18,4 +20,6 @@ class PublicConversation {
   final String summary; // AI가 뽑은 대화 요약
   final String interpretation; // 최종 해석
   final int empathyCount; // 정렬·순위에 쓰지 않는다
+  final List<int> evidenceLines; // 대화에서 확인된 근거 행 (1부터) — 기획서 F7 "근거 구절과 함께 표시"
+  final DateTime createdAt; // 대화 목록 최신순 정렬용 (기획서 9장 2번)
 }

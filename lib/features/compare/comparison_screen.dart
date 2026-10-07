@@ -1,45 +1,96 @@
 // S07 대조 — 주인: D
-// 순서 (기획서 4장): 내 해석(가장 위, 가장 무겁게) → 전문가 해석 A → B → 창작 배경 · 다른 사람의 대화
-// 각 전문가 해석 = 관계 한 줄 + 비교 문장 + 해석 본문
-// 1단계: 관계 · 비교 문장은 가짜 값. compare_with_experts · get_poem_context는 2단계.
+// D의 part-d `S07ComparisonScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
+// - 순서: 내 해석 → 전문가 해석 A → 전문가 해석 B (기획서 4장)
+// - 관계는 코드가 근거 행을 대조해 계산 (lib/compare/relation.dart)
+// - 창작 배경 보기 (바텀시트) · 다른 사람의 대화 보기 (S08 탭)
+// - 해석 본문은 주장(claims)으로 그린다. part-d의 fullText는 용어 사전에 없어 뺐다
 import 'package:flutter/material.dart';
 
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
+import '../../compare/relation.dart';
 import '../../data/fakes/fake_data.dart';
 import '../../data/models/expert_interpretation.dart';
 import '../../data/models/poem.dart';
-import '../../shared/widgets/app_button.dart';
-import '../../shared/widgets/app_card.dart';
-import '../../shared/widgets/poem_view.dart';
-import '../../shared/widgets/section_label.dart';
 
 class ComparisonScreen extends StatelessWidget {
   const ComparisonScreen({super.key, required this.poemId});
 
   final String poemId;
 
+  String _relationText(Relation relation, ExpertInterpretation expert) =>
+      switch (relation) {
+        Relation.sameLines => AppStrings.comparisonRelationSameLines,
+        Relation.partialOverlap => AppStrings.comparisonRelationPartialOverlap,
+        Relation.differentLines =>
+          AppStrings.comparisonRelationDifferentLines(expertLines(expert)),
+      };
+
   void _showCreationBackground(BuildContext context, Poem poem) {
     showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+      backgroundColor: AppColors.card,
+      showDragHandle: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               const Text(
                 AppStrings.comparisonCreationBackgroundTitle,
-                style: AppText.label,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.text,
+                  fontFamily: AppFonts.myeongjo,
+                ),
               ),
               const SizedBox(height: 12),
-              Text(poem.creationBackground, style: AppText.body),
+              Text(
+                poem.creationBackground,
+                style: const TextStyle(
+                  fontSize: 15,
+                  height: 1.6,
+                  color: AppColors.textSub,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.input,
+                    foregroundColor: AppColors.text,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(AppStrings.close),
+                ),
+              ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -47,90 +98,175 @@ class ComparisonScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final poem = FakeData.poemById(poemId);
     final reading = FakeData.readingFor(poemId);
+    final myInterpretation = reading?.interpretation ?? '';
+    final myEvidenceLines = reading?.evidenceLines ?? const <int>[];
     final experts = FakeData.expertInterpretations[poemId] ?? const [];
-    final comparisons = FakeData.comparisons[poemId] ?? const [];
-    final evidenceLines = reading?.evidenceLines ?? const <int>[];
+    final comparisonTexts = FakeData.comparisonTexts[poemId] ?? const [];
 
     return Scaffold(
-      appBar: AppBar(title: Text(poem.title, style: AppText.screenTitle)),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          AppStrings.comparisonTitle(poem.title),
+          style: const TextStyle(
+            color: AppColors.text,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.text),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. 내 해석 — 가장 위, 가장 무겁게
-            AppCard(
-              color: AppColors.accentBg,
-              padding: const EdgeInsets.all(22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // 시 정보 카드
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.input,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
                 children: [
-                  const Text(AppStrings.comparisonMine, style: AppText.label),
-                  const SizedBox(height: 12),
-                  Text(
-                    reading?.interpretation ?? '',
-                    style: AppText.interpretationLarge,
-                  ),
-                  if (evidenceLines.isNotEmpty) ...[
-                    const SizedBox(height: 14),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        for (final lineNo in evidenceLines)
-                          _LineChip(lineNo: lineNo),
-                      ],
+                  const Icon(Icons.menu_book_outlined,
+                      size: 18, color: AppColors.textSub),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      AppStrings.comparisonPoemInfo(
+                          poem.title, poem.author, poem.year),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSub,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ],
+                  ),
+                  Text(
+                    AppStrings.comparisonMyEvidence(myEvidenceLines),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.confirmed,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-            ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              tilePadding: const EdgeInsets.symmetric(horizontal: 4),
-              title: const Text(
-                AppStrings.comparisonPoemToggle,
-                style: AppText.label,
-              ),
-              childrenPadding: const EdgeInsets.only(bottom: 8),
-              children: [
-                PoemView(
-                  poem: poem,
-                  showLineNumbers: true,
-                  evidenceLines: evidenceLines.toSet(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 20),
 
-            // 2 · 3. 전문가 해석 A · B — 항상 전부
+            // 1. 내 해석 (가장 위, 가장 무겁게)
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.accentBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          AppStrings.comparisonMine,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.card,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        AppStrings.comparisonMineCaption,
+                        style:
+                            TextStyle(fontSize: 12, color: AppColors.textFaint),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    myInterpretation,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.6,
+                      color: AppColors.text,
+                      fontFamily: AppFonts.myeongjo,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 2. 전문가 해석 — 항상 전부 (관계는 코드가 계산)
             if (experts.isEmpty)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Text(AppStrings.comparisonNoExperts,
-                    style: AppText.bodySub),
+                padding: EdgeInsets.only(bottom: 20),
+                child: Text(
+                  AppStrings.comparisonNoExperts,
+                  style: TextStyle(color: AppColors.textSub),
+                ),
               ),
-            for (var i = 0; i < experts.length; i++) ...[
+            for (var i = 0; i < experts.length; i++)
               _ExpertCard(
                 expert: experts[i],
-                comparison: i < comparisons.length ? comparisons[i] : null,
+                relationText: _relationText(
+                  computeRelation(myEvidenceLines, experts[i]),
+                  experts[i],
+                ),
+                comparisonText:
+                    i < comparisonTexts.length ? comparisonTexts[i] : null,
               ),
-              const SizedBox(height: 14),
-            ],
 
-            // 4. 창작 배경 · 다른 사람의 대화
             const SizedBox(height: 12),
-            AppSecondaryButton(
-              label: AppStrings.comparisonCreationBackground,
-              icon: Icons.history_edu_outlined,
+
+            // (1) 창작 배경 보기 (바텀시트)
+            OutlinedButton.icon(
               onPressed: () => _showCreationBackground(context, poem),
+              icon: const Icon(Icons.history_edu_outlined, size: 18),
+              label: const Text(AppStrings.comparisonCreationBackground),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.text,
+                side: const BorderSide(color: AppColors.border),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
             ),
-            const SizedBox(height: 10),
-            AppPrimaryButton(
-              label: AppStrings.comparisonGoCommunity,
+            const SizedBox(height: 12),
+
+            // (2) 다른 사람의 대화 보기 (S08 탭)
+            ElevatedButton.icon(
               onPressed: () => AppRouter.goToTab(context, AppRoutes.community),
+              icon: const Icon(Icons.people_outline, size: 18),
+              label: const Text(AppStrings.comparisonGoCommunity),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: AppColors.card,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -139,87 +275,133 @@ class ComparisonScreen extends StatelessWidget {
 }
 
 class _ExpertCard extends StatelessWidget {
-  const _ExpertCard({required this.expert, required this.comparison});
+  const _ExpertCard({
+    required this.expert,
+    required this.relationText,
+    required this.comparisonText,
+  });
 
   final ExpertInterpretation expert;
-  final FakeComparison? comparison;
-
-  String _relationText(FakeComparison comparison) =>
-      switch (comparison.relation) {
-        Relation.sameLines => AppStrings.comparisonRelationSameLines,
-        Relation.partialOverlap => AppStrings.comparisonRelationPartialOverlap,
-        Relation.differentLines =>
-          AppStrings.comparisonRelationDifferentLines(comparison.centerLine),
-      };
+  final String relationText;
+  final String? comparisonText;
 
   @override
   Widget build(BuildContext context) {
-    final result = comparison;
+    final comparison = comparisonText;
 
-    return AppCard(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.text.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionLabel(expert.label),
-          Text(expert.stance, style: AppText.bodyStrong),
-          if (result != null) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                const Icon(Icons.compare_arrows_rounded,
-                    size: 18, color: AppColors.info),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(_relationText(result), style: AppText.relation),
+          // 전문가 라벨 & 코드가 계산한 관계 한 줄
+          Row(
+            children: [
+              Text(
+                expert.label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSub,
                 ),
-              ],
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.confirmed.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    relationText,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.confirmed,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // 입장 (stance)
+          Text(
+            expert.stance,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.info,
             ),
-            const SizedBox(height: 6),
-            Text(result.comparisonText, style: AppText.bodySub),
+          ),
+          if (comparison != null) ...[
+            const SizedBox(height: 10),
+            // 비교 문장 (2단계에 비교 모델이 작성, 공통점부터)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.input,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                comparison,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: AppColors.text,
+                ),
+              ),
+            ),
           ],
-          const SizedBox(height: 14),
-          const Divider(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          // 전문가 해석 본문 — 주장마다 근거 행과 함께
           for (final claim in expert.claims)
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
                     width: 64,
                     child: Text(
-                      claim.lines.map(AppStrings.lineLabel).join(' · '),
-                      style: AppText.caption,
+                      AppStrings.lineList(claim.lines),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.6,
+                        color: AppColors.textFaint,
+                      ),
                     ),
                   ),
-                  Expanded(child: Text(claim.point, style: AppText.body)),
+                  Expanded(
+                    child: Text(
+                      claim.point,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.6,
+                        color: AppColors.textSub,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _LineChip extends StatelessWidget {
-  const _LineChip({required this.lineNo});
-
-  final int lineNo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.confirmed),
-      ),
-      child: Text(
-        AppStrings.lineLabel(lineNo),
-        style: AppText.caption.copyWith(color: AppColors.confirmed),
       ),
     );
   }

@@ -10,7 +10,7 @@
 
 | 단계 | 내용 | 상태 |
 | --- | --- | --- |
-| **1 · 화면** | 12개 화면과 화면 이동. 가짜 데이터로 처음부터 끝까지 눌러볼 수 있음 | ✅ 초안 완료 · 담당자별 다듬기 |
+| **1 · 화면** | 12개 화면과 화면 이동. 가짜 데이터로 처음부터 끝까지 눌러볼 수 있음 | ✅ B · D 화면 통합, 이름 통일 완료 (`docs/여백-이름대조표.md`) |
 | 2 · 기능 | 같은 담당자가 자기 화면에 기능을 붙임 (Firebase, 에이전트, 잠금) | 대기 |
 | 3 · 통합 | 시연 시나리오 점검, APK, 제출 (15주차) | 대기 |
 
@@ -39,6 +39,7 @@ flutter run --dart-define=OPENROUTER_API_KEY=<교수님 발급 키>
 | [`docs/여백-화면분업.md`](docs/여백-화면분업.md) | 1단계 — 화면과 이동표, 완료 기준 |
 | [`docs/여백-코딩분업.md`](docs/여백-코딩분업.md) | 2단계 — 폴더 주인, 계약, 브랜치·PR 규칙 (1단계 후 다시 정리) |
 | [`docs/여백-네이밍규칙.md`](docs/여백-네이밍규칙.md) | 용어 사전, 클래스·파일·라우트·Firestore 이름 |
+| [`docs/여백-이름대조표.md`](docs/여백-이름대조표.md) | 예전 브랜치(part-b · part-d) 이름 → 지금 이름 |
 
 ## 제품 원칙
 
@@ -81,6 +82,7 @@ lib/
 ├─ data/
 │  ├─ models/                    C   Poem, Reading, ExpertInterpretation …
 │  └─ fakes/fake_data.dart       1단계 가짜 데이터
+├─ compare/relation.dart         D   내 해석 ↔ 전문가 해석 관계 계산
 ├─ shared/widgets/
 │  ├─ poem_view.dart             B   시 본문 (S04 · S05 · S07 공용)
 │  ├─ badge_image.dart           D   뱃지 (지금은 아이콘 자리)

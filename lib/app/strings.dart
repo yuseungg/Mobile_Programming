@@ -11,6 +11,10 @@ class AppStrings {
   static const appSubtitle = '시 읽기 보조바퀴';
   static String charCount(int count, int max) => '$count / $max';
   static String lineLabel(int lineNo) => '$lineNo행';
+  static String lineList(List<int> lines) =>
+      lines.map(lineLabel).join(', ');
+  static String monthDay(DateTime date) => '${date.month}월 ${date.day}일';
+  static const close = '닫기';
   static String stopCount(int count) => '$count명';
 
   // ── 하단 탭바 ─────────────────────────────────
@@ -47,15 +51,12 @@ class AppStrings {
   static const signUpHaveAccount = '이미 계정이 있다면';
   static const signUpGoToSignIn = '로그인';
 
-  // ── S03 홈 ────────────────────────────────────
-  static String homeTotalDays(int days) => '지금까지 $days일\n시를 읽었어요';
+  // ── S03 홈 (B) ────────────────────────────────
+  static String homeTotalDays(int days) => '지금까지 $days일 시를 읽었어요';
   static const homeProfileTooltip = '내 프로필';
   static const homeTodayPoem = '오늘의 시';
   static const homeStartReading = '혼자 읽기 시작';
   static const homeMyPoems = '내가 읽은 시';
-  static const homeOtherPoems = '다른 시';
-  static const homeStatusSaved = '해석 저장함';
-  static const homeStatusInProgress = '읽는 중';
 
   // ── S04 읽기 ──────────────────────────────────
   static String readingAppBarTitle(String author, String title) =>
@@ -63,7 +64,6 @@ class AppStrings {
   static String readingAuthorYear(String author, int year) => '$author · $year';
   static const readingStopGuide = '마음이 멈춘 줄을 눌러 보세요. 아무것도 안 눌러도 됩니다.';
   static const readingFirstWordLabel = '읽고 떠오른 낱말 하나';
-  static const readingFirstWordHint = '낱말 하나만 적어 보세요';
   static const readingStartChat = '이 낱말로 대화 시작';
   static const readingEndWithWord = '낱말만 남기고 끝내기';
 
@@ -74,44 +74,51 @@ class AppStrings {
   static const chatSummarizeButton = '내 해석 정리하기';
   static const chatInputHint = '생각을 적어 보세요';
   static const chatSendButton = '보내기';
-  static const chatPoemToggleShow = '시 펼치기';
-  static const chatPoemToggleHide = '시 접기';
 
-  // ── S06 정리 · 저장 ───────────────────────────
+  // ── S06 정리 · 저장 (B) ────────────────────────
   static const saveTitle = '내 해석';
-  static const saveInterpretationLabel = '내 해석';
-  static const saveDraftNotice = '대화에서 나온 말을 모았습니다. 고쳐서 저장하세요 — 저장하는 문장은 당신 것이어야 합니다.';
+  static const saveDraftNotice = '대화에서 나온 내 말을 모았습니다. 고쳐서 저장하세요 — 저장하는 문장은 당신 것이어야 합니다.';
   static const saveEvidenceLabel = '내가 근거로 삼은 구절';
   static const savePublicLabel = '대화를 모두의 대화에 공개';
   static const savePublicCaption = 'AI가 대화에서 의미 있는 내용만 뽑아 닉네임과 함께 올립니다';
   static const saveLockNotice = '저장한 뒤에야 전문가 해석과 다른 사람의 대화가 열립니다.';
   static const saveButton = '저장하기';
 
-  // ── S07 대조 ──────────────────────────────────
-  static const comparisonTitle = '대조';
+  // ── S07 대조 (D) ──────────────────────────────
+  static String comparisonTitle(String poemTitle) => '$poemTitle — 대조';
+  static String comparisonPoemInfo(String title, String author, int year) =>
+      '$title · $author ($year)';
+  static String comparisonMyEvidence(List<int> lines) =>
+      '내 근거: ${lineList(lines)}';
   static const comparisonMine = '내 해석';
-  static const comparisonPoemToggle = '시 다시 보기';
+  static const comparisonMineCaption = '내가 직접 다듬어 저장한 생각';
   static const comparisonRelationSameLines = '같은 곳을 봤어요';
   static const comparisonRelationPartialOverlap = '같은 줄에서 출발했어요';
-  static String comparisonRelationDifferentLines(int lineNo) =>
-      '이 해석은 $lineNo행을 중심으로 읽었어요';
+  static String comparisonRelationDifferentLines(List<int> lines) =>
+      '이 해석은 ${lines.join(', ')}행을 중심으로 읽었어요';
   static const comparisonNoExperts = '이 시의 전문가 해석은 준비 중이에요.';
   static const comparisonCreationBackground = '창작 배경 보기';
   static const comparisonCreationBackgroundTitle = '창작 배경';
   static const comparisonGoCommunity = '다른 사람의 대화 보기';
 
-  // ── S08 대화 목록 ─────────────────────────────
+  // ── S08 대화 목록 (D) ─────────────────────────
   static const communityTitle = '모두의 대화';
-  static const communityGuide = '같은 시를 읽은 사람들이 AI와 나눈 대화예요.';
   static const communityEmpty = '아직 공개된 대화가 없어요.';
-  static String communityFirstWord(String word) => '첫 낱말 · $word';
+  static String communityFirstWordTag(String word) => '#$word';
 
-  // ── S09 대화 보기 ─────────────────────────────
-  static const communityDetailFirstWord = '첫 낱말';
-  static const communityDetailSummary = '대화 요약';
-  static const communityDetailInterpretation = '최종 해석';
-  static const communityDetailEmpathy = '공감';
+  // ── S09 대화 보기 (D) ─────────────────────────
+  static String communityDetailTitle(String poemTitle) => '$poemTitle · 읽은이의 대화';
+  static const communityDetailFirstWord = '1. 첫 낱말';
+  static const communityDetailFirstWordCaption = '시를 읽고 가장 먼저 떠올린 말';
+  static const communityDetailFirstWordNote = '이 낱말에서 AI와의 대화가 시작되었습니다.';
+  static const communityDetailSummary = '2. 대화 과정';
+  static const communityDetailSummaryCaption = 'AI 질문과 사유의 요약';
+  static String communityDetailEvidence(List<int> lines) =>
+      '확인된 근거 구절: ${lineList(lines)}';
+  static const communityDetailInterpretation = '3. 최종 해석';
+  static const communityDetailInterpretationCaption = '대화를 거쳐 도달한 고유한 생각';
   static String communityDetailEmpathyCount(int count) => '공감 $count';
+  static const communityDetailEmpathyNote = '공감은 우열이나 순위에 반영되지 않습니다.';
 
   // ── S10 설정 보기 ─────────────────────────────
   static const settingsTitle = '설정';
@@ -138,10 +145,14 @@ class AppStrings {
   static const tonePlain = '담백하게';
   static const toneGentle = '부드럽게';
 
-  // ── S12 프로필 ────────────────────────────────
-  static const profileTitle = '프로필';
+  // ── S12 프로필 (D) ────────────────────────────
+  static const profileMyTitle = '내 선반';
+  static String profileOtherTitle(String nickname) => '$nickname의 선반';
+  static const profileEmailLinked = '이메일 계정으로 연결됨';
   static const profileTotalDaysLabel = '시를 읽은 날';
-  static String profileTotalDays(int days) => '$days일';
-  static const profileBadges = '받은 뱃지';
-  static const profileNoBadges = '아직 받은 뱃지가 없어요.';
+  static const profileBadges = '모은 시 뱃지';
+  static String profileBadgeCount(int count) => '$count개';
+  static const profileBadgesCaption = '끝까지 읽고 생각을 저장한 시마다 그 시를 닮은 뱃지가 남습니다.';
+  static const profileNoBadges = '아직 모은 뱃지가 없습니다.\n시를 읽고 해석을 저장해 보세요.';
+  static const profileShelfNote = '프로필은 당신의 생각을 모아두는 조용한 선반입니다.';
 }

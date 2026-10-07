@@ -1,166 +1,111 @@
 // S03 홈 — 주인: B
-// 누적일수 문구, 오늘의 시, 내가 읽은 시, 상단 프로필 진입. 탭바는 TabShell이 붙인다.
+// B의 part-b `S03HomeScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
+// - 누적일수 문구, 오늘의 시, 내가 읽은 시
+// - 상단 프로필 → S12
+// - 하단 탭바는 C의 TabShell이 감싸서 붙임
 import 'package:flutter/material.dart';
 
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
-import '../../data/models/poem.dart';
-import '../../shared/widgets/app_button.dart';
-import '../../shared/widgets/app_card.dart';
-import '../../shared/widgets/section_label.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final poem = FakeData.poemById(FakeData.todayPoemId);
     final me = FakeData.profileById(FakeData.myUserId);
-    final todayPoem = FakeData.poemById(FakeData.todayPoemId);
-    final myPoems = FakeData.poems
-        .where((poem) => FakeData.readingFor(poem.poemId) != null)
-        .toList();
-    final otherPoems = FakeData.poems
-        .where((poem) => FakeData.readingFor(poem.poemId) == null)
+    final readPoems = FakeData.poems
+        .where((p) => FakeData.readingFor(p.poemId) != null)
         .toList();
 
+    void openReading(String poemId) =>
+        Navigator.of(context).pushNamed(AppRoutes.reading(poemId));
+
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(AppStrings.appName, style: AppText.appNameSmall),
+        title: const Text(AppStrings.appName),
+        backgroundColor: AppColors.background,
         actions: [
           IconButton(
+            icon: const Icon(Icons.person_outline),
             tooltip: AppStrings.homeProfileTooltip,
             onPressed: () => Navigator.of(context)
                 .pushNamed(AppRoutes.profile(FakeData.myUserId)),
-            icon: const Icon(Icons.account_circle_outlined, size: 28),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        padding: const EdgeInsets.all(20),
         children: [
           Text(
             AppStrings.homeTotalDays(me.totalReadingDays),
-            style: AppText.heading,
+            style: const TextStyle(fontSize: 16, color: AppColors.textSub),
           ),
           const SizedBox(height: 24),
-          _TodayPoemCard(poem: todayPoem),
-          const SizedBox(height: 32),
-          if (myPoems.isNotEmpty) ...[
-            const SectionLabel(AppStrings.homeMyPoems),
-            for (final poem in myPoems) ...[
-              _PoemTile(poem: poem),
-              const SizedBox(height: 10),
-            ],
-            const SizedBox(height: 22),
-          ],
-          if (otherPoems.isNotEmpty) ...[
-            const SectionLabel(AppStrings.homeOtherPoems),
-            for (final poem in otherPoems) ...[
-              _PoemTile(poem: poem),
-              const SizedBox(height: 10),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _TodayPoemCard extends StatelessWidget {
-  const _TodayPoemCard({required this.poem});
-
-  final Poem poem;
-
-  @override
-  Widget build(BuildContext context) {
-    final preview = poem.lines.where((line) => line.isNotEmpty).take(2);
-
-    return AppCard(
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(AppStrings.homeTodayPoem, style: AppText.label),
-          const SizedBox(height: 12),
-          Text(poem.title, style: AppText.poemTitle),
-          const SizedBox(height: 2),
-          Text(poem.author, style: AppText.caption),
-          const SizedBox(height: 14),
-          for (final line in preview) Text(line, style: AppText.poemQuote),
-          const SizedBox(height: 20),
-          AppPrimaryButton(
-            label: AppStrings.homeStartReading,
-            onPressed: () => Navigator.of(context)
-                .pushNamed(AppRoutes.reading(poem.poemId)),
+          const Text(
+            AppStrings.homeTodayPoem,
+            style: TextStyle(color: AppColors.textFaint),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PoemTile extends StatelessWidget {
-  const _PoemTile({required this.poem});
-
-  final Poem poem;
-
-  @override
-  Widget build(BuildContext context) {
-    final reading = FakeData.readingFor(poem.poemId);
-    final String? status = reading == null
-        ? null
-        : reading.isSaved
-            ? AppStrings.homeStatusSaved
-            : AppStrings.homeStatusInProgress;
-
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      onTap: () =>
-          Navigator.of(context).pushNamed(AppRoutes.reading(poem.poemId)),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(poem.title, style: AppText.poemTitleSmall),
-                const SizedBox(height: 2),
-                Text(poem.author, style: AppText.caption),
-              ],
+          const SizedBox(height: 8),
+          Card(
+            color: AppColors.card,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    poem.title,
+                    style: const TextStyle(
+                      fontFamily: AppFonts.myeongjo,
+                      fontSize: 22,
+                    ),
+                  ),
+                  Text(
+                    poem.author,
+                    style: const TextStyle(color: AppColors.textSub),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    poem.lines.take(2).join('\n'),
+                    style: const TextStyle(
+                      fontFamily: AppFonts.myeongjo,
+                      fontSize: 16,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => openReading(poem.poemId),
+                      child: const Text(AppStrings.homeStartReading),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          if (status != null)
-            _StatusChip(label: status, isSaved: reading?.isSaved ?? false),
-          const SizedBox(width: 6),
-          const Icon(Icons.chevron_right, color: AppColors.textFaint),
+          const SizedBox(height: 24),
+          const Text(
+            AppStrings.homeMyPoems,
+            style: TextStyle(color: AppColors.textFaint),
+          ),
+          for (final p in readPoems)
+            ListTile(
+              title: Text(
+                p.title,
+                style: const TextStyle(fontFamily: AppFonts.myeongjo),
+              ),
+              subtitle: Text(p.author),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => openReading(p.poemId),
+            ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label, required this.isSaved});
-
-  final String label;
-  final bool isSaved;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: isSaved ? AppColors.background : AppColors.accentBg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: AppText.caption.copyWith(
-          color: isSaved ? AppColors.confirmed : AppColors.accent,
-        ),
       ),
     );
   }

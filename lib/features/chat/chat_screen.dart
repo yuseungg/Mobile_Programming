@@ -69,12 +69,6 @@ class _ChatScreenState extends State<ChatScreen> {
             Container(
               constraints: const BoxConstraints(maxHeight: 150),
               margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              padding: const EdgeInsets.only(left: 4),
-              decoration: const BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: AppColors.border, width: 2),
-                ),
-              ),
               child: SingleChildScrollView(
                 child: PoemView(
                   poem: poem,

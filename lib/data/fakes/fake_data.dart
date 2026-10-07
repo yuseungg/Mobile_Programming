@@ -4,6 +4,9 @@
 // ⚠ 공개 대화·프로필은 화면을 눌러보기 위한 임시 값이다.
 //   시연용 커뮤니티 데이터는 팀원이 직접 대화해서 채운다 (기획서 9장 7번).
 // ⚠ 모델 이름은 교수님 키로 열린 모델을 확인하기 전 임시 값이다 (기획서 9장 1번).
+//
+// 출처: 시 본문·내 읽기·설정은 C, 멈춤 집계는 B(part-b), 전문가 해석·공개 대화·다른 사람 프로필은
+//       D(part-d)의 가짜 데이터를 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
 
 import '../models/chat_message.dart';
 import '../models/expert_interpretation.dart';
@@ -12,19 +15,6 @@ import '../models/public_conversation.dart';
 import '../models/reading.dart';
 import '../models/settings.dart';
 import '../models/user_profile.dart';
-
-/// 2단계에서 D의 compare_with_experts 반환형으로 바꾼다. 지금은 화면 표시용.
-class FakeComparison {
-  const FakeComparison({
-    required this.relation,
-    required this.centerLine,
-    required this.comparisonText,
-  });
-
-  final Relation relation;
-  final int centerLine; // differentLines일 때 "N행을 중심으로"
-  final String comparisonText; // 모델이 쓸 비교 문장 자리
-}
 
 class FakeData {
   FakeData._();
@@ -112,7 +102,7 @@ class FakeData {
 
   // ── 멈춤 집계: 행 번호 → 멈춘 사람 수 ────────────
   static const stopCounts = <String, Map<int, int>>{
-    'seosi': {1: 3, 2: 5, 5: 4, 6: 7, 10: 6},
+    'seosi': {2: 12, 4: 5, 6: 8, 10: 15}, // B
     'jindallae': {3: 2, 9: 4, 11: 6, 15: 5},
     'bomgoyangi': {1: 3, 5: 4, 8: 2},
   };
@@ -132,28 +122,21 @@ class FakeData {
         label: '전문가 해석 B',
         stance: '시대 앞의 무력감으로 읽는 입장',
         claims: [
-          Claim(lines: [3, 4], point: '작은 바람에도 괴로워하는 화자는 할 수 있는 일이 없는 사람이다'),
           Claim(lines: [10], point: '다짐 뒤에도 밤은 그대로 온다'),
         ],
       ),
     ],
   };
 
-  // ── 대조 결과 (2단계에서 compare_with_experts가 계산) ──
-  static const comparisons = <String, List<FakeComparison>>{
+  // ── 비교 문장 (2단계에서 비교 모델이 쓴다) ──────────
+  // 전문가 해석 순서와 같은 순서. 공통점부터 말하고, 내가 놓친 것을 가리키지 않는다 (기획서 4장).
+  // 관계(같은 곳을 봤어요 등)는 문장이 아니라 코드가 계산한다 → lib/compare/relation.dart
+  static const comparisonTexts = <String, List<String>>{
     'seosi': [
-      FakeComparison(
-        relation: Relation.partialOverlap,
-        centerLine: 6,
-        comparisonText: '두 읽기 모두 6행의 다짐에 머물러요. 내 해석은 그 다짐을 '
-            '자기를 견디는 말로 읽었고, 이 해석은 괴로움을 지나온 뒤에 나온 결심으로 읽어요.',
-      ),
-      FakeComparison(
-        relation: Relation.differentLines,
-        centerLine: 10,
-        comparisonText: '두 읽기는 서로 다른 줄에서 출발해요. 내 해석은 6행의 '
-            '사랑하겠다는 다짐에, 이 해석은 10행에서 여전히 부는 밤바람에 무게를 둬요.',
-      ),
+      '두 읽기 모두 6행의 다짐에 머물러요. 내 해석은 그 다짐을 '
+          '자기를 견디는 말로 읽었고, 이 해석은 괴로움을 지나온 뒤에 나온 결심으로 읽어요.',
+      '두 읽기는 서로 다른 줄에서 출발해요. 내 해석은 6행의 '
+          '사랑하겠다는 다짐에, 이 해석은 10행에서 여전히 부는 밤바람에 무게를 둬요.',
     ],
   };
 
@@ -222,40 +205,51 @@ class FakeData {
     'bomgoyangi': '연마다 고양이의 어느 부분이 나오나요?',
   };
 
-  // ── 공개 대화 ─────────────────────────────────
-  static const publicConversations = <PublicConversation>[
+  // ── 공개 대화 (D) ─────────────────────────────
+  static final publicConversations = <PublicConversation>[
     PublicConversation(
-      conversationId: 'c1',
-      userId: 'u_redpetal',
+      conversationId: 'post_1',
+      userId: 'user_star_1',
       poemId: 'seosi',
-      firstWord: '하늘',
-      summary: '1행에서 하늘을 우러르는 자세에 먼저 멈췄다. 올려다본다는 말이 '
-          '자기가 낮은 곳에 있다는 느낌으로 들린다고 했고, 거기서 2행의 부끄럼으로 이어 읽었다.',
-      interpretation: '하늘을 우러른다는 건 내가 얼마나 낮은지 아는 일이다. '
-          '부끄럼이 없기를 바라는 마음은 그 낮음을 견디겠다는 약속처럼 읽혔다.',
-      empathyCount: 5,
+      firstWord: '부끄러움',
+      summary: '화자가 느끼는 부끄러움의 깊이에 대해 대화했습니다. '
+          'AI의 질문을 통해 사소한 흔들림(잎새에 이는 바람)조차 스스로에게 엄격했던 '
+          '시인의 결벽에 가까운 순수함을 발견했습니다.',
+      evidenceLines: const [2, 3, 4],
+      interpretation: '완벽할 수 없음을 알면서도 스스로에게 부끄럽지 않으려 고뇌했던 '
+          '한 젊은이의 고결한 아픔이 느껴졌다. '
+          '그 부끄러움은 나약함이 아니라 가장 정직한 용기다.',
+      empathyCount: 14,
+      createdAt: DateTime.now().subtract(const Duration(hours: 3)),
     ),
     PublicConversation(
-      conversationId: 'c2',
-      userId: 'u_sleepycat',
+      conversationId: 'post_2',
+      userId: 'user_wind_2',
       poemId: 'seosi',
-      firstWord: '바람',
-      summary: '3행과 10행에 바람이 두 번 나온다는 것을 찾았다. 앞의 바람은 화자를 '
-          '괴롭히고, 마지막 바람은 별을 스친다는 차이에 오래 머물렀다.',
-      interpretation: '처음에 나를 괴롭히던 바람이 마지막에는 별을 스치고 지나간다. '
-          '바람은 그대로인데, 그 바람을 견디는 내 자리가 달라진 것 같다.',
-      empathyCount: 9,
+      firstWord: '다짐',
+      summary: '괴로움 이후에 등장하는 태도의 변화를 추적했습니다. '
+          '6행의 "모든 죽어가는 것"이 무엇을 의미하는지 질문을 받으며, '
+          '자기 연민을 넘어선 더 넓은 존재들에 대한 사랑과 연대임을 짚어냈습니다.',
+      evidenceLines: const [6, 7, 8],
+      interpretation: '괴로움을 통과한 자만이 말할 수 있는 진정한 걸음이다. '
+          '거창한 영웅적 결단이 아니라 나한테 주어진 길을 묵묵히 걸어가겠다는 단단한 선언이다.',
+      empathyCount: 29,
+      createdAt: DateTime.now().subtract(const Duration(hours: 8)),
     ),
     PublicConversation(
-      conversationId: 'c3',
-      userId: 'u_farroad',
+      conversationId: 'post_3',
+      userId: 'user_night_3',
       poemId: 'seosi',
-      firstWord: '길',
-      summary: "7행의 '주어진 길'에 주목했다. 고른 길이 아니라 주어진 길이라는 점을 두고, "
-          '받아들이는 마음인지 체념인지 사이에서 고민했다.',
-      interpretation: '주어진 길을 걸어가겠다는 말은 체념보다 다짐에 가깝다. '
-          '고를 수 없었던 길이라도 걸어가는 건 내가 하는 일이기 때문이다.',
-      empathyCount: 3,
+      firstWord: '밤',
+      summary: '마지막 10행의 고독한 분위기를 중심으로 대화했습니다. '
+          '다짐을 마쳤음에도 불구하고 왜 여전히 "밤"이고 "바람"이 스치는지 질문하며 '
+          '끝나지 않는 현실의 무게를 성찰했습니다.',
+      evidenceLines: const [10],
+      interpretation: '다짐했다고 해서 세상이 바로 밝아지는 것은 아니다. '
+          '밤은 여전히 춥고 바람은 불지만, 그 속에서도 별을 바라보겠다는 '
+          '위태롭고도 애틋한 시선이 남는다.',
+      empathyCount: 8,
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
     ),
   ];
 
@@ -268,25 +262,27 @@ class FakeData {
       lastCountedDate: DateTime(2026, 10, 7),
       badgeIds: const ['seosi'],
     ),
-    'u_redpetal': UserProfile(
-      userId: 'u_redpetal',
-      nickname: '붉은 꽃잎',
-      totalReadingDays: 30,
+    // 아래는 D의 가짜 데이터. 닉네임은 겹치면 안 되므로 '조용한 별'(내 닉네임)과
+    // 겹치던 user_star_1은 D가 쓰던 다른 닉네임 '새벽의 별빛'으로 바꿨다.
+    'user_star_1': UserProfile(
+      userId: 'user_star_1',
+      nickname: '새벽의 별빛',
+      totalReadingDays: 12,
       lastCountedDate: DateTime(2026, 10, 6),
       badgeIds: const ['seosi', 'jindallae'],
     ),
-    'u_sleepycat': UserProfile(
-      userId: 'u_sleepycat',
-      nickname: '나른한 고양이',
-      totalReadingDays: 7,
-      lastCountedDate: DateTime(2026, 10, 5),
-      badgeIds: const ['seosi', 'bomgoyangi'],
-    ),
-    'u_farroad': UserProfile(
-      userId: 'u_farroad',
-      nickname: '먼 길',
-      totalReadingDays: 3,
+    'user_wind_2': UserProfile(
+      userId: 'user_wind_2',
+      nickname: '푸른 바람',
+      totalReadingDays: 24,
       lastCountedDate: DateTime(2026, 10, 7),
+      badgeIds: const ['seosi', 'jindallae', 'bomgoyangi'],
+    ),
+    'user_night_3': UserProfile(
+      userId: 'user_night_3',
+      nickname: '깊은 밤',
+      totalReadingDays: 3,
+      lastCountedDate: DateTime(2026, 10, 5),
       badgeIds: const ['seosi'],
     ),
   };
@@ -337,8 +333,10 @@ class FakeData {
         orElse: () => publicConversations.first,
       );
 
+  /// 최신순. 공감 수로 정렬하지 않는다 (기획서 9장 2번).
   static List<PublicConversation> conversationsFor(String poemId) =>
       publicConversations
           .where((conversation) => conversation.poemId == poemId)
-          .toList();
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 }
