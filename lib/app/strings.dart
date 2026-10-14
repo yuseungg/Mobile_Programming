@@ -74,6 +74,8 @@ class AppStrings {
   static const chatSummarizeButton = '내 해석 정리하기';
   static const chatInputHint = '생각을 적어 보세요';
   static const chatSendButton = '보내기';
+  static const chatStopButton = '중단';
+  static const chatResponding = '질문을 고르는 중…';
 
   // ── S06 정리 · 저장 (B) ────────────────────────
   static const saveTitle = '내 해석';
