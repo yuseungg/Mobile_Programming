@@ -17,12 +17,17 @@ import '../../shared/widgets/poem_view.dart';
 //AI
 // S04 들어올 때 누적일수 셈. 같은 날이면 그대로, 날짜 바뀌면 +1 (연속 아님)
 UserProfile countReadingDay(UserProfile me, DateTime today) {
-  final last = me.lastCountedDate;
-  if (last.year==today.year && last.month == today.month && last.day==today.day) return me;
+  DateTime last = me.lastCountedDate;
+  bool isSameDay = last.year==today.year && last.month == today.month && last.day==today.day;
+  if (isSameDay) {
+    return me;
+  }
 
+  int newDays = me.totalReadingDays + 1;
+  DateTime newDate = DateTime(today.year, today.month, today.day);
   return UserProfile(userId: me.userId, nickname: me.nickname,
-      totalReadingDays: me.totalReadingDays + 1,
-      lastCountedDate: DateTime(today.year, today.month, today.day),
+      totalReadingDays: newDays,
+      lastCountedDate: newDate,
       badgeIds: me.badgeIds);
 }
 
@@ -36,29 +41,46 @@ class ReadingScreen extends StatefulWidget {
 }
 
 class _ReadingScreenState extends State<ReadingScreen> {
-  // 전에 읽던 시면 멈춘 행이랑 첫 낱말 그대로 불러옴
-  late final Reading? _saved = FakeData.readingFor(widget.poemId);
-  late final _markedLines = <int>{...?_saved?.markedLines}; //AI
-  late final _firstWordController = TextEditingController(text: _saved?.firstWord);
+  Reading? _saved;
+  final Set<int> _markedLines = {};
+  final TextEditingController _firstWordController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+
+    // 전에 읽던 시면 멈춘 행이랑 첫 낱말 그대로 불러옴
+    _saved = FakeData.readingFor(widget.poemId);
+    if (_saved != null) {
+      _markedLines.addAll(_saved!.markedLines);
+      _firstWordController.text = _saved!.firstWord;
+    }
+
     // 지금은 기기 날짜로 가짜 프로필에 반영. 저장소 붙이면 서버 시간으로 바꿔야 함
-    final me = FakeData.profileById(FakeData.myUserId);
+    UserProfile me = FakeData.profileById(FakeData.myUserId);
     FakeData.profiles[FakeData.myUserId] = countReadingDay(me, DateTime.now());
   }
 
 
 
   //AI
-  // 집계엔 저장돼 있던 내 멈춤이 이미 들어 있음. 지금 누른 거랑 차이만 +1/-1
+  // 집계엔 저장돼 있던 내 멈춤이 이미 들어 있어서 그건 빼고 지금 누른 걸 더함
   Map<int, int> _stopCountsWithMe(String poemId) {
-    final counts = {...?FakeData.stopCounts[poemId]}; //AI
-    final before = {...?_saved?.markedLines};
-    for (final n in {..._markedLines, ...before}) {
-      counts[n] = (counts[n] ?? 0) + (_markedLines.contains(n) ? 1 : 0) - (before.contains(n) ? 1 : 0);
+    Map<int, int> counts = {};
+    Map<int, int>? others = FakeData.stopCounts[poemId];
+    if (others != null) {
+      counts.addAll(others);
     }
+
+    if (_saved != null) {
+      for (int lineNo in _saved!.markedLines) {
+        counts[lineNo] = (counts[lineNo] ?? 0) - 1;
+      }
+    }
+    for (int lineNo in _markedLines) {
+      counts[lineNo] = (counts[lineNo] ?? 0) + 1;
+    }
+    // print(counts);
     return counts;
   }
 

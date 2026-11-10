@@ -23,19 +23,36 @@ class SaveScreen extends StatefulWidget {
 }
 
 class _SaveScreenState extends State<SaveScreen> {
-  late final Reading? _reading = FakeData.readingFor(widget.poemId);
-  // 대조 연 뒤엔 해석 못 고침 (기획서 F4)
-  late final bool _isLocked = _reading?.hasOpenedComparison ?? false;
+  Reading? _reading;
+  bool _isLocked = false; // 대조 연 뒤엔 해석 못 고침 (기획서 F4)
+  bool _isPublic = false;
+  final TextEditingController _interpretationController = TextEditingController();
 
-  // 이미 저장한 해석 있으면 그거, 없으면 대화에서 사용자가 한 말만 모아서 초안
-  late final _interpretationController = TextEditingController(
-    text: (_reading?.isSaved ?? false) ? _reading!.interpretation
-        : (_reading?.conversation ?? const [])
-        .where((message) => message.role == ChatRole.user)
-        .map((message) => message.text)
-        .join('\n'),
-  );
-  late bool _isPublic = _reading?.isPublic ?? false;
+  @override
+  void initState() {
+    super.initState();
+    _reading = FakeData.readingFor(widget.poemId);
+    if (_reading == null) {
+      return;
+    }
+
+    _isLocked = _reading!.hasOpenedComparison;
+    _isPublic = _reading!.isPublic;
+
+    if (_reading!.isSaved) {
+      // 이미 저장한 해석 있으면 그거 보여줌
+      _interpretationController.text = _reading!.interpretation;
+    } else {
+      // 없으면 대화에서 내가 한 말만 모아서 초안
+      List<String> myMessages = [];
+      for (ChatMessage message in _reading!.conversation) {
+        if (message.role == ChatRole.user) {
+          myMessages.add(message.text);
+        }
+      }
+      _interpretationController.text = myMessages.join('\n');
+    }
+  }
 
   @override
   void dispose() {

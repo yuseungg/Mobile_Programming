@@ -98,11 +98,11 @@ void main() {
 
   //AI
   test('누적일수는 날짜 바뀔 때만 하루씩 늘어남', () {
-    final me = UserProfile(userId: 'me', nickname: 'x', totalReadingDays: 12,
+    UserProfile me = UserProfile(userId: 'me', nickname: 'x', totalReadingDays: 12,
         lastCountedDate: DateTime(2026, 11, 10), badgeIds: const []);
 
     expect(countReadingDay(me, DateTime(2026, 11, 10, 23, 59)).totalReadingDays, 12);
-    final next = countReadingDay(me, DateTime(2026, 11, 11, 0, 1));
+    UserProfile next = countReadingDay(me, DateTime(2026, 11, 11, 0, 1));
     expect(next.totalReadingDays, 13);
     // 며칠 건너뛰어도 +1만 (연속 아님)
     expect(countReadingDay(next, DateTime(2026, 11, 20)).totalReadingDays,14);
