@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yeobaek/data/fakes/fake_data.dart';
+import 'package:yeobaek/data/models/poem.dart';
 import 'package:yeobaek/features/compare/comparison_screen.dart';
 import 'package:yeobaek/features/home/home_screen.dart';
 import 'package:yeobaek/main.dart';
@@ -54,16 +55,16 @@ void main() {
 
   //AI
   test('오늘의 시는 추가된 순서로 하루에 한 편씩 돌아간다', () {
-    final poems = FakeData.poems;
-    final day = DateTime(2026,11,10, 9);
-    final first =todayPoem(poems, day);
-    final i = poems.indexOf(first);
+    List<Poem> poems = FakeData.poems;
+    DateTime day = DateTime(2026,11,10, 9);
+    Poem first =todayPoem(poems, day);
+    int i = poems.indexOf(first);
     expect(todayPoem(poems, DateTime(2026, 11, 10, 23, 59)), first);
 
 
     // 목록 끝 다음 날엔 처음 시로 돌아가는지 확인
-    for (var d = 1; d <= poems.length; d++) {
-      final next = todayPoem(poems, day.add(Duration(days: d)));
+    for (int d = 1; d <= poems.length; d++) {
+      Poem next = todayPoem(poems, day.add(Duration(days: d)));
         expect(next, poems[(i + d) % poems.length]);
     }
   });

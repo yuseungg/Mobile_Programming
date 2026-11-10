@@ -11,10 +11,12 @@ import '../../data/models/poem.dart';
 //AI
 // 추가된 순서대로 하루에 한 편씩 돌아감 (기획서 9장 3번)
 Poem todayPoem(List<Poem> poems, DateTime now) {
-  final day = DateTime.utc(now.year, now.month, now.day).millisecondsSinceEpoch
-        ~/ Duration.millisecondsPerDay;//AI
+  // 1970년 1월 1일부터 오늘까지 며칠 지났는지
+  DateTime today = DateTime.utc(now.year, now.month, now.day);
+  int days = today.difference(DateTime.utc(1970, 1, 1)).inDays;
 
-  return poems[day%poems.length];
+  int index = days % poems.length;
+  return poems[index];
 }
 
 
