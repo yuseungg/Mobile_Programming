@@ -14,13 +14,9 @@ void main() {
     await tester.tap(find.text('로그인'));
     await tester.pumpAndSettle();
 
-    // 오늘의 시는 날마다 바뀌어서 목록에서 서시 고름
+    //오늘의 시는 날마다 바뀌어서 목록에서 서시 고름
     final seosiTile = find.widgetWithText(ListTile,'서시');
-    await tester.scrollUntilVisible(
-      seosiTile,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(seosiTile, 200, scrollable: find.byType(Scrollable).first);
 
     await tester.tap(seosiTile);
     await tester.pumpAndSettle();
@@ -59,10 +55,9 @@ void main() {
   //AI
   test('오늘의 시는 추가된 순서로 하루에 한 편씩 돌아간다', () {
     final poems = FakeData.poems;
-    final day = DateTime(2026, 11, 10, 9);
+    final day = DateTime(2026,11,10, 9);
     final first =todayPoem(poems, day);
     final i = poems.indexOf(first);
-
     expect(todayPoem(poems, DateTime(2026, 11, 10, 23, 59)), first);
 
 

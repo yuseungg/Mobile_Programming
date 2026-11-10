@@ -12,9 +12,9 @@ import '../../data/models/poem.dart';
 // 추가된 순서대로 하루에 한 편씩 돌아감 (기획서 9장 3번)
 Poem todayPoem(List<Poem> poems, DateTime now) {
   final day = DateTime.utc(now.year, now.month, now.day).millisecondsSinceEpoch
-        ~/ Duration.millisecondsPerDay; //AI
+        ~/ Duration.millisecondsPerDay;//AI
 
-  return poems[day % poems.length];
+  return poems[day%poems.length];
 }
 
 
@@ -105,15 +105,12 @@ class HomeScreen extends StatelessWidget {
 
           for (final p in FakeData.poems) //AI
             ListTile(
-              title: Text(
-                p.title,
-                style: const TextStyle(fontFamily: AppFonts.myeongjo),
-              ),
+              title: Text(p.title, style: const TextStyle(fontFamily: AppFonts.myeongjo)),
               subtitle: Text(p.author),
-              trailing: FakeData.readingFor(p.poemId) == null
+              trailing: FakeData.readingFor(p.poemId)==null
                     ? const Icon(Icons.chevron_right)
                     : const Text(AppStrings.homeReadMark, style: AppText.caption),
-              onTap: () => openReading(p.poemId),
+                onTap: () => openReading(p.poemId)
             ),
         ],
       ),
