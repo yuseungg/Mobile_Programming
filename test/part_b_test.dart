@@ -60,7 +60,7 @@ void main() {
     // 맥은 웹이랑 기본 방식이 같아서 맥으로 흉내
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS; //AI
     await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'seosi')));
-    final field = find.byType(TextField);
+    Finder field = find.byType(TextField);
     await tester.scrollUntilVisible(field, 200,
         scrollable: find.byType(Scrollable).first);
     await tester.showKeyboard(field);
@@ -68,16 +68,22 @@ void main() {
 
 
     //마지막 글자 계속 조합 중인 채로 22자까지 입력
-    for (final text in ['가' * 20, '${'가' * 20}나', '${'가' * 21}다']) { //AI
-      tester.testTextInput.updateEditingValue(TextEditingValue(
+    List<String> inputs = [];
+    inputs.add('가' * 20);
+    inputs.add('${'가' * 20}나'); //AI
+    inputs.add('${'가' * 21}다');
+
+    for (String text in inputs) {
+      TextEditingValue value = TextEditingValue(
           text: text,
           selection: TextSelection.collapsed(offset: text.length),
-            composing: TextRange(start: text.length - 1, end: text.length)) //AI
-      );
+            composing: TextRange(start: text.length - 1, end: text.length)); //AI
+      tester.testTextInput.updateEditingValue(value);
       await tester.pump();
     }
 
-    expect(tester.widget<TextField>(field).controller!.text.length,  20);
+    TextField textField = tester.widget<TextField>(field);
+    expect(textField.controller!.text.length,  20);
       debugDefaultTargetPlatformOverride = null;
   });
 
