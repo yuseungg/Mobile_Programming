@@ -56,7 +56,8 @@ class AppStrings {
   static const homeProfileTooltip = '내 프로필';
   static const homeTodayPoem = '오늘의 시';
   static const homeStartReading = '혼자 읽기 시작';
-  static const homeMyPoems = '내가 읽은 시';
+  static const homePoemList = '시 목록';
+  static const homeReadMark = '읽음';
 
   // ── S04 읽기 ──────────────────────────────────
   static String readingAppBarTitle(String author, String title) =>

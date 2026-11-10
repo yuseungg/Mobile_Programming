@@ -1,6 +1,6 @@
 // S03 홈 — 주인: B
 // B의 part-b `S03HomeScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
-// - 누적일수 문구, 오늘의 시, 내가 읽은 시
+// - 누적일수 문구, 오늘의 시, 시 목록(읽은 시 표시)
 // - 상단 프로필 → S12
 // - 하단 탭바는 C의 TabShell이 감싸서 붙임
 import 'package:flutter/material.dart';
@@ -9,17 +9,28 @@ import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
+import '../../data/models/poem.dart';
+
+
+//AI
+/// 오늘의 시 — 추가된 순서로 하루에 한 편씩 돌아간다 (기획서 9장 3번).
+/// 날짜만 보므로 같은 날에는 누구나 같은 시를 받는다.
+Poem todayPoem(List<Poem> poems, DateTime now) {
+  final day = DateTime.utc(now.year, now.month, now.day).millisecondsSinceEpoch
+        ~/ Duration.millisecondsPerDay;
+
+  return poems[day % poems.length];
+}
+
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final poem = FakeData.poemById(FakeData.todayPoemId);
+    final poem =  todayPoem(FakeData.poems, DateTime.now());
     final me = FakeData.profileById(FakeData.myUserId);
-    final readPoems = FakeData.poems
-        .where((p) => FakeData.readingFor(p.poemId) != null)
-        .toList();
 
     void openReading(String poemId) =>
         Navigator.of(context).pushNamed(AppRoutes.reading(poemId));
@@ -92,17 +103,22 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           const Text(
-            AppStrings.homeMyPoems,
+            AppStrings.homePoemList,
             style: TextStyle(color: AppColors.textFaint),
           ),
-          for (final p in readPoems)
+
+
+          for (final p in FakeData.poems)
             ListTile(
               title: Text(
                 p.title,
                 style: const TextStyle(fontFamily: AppFonts.myeongjo),
               ),
               subtitle: Text(p.author),
-              trailing: const Icon(Icons.chevron_right),
+              // 읽은 시는 화살표 대신 '읽음'
+              trailing: FakeData.readingFor(p.poemId) == null
+                    ? const Icon(Icons.chevron_right)
+                    : const Text(AppStrings.homeReadMark, style: AppText.caption),
               onTap: () => openReading(p.poemId),
             ),
         ],
