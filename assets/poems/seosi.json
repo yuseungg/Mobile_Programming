@@ -1,0 +1,21 @@
+{
+  "poem": "seosi",
+  "badge": "badges/seosi.png",
+  "readings": [
+    {
+      "label": "전문가 해석 A",
+      "stance": "부끄러움과 다짐으로 읽는 입장",
+      "claims": [
+        { "lines": [2], "point": "부끄럼 없기를 바라는 건 도달할 수 없는 기준이다" },
+        { "lines": [6, 7, 8], "point": "괴로움을 통과한 뒤에 나온 다짐이다" }
+      ]
+    },
+    {
+      "label": "전문가 해석 B",
+      "stance": "시대 앞의 무력감으로 읽는 입장",
+      "claims": [
+        { "lines": [10], "point": "다짐 뒤에도 밤은 그대로 온다" }
+      ]
+    }
+  ]
+}
