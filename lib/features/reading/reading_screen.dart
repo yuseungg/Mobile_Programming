@@ -85,8 +85,8 @@ class _ReadingScreenState extends State<ReadingScreen> {
           TextField(
             controller: _firstWordController,
             maxLength: 20,
-            // 웹 기본값은 한글 조합 중에 제한을 풀어 20자를 넘긴다
-            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            // 웹 기본값은 한글 조합 중엔 제한을 풀어서 20자 넘어감
+            maxLengthEnforcement:  MaxLengthEnforcement.enforced, //AI
             onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(
               filled: true,

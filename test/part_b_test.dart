@@ -52,10 +52,12 @@ void main() {
     expect(find.byType(ComparisonScreen), findsOneWidget);
   });
 
-  // 웹(Chrome)에서 한글을 계속 치면 조합 중이라 20자 제한이 뚫리던 버그
+
+  //AI
+  // 크롬에서 한글 계속 치면 조합 중이라 20자 제한 뚫리던 버그
   testWidgets('첫 낱말은 한글 조합 중에도 20자를 넘지 않는다', (tester) async {
-    // 웹과 같은 기본 방식(조합 중엔 제한을 풂)을 쓰는 플랫폼으로 흉내
-    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    // 맥은 웹이랑 기본 방식이 같아서 맥으로 흉내
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS; //AI
     await tester.pumpWidget(
       const MaterialApp(home: ReadingScreen(poemId: 'seosi')),
     );
@@ -67,19 +69,21 @@ void main() {
     );
     await tester.showKeyboard(field);
 
-    // 마지막 글자가 계속 조합 중인 채로 20자 → 22자까지 입력
-    for (final text in ['가' * 20, '${'가' * 20}나', '${'가' * 21}다']) {
+
+
+    // 마지막 글자 계속 조합 중인 채로 22자까지 입력
+    for (final text in ['가' * 20, '${'가' * 20}나', '${'가' * 21}다']) { //AI
       tester.testTextInput.updateEditingValue(
         TextEditingValue(
           text: text,
           selection: TextSelection.collapsed(offset: text.length),
-          composing: TextRange(start: text.length - 1, end: text.length),
+            composing: TextRange(start: text.length - 1, end: text.length), //AI
         ),
       );
       await tester.pump();
     }
 
-    expect(tester.widget<TextField>(field).controller!.text.length, 20);
+    expect(tester.widget<TextField>(field).controller!.text.length,  20);
     debugDefaultTargetPlatformOverride = null;
   });
 }

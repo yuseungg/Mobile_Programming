@@ -67,8 +67,9 @@ class _SaveScreenState extends State<SaveScreen> {
           TextField(
             controller: _interpretationController,
             maxLength: 500,
-            // 웹 기본값은 한글 조합 중에 제한을 풀어 500자를 넘긴다
-            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            // 웹 기본값은 한글 조합 중엔 제한을 풀어서 500자 넘어감
+            maxLengthEnforcement: MaxLengthEnforcement.enforced, //AI
+
             minLines: 6,
             maxLines: null,
             onChanged: (_) => setState(() {}),
