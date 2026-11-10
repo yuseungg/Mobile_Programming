@@ -15,12 +15,13 @@ void main() {
     await tester.pumpAndSettle();
 
     // 오늘의 시는 날마다 바뀌어서 목록에서 서시 고름
-    final seosiTile = find.widgetWithText(ListTile, '서시');
+    final seosiTile = find.widgetWithText(ListTile,'서시');
     await tester.scrollUntilVisible(
       seosiTile,
       200,
       scrollable: find.byType(Scrollable).first,
     );
+
     await tester.tap(seosiTile);
     await tester.pumpAndSettle();
 
