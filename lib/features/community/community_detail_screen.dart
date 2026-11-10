@@ -3,12 +3,14 @@
 // - 한 사람의 첫 낱말 → 대화 요약 → 최종 해석
 // - 닉네임 탭 → S12 남의 프로필
 // - 공감 버튼 (정렬·순위에 쓰지 않음). 1단계는 화면 안에서만 바뀐다
+// - 그 시의 해석을 저장하지 않았으면 내용 대신 잠금 안내 (기획서 5장)
 import 'package:flutter/material.dart';
 
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
+import 'locked_notice.dart';
 
 class CommunityDetailScreen extends StatefulWidget {
   const CommunityDetailScreen({super.key, required this.conversationId});
@@ -30,6 +32,11 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       _empathyCount += _hasEmpathized ? 1 : -1;
     });
   }
+
+  /// 그 시의 해석을 저장했을 때만 남의 대화를 볼 수 있다 (기획서 5장).
+  /// 화면 분기는 우회할 수 있어, 실제 차단은 C의 보안 규칙이 맡는다.
+  bool _isLocked(String poemId) =>
+      !(FakeData.readingFor(poemId)?.isSaved ?? false);
 
   void _openAuthorProfile() {
     Navigator.of(context).pushNamed(AppRoutes.profile(_conversation.userId));
@@ -56,7 +63,9 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.text),
       ),
-      body: SingleChildScrollView(
+      body: _isLocked(conversation.poemId)
+          ? LockedNotice(poemId: conversation.poemId)
+          : SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

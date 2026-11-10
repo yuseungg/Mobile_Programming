@@ -3,7 +3,7 @@
 // - 이 시를 읽은 사람들이 공개한 대화 목록 (최신순, 공감 수로 정렬하지 않음)
 // - 카드 탭 → S09
 // - 하단 탭 화면이라 시는 위의 칩으로 고른다 (해석을 저장하지 않은 시는 자물쇠)
-// - 1단계: 잠금은 표시만 하고 늘 열어둔다
+// - 저장하지 않은 시를 고르면 목록 대신 잠금 안내를 보여 준다 (기획서 5장)
 import 'package:flutter/material.dart';
 
 import '../../app/router.dart';
@@ -11,6 +11,7 @@ import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
 import '../../data/models/public_conversation.dart';
+import 'locked_notice.dart';
 
 class CommunityListScreen extends StatefulWidget {
   const CommunityListScreen({super.key});
@@ -22,9 +23,15 @@ class CommunityListScreen extends StatefulWidget {
 class _CommunityListScreenState extends State<CommunityListScreen> {
   String _selectedPoemId = FakeData.todayPoemId;
 
+  /// 그 시의 해석을 저장했는가 — 유일한 잠금 해제 지점 (기획서 5장)
+  bool _isUnlocked(String poemId) =>
+      FakeData.readingFor(poemId)?.isSaved ?? false;
+
   @override
   Widget build(BuildContext context) {
-    final conversations = FakeData.conversationsFor(_selectedPoemId);
+    final isUnlocked = _isUnlocked(_selectedPoemId);
+    final conversations =
+        isUnlocked ? FakeData.conversationsFor(_selectedPoemId) : const [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -51,7 +58,7 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
                 for (final poem in FakeData.poems) ...[
                   ChoiceChip(
                     label: Text(poem.title),
-                    avatar: (FakeData.readingFor(poem.poemId)?.isSaved ?? false)
+                    avatar: _isUnlocked(poem.poemId)
                         ? null
                         : const Icon(Icons.lock_outline,
                             size: 16, color: AppColors.textFaint),
@@ -66,7 +73,8 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (conversations.isEmpty)
+          if (!isUnlocked) LockedNotice(poemId: _selectedPoemId),
+          if (isUnlocked && conversations.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 48),
               child: Center(

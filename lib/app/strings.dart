@@ -106,6 +106,12 @@ class AppStrings {
   static const communityEmpty = '아직 공개된 대화가 없어요.';
   static String communityFirstWordTag(String word) => '#$word';
 
+  /// 잠금 — 그 시의 해석을 저장해야 남의 대화가 열린다 (기획서 5장 「잠금 한 곳」)
+  static const communityLockedTitle = '아직 열리지 않았어요';
+  static const communityLockedBody =
+      '이 시를 끝까지 읽고 내 해석을 저장하면 다른 사람의 대화가 열려요.';
+  static const communityLockedAction = '이 시 읽으러 가기';
+
   // ── S09 대화 보기 (D) ─────────────────────────
   static String communityDetailTitle(String poemTitle) => '$poemTitle · 읽은이의 대화';
   static const communityDetailFirstWord = '1. 첫 낱말';
