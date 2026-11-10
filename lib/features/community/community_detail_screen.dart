@@ -51,17 +51,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(
-          AppStrings.communityDetailTitle(poem.title),
-          style: const TextStyle(
-            color: AppColors.text,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.text),
+        title: Text(AppStrings.communityDetailTitle(poem.title)),
       ),
       body: _isLocked(conversation.poemId)
           ? LockedNotice(poemId: conversation.poemId)
@@ -121,10 +111,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                   ),
                   Text(
                     AppStrings.monthDay(conversation.createdAt),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textFaint,
-                    ),
+                    style: AppText.caption,
                   ),
                 ],
               ),
@@ -296,7 +283,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             const Center(
               child: Text(
                 AppStrings.communityDetailEmpathyNote,
-                style: TextStyle(fontSize: 11, color: AppColors.textFaint),
+                style: AppText.lineNumber,
               ),
             ),
             const SizedBox(height: 32),
@@ -329,7 +316,7 @@ class _SectionHeader extends StatelessWidget {
         Flexible(
           child: Text(
             subtitle,
-            style: const TextStyle(fontSize: 12, color: AppColors.textFaint),
+            style: AppText.caption,
           ),
         ),
       ],

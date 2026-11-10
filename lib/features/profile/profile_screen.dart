@@ -28,15 +28,7 @@ class ProfileScreen extends StatelessWidget {
           isMe
               ? AppStrings.profileMyTitle
               : AppStrings.profileOtherTitle(profile.nickname),
-          style: const TextStyle(
-            color: AppColors.text,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
         ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.text),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -88,7 +80,7 @@ class ProfileScreen extends StatelessWidget {
                       child: Text(
                         AppStrings.profileEmailLinked,
                         style:
-                            TextStyle(fontSize: 12, color: AppColors.textFaint),
+                            AppText.caption,
                       ),
                     ),
                 ],
@@ -170,7 +162,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 6),
             const Text(
               AppStrings.profileBadgesCaption,
-              style: TextStyle(fontSize: 12, color: AppColors.textFaint),
+              style: AppText.caption,
             ),
             const SizedBox(height: 16),
 
@@ -259,7 +251,7 @@ class _BadgeItem extends StatelessWidget {
           Text(
             poem.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, color: AppColors.textFaint),
+            style: AppText.lineNumber,
           ),
         ],
       ),

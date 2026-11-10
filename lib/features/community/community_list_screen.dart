@@ -35,19 +35,7 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          AppStrings.communityTitle,
-          style: TextStyle(
-            color: AppColors.text,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.text),
-      ),
+      appBar: AppBar(title: const Text(AppStrings.communityTitle)),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         children: [
@@ -80,7 +68,7 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
               child: Center(
                 child: Text(
                   AppStrings.communityEmpty,
-                  style: TextStyle(color: AppColors.textSub),
+                  style: AppText.bodySub,
                 ),
               ),
             ),
@@ -170,10 +158,7 @@ class _ConversationCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${conversation.empathyCount}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textFaint,
-                      ),
+                      style: AppText.caption,
                     ),
                   ],
                 ),

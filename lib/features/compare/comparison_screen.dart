@@ -55,12 +55,7 @@ class ComparisonScreen extends StatelessWidget {
               ),
               const Text(
                 AppStrings.comparisonCreationBackgroundTitle,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.text,
-                  fontFamily: AppFonts.myeongjo,
-                ),
+                style: AppText.poemTitleSmall,
               ),
               const SizedBox(height: 12),
               Text(
@@ -105,19 +100,7 @@ class ComparisonScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          AppStrings.comparisonTitle(poem.title),
-          style: const TextStyle(
-            color: AppColors.text,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.text),
-      ),
+      appBar: AppBar(title: Text(AppStrings.comparisonTitle(poem.title))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
@@ -140,11 +123,7 @@ class ComparisonScreen extends StatelessWidget {
                     child: Text(
                       AppStrings.comparisonPoemInfo(
                           poem.title, poem.author, poem.year),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSub,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: AppText.label,
                     ),
                   ),
                   Text(
@@ -194,7 +173,7 @@ class ComparisonScreen extends StatelessWidget {
                       const Text(
                         AppStrings.comparisonMineCaption,
                         style:
-                            TextStyle(fontSize: 12, color: AppColors.textFaint),
+                            AppText.caption,
                       ),
                     ],
                   ),
@@ -219,7 +198,7 @@ class ComparisonScreen extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: 20),
                 child: Text(
                   AppStrings.comparisonNoExperts,
-                  style: TextStyle(color: AppColors.textSub),
+                  style: AppText.bodySub,
                 ),
               ),
             for (var i = 0; i < experts.length; i++)
@@ -324,17 +303,13 @@ class _ExpertCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.confirmed.withValues(alpha: 0.12),
+                    color: AppColors.info.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text(
-                    relationText,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.confirmed,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  // 관계는 세 가지 모두 같은 색이다. 겹쳤다고 초록(confirmed)을
+                  // 쓰면 「맞췄다」로 읽힌다 — 기획서 4장은 어느 해석도 정답이
+                  // 아니라고 못박는다. A가 준비해 둔 AppText.relation을 쓴다.
+                  child: Text(relationText, style: AppText.relation),
                 ),
               ),
             ],
@@ -391,11 +366,7 @@ class _ExpertCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       claim.point,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: AppColors.textSub,
-                      ),
+                      style: AppText.bodySub,
                     ),
                   ),
                 ],
