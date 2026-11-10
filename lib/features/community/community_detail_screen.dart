@@ -9,51 +9,102 @@ import 'package:flutter/material.dart';
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
-import '../../data/fakes/fake_data.dart';
+import '../../data/models/poem.dart';
+import '../../data/models/public_conversation.dart';
+import '../../data/models/user_profile.dart';
+import '../../ports/fake_reading_source.dart';
+import '../../ports/reading_source.dart';
 import 'locked_notice.dart';
 
+/// 화면 한 번에 필요한 것
+class _DetailData {
+  const _DetailData({
+    required this.conversation,
+    required this.poem,
+    required this.author,
+    required this.isLocked,
+  });
+
+  final PublicConversation conversation;
+  final Poem poem;
+  final UserProfile author;
+
+  /// 그 시의 해석을 저장했을 때만 남의 대화를 볼 수 있다 (기획서 5장).
+  /// 화면 분기는 우회할 수 있어, 실제 차단은 C의 보안 규칙이 맡는다.
+  final bool isLocked;
+}
+
 class CommunityDetailScreen extends StatefulWidget {
-  const CommunityDetailScreen({super.key, required this.conversationId});
+  const CommunityDetailScreen({
+    super.key,
+    required this.conversationId,
+    this.source = const FakeReadingSource(),
+  });
 
   final String conversationId;
+  final ReadingSource source;
 
   @override
   State<CommunityDetailScreen> createState() => _CommunityDetailScreenState();
 }
 
 class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
-  late final _conversation = FakeData.conversationById(widget.conversationId);
+  late final Future<_DetailData> _data = _load();
   bool _hasEmpathized = false;
-  late int _empathyCount = _conversation.empathyCount;
+  int? _empathyCount; // 읽어 온 뒤에 정해진다
 
-  void _toggleEmpathy() {
+  Future<_DetailData> _load() async {
+    final source = widget.source;
+    final conversation = await source.conversationById(widget.conversationId);
+    final reading = await source.readingFor(conversation.poemId);
+    return _DetailData(
+      conversation: conversation,
+      poem: await source.poemById(conversation.poemId),
+      author: await source.profileById(conversation.userId),
+      isLocked: !(reading?.isSaved ?? false),
+    );
+  }
+
+  void _toggleEmpathy(int baseCount) {
     setState(() {
       _hasEmpathized = !_hasEmpathized;
-      _empathyCount += _hasEmpathized ? 1 : -1;
+      _empathyCount = baseCount + (_hasEmpathized ? 1 : 0);
     });
   }
 
-  /// 그 시의 해석을 저장했을 때만 남의 대화를 볼 수 있다 (기획서 5장).
-  /// 화면 분기는 우회할 수 있어, 실제 차단은 C의 보안 규칙이 맡는다.
-  bool _isLocked(String poemId) =>
-      !(FakeData.readingFor(poemId)?.isSaved ?? false);
-
-  void _openAuthorProfile() {
-    Navigator.of(context).pushNamed(AppRoutes.profile(_conversation.userId));
+  void _openAuthorProfile(String userId) {
+    Navigator.of(context).pushNamed(AppRoutes.profile(userId));
   }
 
   @override
   Widget build(BuildContext context) {
-    final conversation = _conversation;
-    final poem = FakeData.poemById(conversation.poemId);
-    final author = FakeData.profileById(conversation.userId);
+    return FutureBuilder<_DetailData>(
+      future: _data,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        if (data == null) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return _content(context, data);
+      },
+    );
+  }
+
+  Widget _content(BuildContext context, _DetailData data) {
+    final conversation = data.conversation;
+    final poem = data.poem;
+    final author = data.author;
+    final empathyCount = _empathyCount ?? conversation.empathyCount;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(AppStrings.communityDetailTitle(poem.title)),
       ),
-      body: _isLocked(conversation.poemId)
+      body: data.isLocked
           ? LockedNotice(poemId: conversation.poemId)
           : SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -84,7 +135,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: InkWell(
-                      onTap: _openAuthorProfile,
+                      onTap: () => _openAuthorProfile(author.userId),
                       borderRadius: BorderRadius.circular(4),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -249,14 +300,15 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             // 공감 버튼 (정렬에 쓰이지 않는 순수한 공감)
             Center(
               child: OutlinedButton.icon(
-                onPressed: _toggleEmpathy,
+                onPressed: () =>
+                    _toggleEmpathy(conversation.empathyCount),
                 icon: Icon(
                   _hasEmpathized ? Icons.favorite : Icons.favorite_border,
                   size: 20,
                   color: _hasEmpathized ? AppColors.accent : AppColors.textSub,
                 ),
                 label: Text(
-                  AppStrings.communityDetailEmpathyCount(_empathyCount),
+                  AppStrings.communityDetailEmpathyCount(empathyCount),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

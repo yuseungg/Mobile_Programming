@@ -9,76 +9,171 @@ import 'package:flutter/material.dart';
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
-import '../../data/fakes/fake_data.dart';
+import '../../data/models/poem.dart';
 import '../../data/models/public_conversation.dart';
+import '../../ports/fake_reading_source.dart';
+import '../../ports/reading_source.dart';
 import 'locked_notice.dart';
 
+/// 시 칩 줄에 필요한 것 — 한 번만 읽는다
+class _ShellData {
+  const _ShellData({required this.poems, required this.unlocked});
+
+  final List<Poem> poems;
+  final Map<String, bool> unlocked; // poemId → 그 시의 해석을 저장했는가
+}
+
+/// 고른 시의 목록에 필요한 것 — 시를 바꿀 때마다 다시 읽는다
+class _ListData {
+  const _ListData({
+    required this.isUnlocked,
+    required this.conversations,
+    required this.nicknames,
+  });
+
+  final bool isUnlocked;
+  final List<PublicConversation> conversations;
+
+  /// uid → 닉네임. 카드마다 읽지 않도록 미리 모아 둔다 (같은 uid는 한 번만).
+  /// 진짜 해결은 C가 공개 대화 문서에 닉네임을 비정규화해 넣는 것이다.
+  final Map<String, String> nicknames;
+}
+
 class CommunityListScreen extends StatefulWidget {
-  const CommunityListScreen({super.key});
+  const CommunityListScreen({
+    super.key,
+    this.source = const FakeReadingSource(),
+  });
+
+  final ReadingSource source;
 
   @override
   State<CommunityListScreen> createState() => _CommunityListScreenState();
 }
 
 class _CommunityListScreenState extends State<CommunityListScreen> {
-  String _selectedPoemId = FakeData.todayPoemId;
+  late final ReadingSource _source = widget.source;
+  late String _selectedPoemId = _source.todayPoemId;
+  late final Future<_ShellData> _shell = _loadShell();
+  late Future<_ListData> _list = _loadList(_selectedPoemId);
+
+  Future<_ShellData> _loadShell() async {
+    final poems = await _source.poems();
+    final unlocked = <String, bool>{};
+    for (final poem in poems) {
+      unlocked[poem.poemId] = await _isUnlocked(poem.poemId);
+    }
+    return _ShellData(poems: poems, unlocked: unlocked);
+  }
 
   /// 그 시의 해석을 저장했는가 — 유일한 잠금 해제 지점 (기획서 5장)
-  bool _isUnlocked(String poemId) =>
-      FakeData.readingFor(poemId)?.isSaved ?? false;
+  Future<bool> _isUnlocked(String poemId) async =>
+      (await _source.readingFor(poemId))?.isSaved ?? false;
+
+  Future<_ListData> _loadList(String poemId) async {
+    if (!await _isUnlocked(poemId)) {
+      return const _ListData(
+        isUnlocked: false,
+        conversations: [],
+        nicknames: {},
+      );
+    }
+    final conversations = await _source.conversationsFor(poemId);
+    final nicknames = <String, String>{};
+    for (final conversation in conversations) {
+      if (nicknames.containsKey(conversation.userId)) continue;
+      nicknames[conversation.userId] =
+          (await _source.profileById(conversation.userId)).nickname;
+    }
+    return _ListData(
+      isUnlocked: true,
+      conversations: conversations,
+      nicknames: nicknames,
+    );
+  }
+
+  void _select(String poemId) {
+    setState(() {
+      _selectedPoemId = poemId;
+      _list = _loadList(poemId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isUnlocked = _isUnlocked(_selectedPoemId);
-    final conversations =
-        isUnlocked ? FakeData.conversationsFor(_selectedPoemId) : const [];
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text(AppStrings.communityTitle)),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final poem in FakeData.poems) ...[
-                  ChoiceChip(
-                    label: Text(poem.title),
-                    avatar: _isUnlocked(poem.poemId)
-                        ? null
-                        : const Icon(Icons.lock_outline,
-                            size: 16, color: AppColors.textFaint),
-                    showCheckmark: false,
-                    selected: poem.poemId == _selectedPoemId,
-                    onSelected: (_) =>
-                        setState(() => _selectedPoemId = poem.poemId),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-              ],
-            ),
+          FutureBuilder<_ShellData>(
+            future: _shell,
+            builder: (context, snapshot) {
+              final shell = snapshot.data;
+              if (shell == null) return const SizedBox(height: 32);
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final poem in shell.poems) ...[
+                      ChoiceChip(
+                        label: Text(poem.title),
+                        avatar: (shell.unlocked[poem.poemId] ?? false)
+                            ? null
+                            : const Icon(Icons.lock_outline,
+                                size: 16, color: AppColors.textFaint),
+                        showCheckmark: false,
+                        selected: poem.poemId == _selectedPoemId,
+                        onSelected: (_) => _select(poem.poemId),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
-          if (!isUnlocked) LockedNotice(poemId: _selectedPoemId),
-          if (isUnlocked && conversations.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 48),
-              child: Center(
-                child: Text(
-                  AppStrings.communityEmpty,
-                  style: AppText.bodySub,
-                ),
-              ),
-            ),
-          for (final conversation in conversations)
-            _ConversationCard(
-              conversation: conversation,
-              onTap: () => Navigator.of(context).pushNamed(
-                AppRoutes.communityDetail(conversation.conversationId),
-              ),
-            ),
+          FutureBuilder<_ListData>(
+            future: _list,
+            builder: (context, snapshot) {
+              final list = snapshot.data;
+              if (list == null) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 48),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (!list.isUnlocked) {
+                return LockedNotice(poemId: _selectedPoemId);
+              }
+              if (list.conversations.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 48),
+                  child: Center(
+                    child: Text(
+                      AppStrings.communityEmpty,
+                      style: AppText.bodySub,
+                    ),
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  for (final conversation in list.conversations)
+                    _ConversationCard(
+                      conversation: conversation,
+                      authorNickname:
+                          list.nicknames[conversation.userId] ?? '',
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.communityDetail(conversation.conversationId),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
@@ -86,15 +181,18 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
 }
 
 class _ConversationCard extends StatelessWidget {
-  const _ConversationCard({required this.conversation, required this.onTap});
+  const _ConversationCard({
+    required this.conversation,
+    required this.authorNickname,
+    required this.onTap,
+  });
 
   final PublicConversation conversation;
+  final String authorNickname;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final author = FakeData.profileById(conversation.userId);
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -123,7 +221,7 @@ class _ConversationCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      author.nickname,
+                      authorNickname,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,

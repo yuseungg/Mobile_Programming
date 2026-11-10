@@ -10,14 +10,57 @@ import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../compare/relation.dart';
-import '../../data/fakes/fake_data.dart';
 import '../../data/models/expert_interpretation.dart';
 import '../../data/models/poem.dart';
+import '../../ports/fake_reading_source.dart';
+import '../../ports/reading_source.dart';
 
-class ComparisonScreen extends StatelessWidget {
-  const ComparisonScreen({super.key, required this.poemId});
+/// 화면 한 번에 필요한 것
+class _ComparisonData {
+  const _ComparisonData({
+    required this.poem,
+    required this.myInterpretation,
+    required this.myEvidenceLines,
+    required this.experts,
+    required this.comparisonTexts,
+  });
+
+  final Poem poem;
+  final String myInterpretation;
+  final List<int> myEvidenceLines;
+  final List<ExpertInterpretation> experts;
+  final List<String> comparisonTexts;
+}
+
+class ComparisonScreen extends StatefulWidget {
+  const ComparisonScreen({
+    super.key,
+    required this.poemId,
+    this.source = const FakeReadingSource(),
+  });
 
   final String poemId;
+  final ReadingSource source;
+
+  @override
+  State<ComparisonScreen> createState() => _ComparisonScreenState();
+}
+
+class _ComparisonScreenState extends State<ComparisonScreen> {
+  late final Future<_ComparisonData> _data = _load();
+
+  Future<_ComparisonData> _load() async {
+    final source = widget.source;
+    final poemId = widget.poemId;
+    final reading = await source.readingFor(poemId);
+    return _ComparisonData(
+      poem: await source.poemById(poemId),
+      myInterpretation: reading?.interpretation ?? '',
+      myEvidenceLines: reading?.evidenceLines ?? const <int>[],
+      experts: await source.expertsFor(poemId),
+      comparisonTexts: await source.comparisonTextsFor(poemId),
+    );
+  }
 
   String _relationText(Relation relation, ExpertInterpretation expert) =>
       switch (relation) {
@@ -91,12 +134,27 @@ class ComparisonScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final poem = FakeData.poemById(poemId);
-    final reading = FakeData.readingFor(poemId);
-    final myInterpretation = reading?.interpretation ?? '';
-    final myEvidenceLines = reading?.evidenceLines ?? const <int>[];
-    final experts = FakeData.expertInterpretations[poemId] ?? const [];
-    final comparisonTexts = FakeData.comparisonTexts[poemId] ?? const [];
+    return FutureBuilder<_ComparisonData>(
+      future: _data,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        if (data == null) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return _content(context, data);
+      },
+    );
+  }
+
+  Widget _content(BuildContext context, _ComparisonData data) {
+    final poem = data.poem;
+    final myInterpretation = data.myInterpretation;
+    final myEvidenceLines = data.myEvidenceLines;
+    final experts = data.experts;
+    final comparisonTexts = data.comparisonTexts;
 
     return Scaffold(
       backgroundColor: AppColors.background,

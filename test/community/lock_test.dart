@@ -6,6 +6,10 @@ import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/features/community/community_detail_screen.dart';
 import 'package:yeobaek/features/community/community_list_screen.dart';
 import 'package:yeobaek/features/community/locked_notice.dart';
+import 'package:yeobaek/data/models/public_conversation.dart';
+import 'package:yeobaek/data/models/reading.dart';
+
+import '../support/stub_reading_source.dart';
 
 void main() {
   group('S08 대화 목록', () {
@@ -68,6 +72,89 @@ void main() {
       expect(find.text(AppStrings.communityDetailFirstWord), findsOneWidget);
       expect(find.text(AppStrings.communityDetailInterpretation),
           findsOneWidget);
+    });
+  });
+
+  group('S09 — 저장하지 않은 시 (읽기 포트로 덮음)', () {
+    PublicConversation conversation(String poemId) => PublicConversation(
+          conversationId: 'c1',
+          userId: 'user_1',
+          poemId: poemId,
+          firstWord: '다짐',
+          summary: '요약',
+          interpretation: '남의 해석',
+          empathyCount: 3,
+          createdAt: DateTime.utc(2026, 11, 1),
+        );
+
+    testWidgets('저장하지 않았으면 내용 대신 잠금 안내', (tester) async {
+      final source = StubReadingSource(
+        conversations: [conversation('jindallae')],
+        readings: const {}, // 아무 시도 저장하지 않았다
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CommunityDetailScreen(
+            conversationId: 'c1',
+            source: source,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LockedNotice), findsOneWidget);
+      expect(find.text('남의 해석'), findsNothing);
+      expect(find.text(AppStrings.communityDetailInterpretation), findsNothing);
+    });
+
+    testWidgets('저장했으면 열린다', (tester) async {
+      final source = StubReadingSource(
+        conversations: [conversation('jindallae')],
+        readings: const {
+          'jindallae': Reading(poemId: 'jindallae', isSaved: true),
+        },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CommunityDetailScreen(
+            conversationId: 'c1',
+            source: source,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LockedNotice), findsNothing);
+      expect(find.text('남의 해석'), findsOneWidget);
+    });
+  });
+
+  group('S08 — 작성자 닉네임을 미리 모은다', () {
+    testWidgets('같은 사람의 카드가 여러 장이어도 한 번만 읽는다', (tester) async {
+      final source = StubReadingSource(
+        readings: const {'seosi': Reading(poemId: 'seosi', isSaved: true)},
+        conversations: [
+          for (var i = 1; i <= 3; i++)
+            PublicConversation(
+              conversationId: 'c$i',
+              userId: 'user_1', // 세 장 모두 같은 사람
+              poemId: 'seosi',
+              firstWord: '낱말$i',
+              summary: '요약',
+              interpretation: '해석',
+              empathyCount: 0,
+              createdAt: DateTime.utc(2026, 11, i),
+            ),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: CommunityListScreen(source: source)),
+      );
+      await tester.pumpAndSettle();
+
+      final profileCalls =
+          source.calls.where((c) => c.startsWith('profileById:')).length;
+      expect(profileCalls, 1);
     });
   });
 
