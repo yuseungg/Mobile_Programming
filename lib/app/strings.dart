@@ -126,6 +126,12 @@ class AppStrings {
   static const communityDetailFirstWordCaption = '시를 읽고 가장 먼저 떠올린 말';
   static const communityDetailFirstWordNote = '이 낱말에서 AI와의 대화가 시작되었습니다.';
   static const communityDetailSummary = '2. 대화 과정';
+
+  /// 요약을 모델이 쓰지 못했을 때 (키 없음 · 실패 · 취소). 사실만 적는다.
+  static String communitySummaryFallback(String firstWord, int questionCount) =>
+      questionCount > 0
+          ? '「$firstWord」에서 시작해 질문 $questionCount개를 지난 대화예요.'
+          : '「$firstWord」에서 시작한 대화예요.';
   static const communityDetailSummaryCaption = 'AI 질문과 사유의 요약';
   static String communityDetailEvidence(List<int> lines) =>
       '확인된 근거 구절: ${lineList(lines)}';

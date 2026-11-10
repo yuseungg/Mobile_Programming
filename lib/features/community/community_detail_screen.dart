@@ -14,6 +14,8 @@ import '../../data/models/public_conversation.dart';
 import '../../data/models/user_profile.dart';
 import '../../ports/fake_reading_source.dart';
 import '../../ports/reading_source.dart';
+import '../../writers/fake_summary_writer.dart';
+import '../../writers/summary_writer.dart';
 import 'locked_notice.dart';
 
 /// 화면 한 번에 필요한 것
@@ -22,12 +24,16 @@ class _DetailData {
     required this.conversation,
     required this.poem,
     required this.author,
+    required this.summary,
     required this.isLocked,
   });
 
   final PublicConversation conversation;
   final Poem poem;
   final UserProfile author;
+
+  /// 공개 대화에 담긴 요약. 비어 있으면 폴백으로 채운다.
+  final String summary;
 
   /// 그 시의 해석을 저장했을 때만 남의 대화를 볼 수 있다 (기획서 5장).
   /// 화면 분기는 우회할 수 있어, 실제 차단은 C의 보안 규칙이 맡는다.
@@ -39,10 +45,15 @@ class CommunityDetailScreen extends StatefulWidget {
     super.key,
     required this.conversationId,
     this.source = const FakeReadingSource(),
+    this.summaryWriter = const FakeSummaryWriter(),
   });
 
   final String conversationId;
   final ReadingSource source;
+
+  /// 저장할 때 요약이 비어 있었으면 이것으로 채운다. A의 PR이 병합되면
+  /// OpenRouter를 쓰는 구현체로 바꾼다.
+  final SummaryWriter summaryWriter;
 
   @override
   State<CommunityDetailScreen> createState() => _CommunityDetailScreenState();
@@ -61,8 +72,24 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       conversation: conversation,
       poem: await source.poemById(conversation.poemId),
       author: await source.profileById(conversation.userId),
+      summary: await _summaryOf(conversation),
       isLocked: !(reading?.isSaved ?? false),
     );
+  }
+
+  /// 요약은 저장할 때 한 번 쓰여 문서에 담긴다. 화면이 열릴 때마다 모델을
+  /// 부르지 않는다. 그때 못 썼으면(키 없음·실패) 여기서 사실만으로 채운다.
+  Future<String> _summaryOf(PublicConversation conversation) async {
+    if (conversation.summary.trim().isNotEmpty) return conversation.summary;
+    final written = await widget.summaryWriter.write(
+      SummaryRequest(
+        poemId: conversation.poemId,
+        firstWord: conversation.firstWord,
+        conversation: const [], // 공개 문서에는 대화 원본이 없다
+        interpretation: conversation.interpretation,
+      ),
+    );
+    return written.text;
   }
 
   void _toggleEmpathy(int baseCount) {
@@ -229,7 +256,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    conversation.summary,
+                    data.summary,
                     style: const TextStyle(
                       fontSize: 14,
                       height: 1.6,
