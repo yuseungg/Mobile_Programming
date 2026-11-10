@@ -14,6 +14,8 @@ import '../../data/models/expert_interpretation.dart';
 import '../../data/models/poem.dart';
 import '../../ports/fake_reading_source.dart';
 import '../../ports/reading_source.dart';
+import '../../writers/comparison_writer.dart';
+import '../../writers/fake_comparison_writer.dart';
 
 /// 화면 한 번에 필요한 것
 class _ComparisonData {
@@ -22,14 +24,16 @@ class _ComparisonData {
     required this.myInterpretation,
     required this.myEvidenceLines,
     required this.experts,
-    required this.comparisonTexts,
+    required this.comparisons,
   });
 
   final Poem poem;
   final String myInterpretation;
   final List<int> myEvidenceLines;
   final List<ExpertInterpretation> experts;
-  final List<String> comparisonTexts;
+
+  /// 전문가 해석과 같은 순서. 모델이 못 썼으면 isFallback이 참이다.
+  final List<ComparisonText> comparisons;
 }
 
 class ComparisonScreen extends StatefulWidget {
@@ -37,10 +41,15 @@ class ComparisonScreen extends StatefulWidget {
     super.key,
     required this.poemId,
     this.source = const FakeReadingSource(),
+    this.writer,
   });
 
   final String poemId;
   final ReadingSource source;
+
+  /// 비교 문장을 쓰는 쪽. 비워 두면 미리 쓴 문장과 관계 한 줄로 채운다.
+  /// A의 PR이 병합되면 OpenRouter를 쓰는 구현체를 여기에 넣는다.
+  final ComparisonWriter? writer;
 
   @override
   State<ComparisonScreen> createState() => _ComparisonScreenState();
@@ -53,12 +62,38 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     final source = widget.source;
     final poemId = widget.poemId;
     final reading = await source.readingFor(poemId);
+    final myInterpretation = reading?.interpretation ?? '';
+    final myEvidenceLines = reading?.evidenceLines ?? const <int>[];
+    final experts = await source.expertsFor(poemId);
+
+    // 미리 쓴 문장은 폴백의 재료다. 모델이 쓰면 그것이 이긴다.
+    final writer = widget.writer ??
+        FakeComparisonWriter(
+          prewritten: {poemId: await source.comparisonTextsFor(poemId)},
+        );
+
+    final comparisons = <ComparisonText>[];
+    for (var i = 0; i < experts.length; i++) {
+      comparisons.add(
+        await writer.write(
+          ComparisonRequest(
+            poemId: poemId,
+            myInterpretation: myInterpretation,
+            myEvidenceLines: myEvidenceLines,
+            expert: experts[i],
+            relation: computeRelation(myEvidenceLines, experts[i]),
+            expertIndex: i,
+          ),
+        ),
+      );
+    }
+
     return _ComparisonData(
       poem: await source.poemById(poemId),
-      myInterpretation: reading?.interpretation ?? '',
-      myEvidenceLines: reading?.evidenceLines ?? const <int>[],
-      experts: await source.expertsFor(poemId),
-      comparisonTexts: await source.comparisonTextsFor(poemId),
+      myInterpretation: myInterpretation,
+      myEvidenceLines: myEvidenceLines,
+      experts: experts,
+      comparisons: comparisons,
     );
   }
 
@@ -154,7 +189,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     final myInterpretation = data.myInterpretation;
     final myEvidenceLines = data.myEvidenceLines;
     final experts = data.experts;
-    final comparisonTexts = data.comparisonTexts;
+    final comparisons = data.comparisons;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -267,7 +302,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                   experts[i],
                 ),
                 comparisonText:
-                    i < comparisonTexts.length ? comparisonTexts[i] : null,
+                    i < comparisons.length ? comparisons[i].text : null,
               ),
 
             const SizedBox(height: 12),

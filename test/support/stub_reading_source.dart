@@ -14,15 +14,15 @@ class StubReadingSource implements ReadingSource {
     this.experts = const {},
     this.comparisonTexts = const {},
     this.profiles = const {},
-    String? todayPoemId,
-  }) : _todayPoemId = todayPoemId;
+    this.todayPoemIdOverride,
+  });
 
   final Map<String, Reading> readings;
   final List<PublicConversation> conversations;
   final Map<String, List<ExpertInterpretation>> experts;
   final Map<String, List<String>> comparisonTexts;
   final Map<String, UserProfile> profiles;
-  final String? _todayPoemId;
+  final String? todayPoemIdOverride;
 
   final _fallback = const FakeReadingSource();
 
@@ -33,7 +33,7 @@ class StubReadingSource implements ReadingSource {
   String get myUserId => _fallback.myUserId;
 
   @override
-  String get todayPoemId => _todayPoemId ?? _fallback.todayPoemId;
+  String get todayPoemId => todayPoemIdOverride ?? _fallback.todayPoemId;
 
   @override
   Future<List<Poem>> poems() => _fallback.poems();

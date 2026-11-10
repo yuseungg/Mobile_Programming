@@ -97,6 +97,14 @@ class AppStrings {
   static String comparisonRelationDifferentLines(List<int> lines) =>
       '이 해석은 ${lines.join(', ')}행을 중심으로 읽었어요';
   static const comparisonNoExperts = '이 시의 전문가 해석은 준비 중이에요.';
+
+  /// 비교 문장을 모델이 쓰지 못했을 때 (키 없음 · 실패 · 취소).
+  /// 공통점부터 말하고, 내가 놓친 것을 가리키지 않는다 (기획서 4장).
+  static String comparisonFallbackSameLines(List<int> lines) =>
+      '두 읽기 모두 ${lines.join(', ')}행을 근거로 삼았어요.';
+  static String comparisonFallbackPartialOverlap(List<int> lines) =>
+      '두 읽기 모두 ${lines.join(', ')}행을 지나가요.';
+  static const comparisonFallbackDifferentLines = '두 읽기는 서로 다른 줄에서 출발해요.';
   static const comparisonCreationBackground = '창작 배경 보기';
   static const comparisonCreationBackgroundTitle = '창작 배경';
   static const comparisonGoCommunity = '다른 사람의 대화 보기';
