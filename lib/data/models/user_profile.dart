@@ -15,4 +15,18 @@ class UserProfile {
   final int totalReadingDays; // 누적일수 — 연속이 아님
   final DateTime lastCountedDate; // 서버 시간 기준
   final List<String> badgeIds; // 뱃지 id = poemId
+
+  UserProfile copyWith({
+    String? nickname,
+    int? totalReadingDays,
+    DateTime? lastCountedDate,
+    List<String>? badgeIds,
+  }) =>
+      UserProfile(
+        userId: userId,
+        nickname: nickname ?? this.nickname,
+        totalReadingDays: totalReadingDays ?? this.totalReadingDays,
+        lastCountedDate: lastCountedDate ?? this.lastCountedDate,
+        badgeIds: badgeIds ?? this.badgeIds,
+      );
 }
