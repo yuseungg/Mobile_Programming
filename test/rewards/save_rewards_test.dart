@@ -134,6 +134,45 @@ void main() {
       expect(doc.createdAt, past);
     });
 
+    test('이미 공개한 시를 다시 저장하면 만들지 않는다', () {
+      // 같은 대화가 목록에 두 번 올라가면 안 된다.
+      expect(
+        publicConversationToCreate(
+          conversationId: 'c2',
+          userId: 'u1',
+          reading: savedReading(isPublic: true),
+          summary: '요약',
+          createdAt: createdAt,
+          previous: savedReading(isPublic: true),
+        ),
+        isNull,
+      );
+    });
+
+    test('저장했지만 공개는 아니었던 시는 이제 만든다', () {
+      final doc = publicConversationToCreate(
+        conversationId: 'c2',
+        userId: 'u1',
+        reading: savedReading(isPublic: true),
+        summary: '요약',
+        createdAt: createdAt,
+        previous: savedReading(isPublic: false),
+      );
+      expect(doc, isNotNull);
+    });
+
+    test('아직 저장 전이었던 시도 만든다', () {
+      final doc = publicConversationToCreate(
+        conversationId: 'c2',
+        userId: 'u1',
+        reading: savedReading(isPublic: true),
+        summary: '요약',
+        createdAt: createdAt,
+        previous: savedReading(isPublic: true, isSaved: false),
+      );
+      expect(doc, isNotNull);
+    });
+
     test('근거 행이 없어도 만든다', () {
       final doc = publicConversationToCreate(
         conversationId: 'c1',

@@ -30,6 +30,9 @@ String? badgeToAward({
 /// 공개는 기본 꺼짐이고(Reading.isPublic), 해석이 비어 있으면 공개하지 않는다.
 /// 공감 수는 0에서 시작한다. 정렬·순위에 쓰지 않는다 (PublicConversation 주석).
 ///
+/// [previous]는 이 저장 **전**의 읽기다. 이미 공개한 시를 다시 저장하면
+/// 새로 만들지 않는다 — 같은 대화가 목록에 두 번 올라가면 안 된다.
+///
 /// [conversationId]와 [createdAt]은 C가 만들어 넣는다. 문서 id는 Firestore의
 /// 몫이고, 시각은 서버 시간이어야 한다.
 PublicConversation? publicConversationToCreate({
@@ -38,10 +41,12 @@ PublicConversation? publicConversationToCreate({
   required Reading reading,
   required String summary,
   required DateTime createdAt,
+  Reading? previous,
 }) {
   if (!reading.isSaved) return null;
   if (!reading.isPublic) return null;
   if (reading.interpretation.trim().isEmpty) return null;
+  if (previous != null && previous.isSaved && previous.isPublic) return null;
 
   return PublicConversation(
     conversationId: conversationId,
