@@ -68,7 +68,7 @@ class _SaveScreenState extends State<SaveScreen> {
             controller: _interpretationController,
             maxLength: 500,
             // 웹 기본값은 한글 조합 중엔 제한을 풀어서 500자 넘어감
-            maxLengthEnforcement: MaxLengthEnforcement.enforced, //AI
+            maxLengthEnforcement:MaxLengthEnforcement.enforced, //AI
 
             minLines: 6,
             maxLines: null,
