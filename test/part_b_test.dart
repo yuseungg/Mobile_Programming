@@ -65,7 +65,7 @@ void main() {
     expect(todayPoem(poems, DateTime(2026, 11, 10, 23, 59)), first);
 
 
-    // 목록 끝 다음 날엔 처음 시로 돌아가는지까지 확인함
+    // 목록 끝 다음 날엔 처음 시로 돌아가는지 확인
     for (var d = 1; d <= poems.length; d++) {
       final next = todayPoem(poems, day.add(Duration(days: d)));
         expect(next, poems[(i + d) % poems.length]);
