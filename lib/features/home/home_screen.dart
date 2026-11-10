@@ -1,8 +1,4 @@
 // S03 홈 — 주인: B
-// B의 part-b `S03HomeScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
-// - 누적일수 문구, 오늘의 시, 시 목록(읽은 시 표시)
-// - 상단 프로필 → S12
-// - 하단 탭바는 C의 TabShell이 감싸서 붙임
 import 'package:flutter/material.dart';
 
 import '../../app/router.dart';
@@ -13,8 +9,7 @@ import '../../data/models/poem.dart';
 
 
 //AI
-/// 오늘의 시 — 추가된 순서로 하루에 한 편씩 돌아간다 (기획서 9장 3번).
-/// 날짜만 보므로 같은 날에는 누구나 같은 시를 받는다.
+// 추가된 순서대로 하루에 한 편씩 돌아감 (기획서 9장 3번)
 Poem todayPoem(List<Poem> poems, DateTime now) {
   final day = DateTime.utc(now.year, now.month, now.day).millisecondsSinceEpoch
         ~/ Duration.millisecondsPerDay;
@@ -115,7 +110,6 @@ class HomeScreen extends StatelessWidget {
                 style: const TextStyle(fontFamily: AppFonts.myeongjo),
               ),
               subtitle: Text(p.author),
-              // 읽은 시는 화살표 대신 '읽음'
               trailing: FakeData.readingFor(p.poemId) == null
                     ? const Icon(Icons.chevron_right)
                     : const Text(AppStrings.homeReadMark, style: AppText.caption),
