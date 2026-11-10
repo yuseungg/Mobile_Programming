@@ -4,6 +4,7 @@
 // - 근거 구절 모음, 공개 선택 (기본 꺼짐)
 // - 저장 → S07. 대조를 연 뒤에는 수정 불가라 되돌아오지 않게 교체 이동
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/router.dart';
 import '../../app/strings.dart';
@@ -66,6 +67,8 @@ class _SaveScreenState extends State<SaveScreen> {
           TextField(
             controller: _interpretationController,
             maxLength: 500,
+            // 웹 기본값은 한글 조합 중에 제한을 풀어 500자를 넘긴다
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
             minLines: 6,
             maxLines: null,
             onChanged: (_) => setState(() {}),

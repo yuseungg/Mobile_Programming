@@ -1,8 +1,10 @@
 // B의 part-b 흐름 테스트를 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
 // 1단계 흐름: S01 → S03 → S04 행 표시 → S05 → S06 → S07
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yeobaek/features/compare/comparison_screen.dart';
+import 'package:yeobaek/features/reading/reading_screen.dart';
 import 'package:yeobaek/main.dart';
 
 void main() {
@@ -48,5 +50,36 @@ void main() {
     await tester.tap(find.text('저장하기'));
     await tester.pumpAndSettle();
     expect(find.byType(ComparisonScreen), findsOneWidget);
+  });
+
+  // 웹(Chrome)에서 한글을 계속 치면 조합 중이라 20자 제한이 뚫리던 버그
+  testWidgets('첫 낱말은 한글 조합 중에도 20자를 넘지 않는다', (tester) async {
+    // 웹과 같은 기본 방식(조합 중엔 제한을 풂)을 쓰는 플랫폼으로 흉내
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    await tester.pumpWidget(
+      const MaterialApp(home: ReadingScreen(poemId: 'seosi')),
+    );
+    final field = find.byType(TextField);
+    await tester.scrollUntilVisible(
+      field,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.showKeyboard(field);
+
+    // 마지막 글자가 계속 조합 중인 채로 20자 → 22자까지 입력
+    for (final text in ['가' * 20, '${'가' * 20}나', '${'가' * 21}다']) {
+      tester.testTextInput.updateEditingValue(
+        TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+          composing: TextRange(start: text.length - 1, end: text.length),
+        ),
+      );
+      await tester.pump();
+    }
+
+    expect(tester.widget<TextField>(field).controller!.text.length, 20);
+    debugDefaultTargetPlatformOverride = null;
   });
 }
