@@ -3,6 +3,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/data/models/user_profile.dart';
 import 'package:yeobaek/features/compare/comparison_screen.dart';
 import 'package:yeobaek/features/reading/reading_screen.dart';
 import 'package:yeobaek/main.dart';
@@ -25,7 +26,7 @@ void main() {
     expect(find.text('12명'), findsNothing);
     await tester.tap(find.text('한 점 부끄럼이 없기를,'));
     await tester.pump();
-    expect(find.text('12명'), findsOneWidget);
+    expect(find.text('13명'), findsOneWidget); // 다른 사람 12 + 나
 
     await tester.scrollUntilVisible(
       find.byType(TextField),
@@ -78,5 +79,26 @@ void main() {
 
     expect(tester.widget<TextField>(field).controller!.text.length,  20);
       debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('읽던 시 다시 열면 멈춘 행이랑 첫 낱말 불러옴', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'seosi')));
+
+    expect(find.text('8명'), findsOneWidget); // 저장돼 있던 6행
+    await tester.scrollUntilVisible(find.byType(TextField), 200, scrollable: find.byType(Scrollable).first);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, '부끄러움');
+  });
+
+
+  //AI
+  test('누적일수는 날짜 바뀔 때만 하루씩 늘어남', () {
+    final me = UserProfile(userId: 'me', nickname: 'x', totalReadingDays: 12,
+        lastCountedDate: DateTime(2026, 11, 10), badgeIds: const []);
+
+    expect(countReadingDay(me, DateTime(2026, 11, 10, 23, 59)).totalReadingDays, 12);
+    final next = countReadingDay(me, DateTime(2026, 11, 11, 0, 1));
+    expect(next.totalReadingDays, 13);
+    // 며칠 건너뛰어도 +1만 (연속 아님)
+    expect(countReadingDay(next, DateTime(2026, 11, 20)).totalReadingDays,14);
   });
 }

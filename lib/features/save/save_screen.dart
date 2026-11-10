@@ -11,6 +11,7 @@ import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
 import '../../data/models/chat_message.dart';
+import '../../data/models/reading.dart';
 
 class SaveScreen extends StatefulWidget {
   const SaveScreen({super.key, required this.poemId});
@@ -22,14 +23,19 @@ class SaveScreen extends StatefulWidget {
 }
 
 class _SaveScreenState extends State<SaveScreen> {
-  // 초안 = 대화에서 사용자가 한 말만 (AI가 다듬지 않음)
+  late final Reading? _reading = FakeData.readingFor(widget.poemId);
+  // 대조 연 뒤엔 해석 못 고침 (기획서 F4)
+  late final bool _isLocked = _reading?.hasOpenedComparison ?? false;
+
+  // 이미 저장한 해석 있으면 그거, 없으면 대화에서 사용자가 한 말만 모아서 초안
   late final _interpretationController = TextEditingController(
-    text: (FakeData.readingFor(widget.poemId)?.conversation ?? const [])
+    text: (_reading?.isSaved ?? false) ? _reading!.interpretation
+        : (_reading?.conversation ?? const [])
         .where((message) => message.role == ChatRole.user)
         .map((message) => message.text)
         .join('\n'),
   );
-  bool _isPublic = false;
+  late bool _isPublic = _reading?.isPublic ?? false;
 
   @override
   void dispose() {
@@ -59,13 +65,14 @@ class _SaveScreenState extends State<SaveScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
-            AppStrings.saveDraftNotice,
-            style: TextStyle(color: AppColors.textSub),
+          Text(
+            _isLocked ? AppStrings.saveLockedNotice : AppStrings.saveDraftNotice,
+            style: const TextStyle(color: AppColors.textSub),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _interpretationController,
+            readOnly: _isLocked,
             maxLength: 500,
             // 웹 기본값은 한글 조합 중엔 제한을 풀어서 500자 넘어감
             maxLengthEnforcement:MaxLengthEnforcement.enforced, //AI
@@ -114,7 +121,7 @@ class _SaveScreenState extends State<SaveScreen> {
             title: const Text(AppStrings.savePublicLabel),
             subtitle: const Text(AppStrings.savePublicCaption),
             value: _isPublic,
-            onChanged: (value) => setState(() => _isPublic = value),
+            onChanged: _isLocked ? null : (value) => setState(() => _isPublic = value),
           ),
         ],
       ),

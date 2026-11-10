@@ -9,7 +9,22 @@ import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
+import '../../data/models/reading.dart';
+import '../../data/models/user_profile.dart';
 import '../../shared/widgets/poem_view.dart';
+
+
+//AI
+// S04 들어올 때 누적일수 셈. 같은 날이면 그대로, 날짜 바뀌면 +1 (연속 아님)
+UserProfile countReadingDay(UserProfile me, DateTime today) {
+  final last = me.lastCountedDate;
+  if (last.year==today.year && last.month == today.month && last.day==today.day) return me;
+
+  return UserProfile(userId: me.userId, nickname: me.nickname,
+      totalReadingDays: me.totalReadingDays + 1,
+      lastCountedDate: DateTime(today.year, today.month, today.day),
+      badgeIds: me.badgeIds);
+}
 
 class ReadingScreen extends StatefulWidget {
   const ReadingScreen({super.key, required this.poemId});
@@ -21,8 +36,31 @@ class ReadingScreen extends StatefulWidget {
 }
 
 class _ReadingScreenState extends State<ReadingScreen> {
-  final _markedLines = <int>{};
-  final _firstWordController = TextEditingController();
+  // 전에 읽던 시면 멈춘 행이랑 첫 낱말 그대로 불러옴
+  late final Reading? _saved = FakeData.readingFor(widget.poemId);
+  late final _markedLines = <int>{...?_saved?.markedLines}; //AI
+  late final _firstWordController = TextEditingController(text: _saved?.firstWord);
+
+  @override
+  void initState() {
+    super.initState();
+    // 지금은 기기 날짜로 가짜 프로필에 반영. 저장소 붙이면 서버 시간으로 바꿔야 함
+    final me = FakeData.profileById(FakeData.myUserId);
+    FakeData.profiles[FakeData.myUserId] = countReadingDay(me, DateTime.now());
+  }
+
+
+
+  //AI
+  // 집계엔 저장돼 있던 내 멈춤이 이미 들어 있음. 지금 누른 거랑 차이만 +1/-1
+  Map<int, int> _stopCountsWithMe(String poemId) {
+    final counts = {...?FakeData.stopCounts[poemId]}; //AI
+    final before = {...?_saved?.markedLines};
+    for (final n in {..._markedLines, ...before}) {
+      counts[n] = (counts[n] ?? 0) + (_markedLines.contains(n) ? 1 : 0) - (before.contains(n) ? 1 : 0);
+    }
+    return counts;
+  }
 
   @override
   void dispose() {
@@ -64,7 +102,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
           PoemView(
             poem: poem,
             markedLines: _markedLines,
-            stopCounts: FakeData.stopCounts[poem.poemId] ?? const {},
+            stopCounts: _stopCountsWithMe(poem.poemId),
             onLineTap: (lineNo) => setState(
               () => _markedLines.contains(lineNo)
                   ? _markedLines.remove(lineNo)
