@@ -109,6 +109,13 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       future: _data,
       builder: (context, snapshot) {
         final data = snapshot.data;
+        if (snapshot.hasError) {
+          // C의 저장소는 저장하지 않은 시의 대화를 읽으면 예외를 던진다.
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(child: UnavailableNotice()),
+          );
+        }
         if (data == null) {
           return const Scaffold(
             backgroundColor: AppColors.background,

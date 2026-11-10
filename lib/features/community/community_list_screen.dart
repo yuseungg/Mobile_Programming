@@ -111,6 +111,7 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
             future: _shell,
             builder: (context, snapshot) {
               final shell = snapshot.data;
+              if (snapshot.hasError) return const SizedBox(height: 32);
               if (shell == null) return const SizedBox(height: 32);
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -139,6 +140,10 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
             future: _list,
             builder: (context, snapshot) {
               final list = snapshot.data;
+              if (snapshot.hasError) {
+                // C의 저장소는 저장하지 않은 시의 목록을 읽으면 예외를 던진다.
+                return UnavailableNotice(onRetry: () => _select(_selectedPoemId));
+              }
               if (list == null) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 48),

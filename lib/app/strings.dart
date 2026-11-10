@@ -120,6 +120,11 @@ class AppStrings {
       '이 시를 끝까지 읽고 내 해석을 저장하면 다른 사람의 대화가 열려요.';
   static const communityLockedAction = '이 시 읽으러 가기';
 
+  /// 읽어 오지 못했을 때. 이유를 단정하지 않는다 — 잠금일 수도, 네트워크일
+  /// 수도 있다. 화면이 영원히 도는 것보다 낫다.
+  static const noticeUnavailable = '지금은 가져올 수 없어요.';
+  static const noticeUnavailableAction = '다시 시도';
+
   // ── S09 대화 보기 (D) ─────────────────────────
   static String communityDetailTitle(String poemTitle) => '$poemTitle · 읽은이의 대화';
   static const communityDetailFirstWord = '1. 첫 낱말';

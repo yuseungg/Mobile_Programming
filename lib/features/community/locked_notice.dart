@@ -10,6 +10,44 @@ import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
 
+/// 읽어 오지 못했을 때 (잠금 예외 · 네트워크 · 그 밖의 실패).
+///
+/// D 화면 네 개(S07 · S08 · S09 · S12)가 같이 쓴다. 이유를 단정하지 않는다 —
+/// C의 저장소는 저장하지 않은 시의 대화를 읽으면 예외를 던지고, 네트워크
+/// 실패도 같은 자리로 온다. 둘을 구분해 문구를 고르는 것은 저장소의 예외
+/// 타입이 들어온 뒤에 한다. 지금 중요한 것은 **스피너가 영원히 돌지 않는 것**이다.
+class UnavailableNotice extends StatelessWidget {
+  const UnavailableNotice({super.key, this.onRetry});
+
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_off_outlined,
+              size: 32, color: AppColors.textFaint),
+          const SizedBox(height: 16),
+          Text(
+            AppStrings.noticeUnavailable,
+            style: AppText.bodySub,
+            textAlign: TextAlign.center,
+          ),
+          if (onRetry != null) ...[
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: onRetry,
+              child: const Text(AppStrings.noticeUnavailableAction),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class LockedNotice extends StatelessWidget {
   const LockedNotice({super.key, required this.poemId});
 

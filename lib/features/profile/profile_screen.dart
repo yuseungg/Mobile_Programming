@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/strings.dart';
+import '../community/locked_notice.dart';
 import '../../app/theme.dart';
 import '../../data/models/user_profile.dart';
 import '../../ports/fake_reading_source.dart';
@@ -63,6 +64,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       future: _data,
       builder: (context, snapshot) {
         final data = snapshot.data;
+        if (snapshot.hasError) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(child: UnavailableNotice()),
+          );
+        }
         if (data == null) {
           return const Scaffold(
             backgroundColor: AppColors.background,

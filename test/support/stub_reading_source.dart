@@ -15,6 +15,7 @@ class StubReadingSource implements ReadingSource {
     this.comparisonTexts = const {},
     this.profiles = const {},
     this.todayPoemIdOverride,
+    this.throwOnRead = false,
   });
 
   final Map<String, Reading> readings;
@@ -23,6 +24,10 @@ class StubReadingSource implements ReadingSource {
   final Map<String, List<String>> comparisonTexts;
   final Map<String, UserProfile> profiles;
   final String? todayPoemIdOverride;
+
+  /// 읽을 때 예외를 던진다. C의 저장소는 저장하지 않은 시의 대화를 읽으면
+  /// ConversationsLockedException을 던지므로, 그 경로를 흉내 낸다.
+  final bool throwOnRead;
 
   final _fallback = const FakeReadingSource();
 
@@ -43,24 +48,28 @@ class StubReadingSource implements ReadingSource {
 
   @override
   Future<Reading?> readingFor(String poemId) async {
+    if (throwOnRead) throw StateError('읽을 수 없다');
     calls.add('readingFor:$poemId');
     return readings[poemId];
   }
 
   @override
   Future<UserProfile> profileById(String userId) async {
+    if (throwOnRead) throw StateError('읽을 수 없다');
     calls.add('profileById:$userId');
     return profiles[userId] ?? await _fallback.profileById(userId);
   }
 
   @override
   Future<List<PublicConversation>> conversationsFor(String poemId) async {
+    if (throwOnRead) throw StateError('읽을 수 없다');
     calls.add('conversationsFor:$poemId');
     return conversations.where((c) => c.poemId == poemId).toList();
   }
 
   @override
   Future<PublicConversation> conversationById(String conversationId) async {
+    if (throwOnRead) throw StateError('읽을 수 없다');
     calls.add('conversationById:$conversationId');
     return conversations.firstWhere(
       (c) => c.conversationId == conversationId,

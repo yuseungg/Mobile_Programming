@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/router.dart';
 import '../../app/strings.dart';
+import '../community/locked_notice.dart';
 import '../../app/theme.dart';
 import '../../compare/relation.dart';
 import '../../data/models/expert_interpretation.dart';
@@ -173,6 +174,12 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
       future: _data,
       builder: (context, snapshot) {
         final data = snapshot.data;
+        if (snapshot.hasError) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(child: UnavailableNotice()),
+          );
+        }
         if (data == null) {
           return const Scaffold(
             backgroundColor: AppColors.background,
