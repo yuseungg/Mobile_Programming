@@ -166,7 +166,7 @@ void main() {
 
     setUp(() {
       final auth = FakeAuthRepository(signedInUserId: FakeData.myUserId);
-      conversations = FakePublicConversationRepository(FakeStore(), auth: auth);
+      conversations = FakePublicConversationRepository(FakeStore(), auth);
     });
 
     test('해석을 저장한 시는 열리고, 저장하지 않은 시는 잠긴다', () async {

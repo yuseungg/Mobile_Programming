@@ -10,8 +10,7 @@ import '../repositories/public_conversation_repository.dart';
 import 'fake_store.dart';
 
 class FakePublicConversationRepository implements PublicConversationRepository {
-  FakePublicConversationRepository(this._store, {required AuthRepository auth})
-      : _auth = auth;
+  FakePublicConversationRepository(this._store, this._auth);
 
   final FakeStore _store;
   final AuthRepository _auth;

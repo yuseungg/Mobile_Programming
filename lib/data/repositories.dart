@@ -40,7 +40,7 @@ class Repositories {
     auth = FakeAuthRepository(signedInUserId: signedInUserId);
     user = FakeUserRepository(store);
     reading = FakeReadingRepository(store);
-    publicConversation = FakePublicConversationRepository(store, auth: auth);
+    publicConversation = FakePublicConversationRepository(store, auth);
     settings = FakeSettingsRepository();
   }
 }
