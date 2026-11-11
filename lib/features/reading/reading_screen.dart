@@ -3,6 +3,7 @@
 // - AI 없이 혼자 읽기. 마음이 멈춘 행을 눌러 표시
 // - 떠오른 낱말 하나 (최대 20자) → 대화의 출발점
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/router.dart';
 import '../../app/strings.dart';
@@ -84,6 +85,8 @@ class _ReadingScreenState extends State<ReadingScreen> {
           TextField(
             controller: _firstWordController,
             maxLength: 20,
+            //웹 기본값은 한글 조합 중엔 제한을 풀어서 20자 넘어감
+              maxLengthEnforcement:  MaxLengthEnforcement.enforced,//AI
             onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(
               filled: true,
