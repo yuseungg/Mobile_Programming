@@ -50,8 +50,9 @@ app.*.map.json
 # 비밀값 — 절대 커밋하지 않는다
 .env
 *.env
-android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
+# android/app/google-services.json 은 커밋한다 — firebase_options.dart와 같은 공개 설정값이고
+# 보호는 Firestore 보안 규칙이 한다 (PR #11 리뷰에서 결정)
 *.jks
 *.keystore
 key.properties
