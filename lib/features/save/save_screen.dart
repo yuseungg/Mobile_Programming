@@ -1,8 +1,5 @@
 // S06 정리 · 저장 — 주인: B
-// B의 part-b `S06SaveScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
-// - 대화에서 사용자가 한 말만 모은 초안을 직접 고침 (최대 500자)
-// - 근거 구절 모음, 공개 선택 (기본 꺼짐)
-// - 저장 → S07. 대조를 연 뒤에는 수정 불가라 되돌아오지 않게 교체 이동
+// 저장 뒤 S07로 갈 땐 앞 화면 다 닫음 (대조 연 뒤엔 못 고쳐서 돌아오면 안 됨)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +9,7 @@ import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
 import '../../data/models/chat_message.dart';
 import '../../data/models/reading.dart';
+import '../../data/repositories.dart';
 
 class SaveScreen extends StatefulWidget {
   const SaveScreen({super.key, required this.poemId});
@@ -23,35 +21,50 @@ class SaveScreen extends StatefulWidget {
 }
 
 class _SaveScreenState extends State<SaveScreen> {
+  // S01이 아직 진짜 로그인을 안 시켜서 없으면 가짜 계정으로
+  final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
+
   Reading? _reading;
   bool _isLocked = false; // 대조 연 뒤엔 해석 못 고침 (기획서 F4)
   bool _isPublic = false;
+  bool _wasPublic = false; // 공개로 한 번 저장하면 못 되돌림
+  bool _isSaving = false;
   final TextEditingController _interpretationController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _reading = FakeData.readingFor(widget.poemId);
-    if (_reading == null) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    Reading? reading = await Repositories.reading.fetchReading(_userId, widget.poemId);
+    if (!mounted || reading == null) {
       return;
     }
 
-    _isLocked = _reading!.hasOpenedComparison;
-    _isPublic = _reading!.isPublic;
-
-    if (_reading!.isSaved) {
+    String text;
+    if (reading.isSaved) {
       // 이미 저장한 해석 있으면 그거 보여줌
-      _interpretationController.text = _reading!.interpretation;
+      text = reading.interpretation;
     } else {
       // 없으면 대화에서 내가 한 말만 모아서 초안
       List<String> myMessages = [];
-      for (ChatMessage message in _reading!.conversation) {
+      for (ChatMessage message in reading.conversation) {
         if (message.role == ChatRole.user) {
           myMessages.add(message.text);
         }
       }
-      _interpretationController.text = myMessages.join('\n');
+      text = myMessages.join('\n');
     }
+
+    setState(() {
+      _reading = reading;
+      _isLocked = reading.hasOpenedComparison;
+      _isPublic = reading.isPublic;
+      _wasPublic = reading.isSaved && reading.isPublic;
+      _interpretationController.text = text;
+    });
   }
 
   @override
@@ -60,18 +73,61 @@ class _SaveScreenState extends State<SaveScreen> {
     super.dispose();
   }
 
-  void _save() {
+
+
+  //AI
+  // 해석 저장 = 잠금 해제. 뱃지랑 공개 대화도 저장소에서 같이 처리됨
+  Future<void> _save() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    Reading base = _reading ?? Reading(poemId: widget.poemId);
+    Reading toSave = base.copyWith(interpretation: _interpretationController.text.trim(), isPublic: _isPublic);
+
+    // TODO: D 요약기(#8) 머지되면 그걸로 바꿔야 함. 지금은 내 해석을 그대로 요약 자리에 넣음
+    // 비공개면 요약 안 씀 (#12 머지되면 '' 대신 null)
+    String summary = '';
+    if (_isPublic) {
+      summary = toSave.interpretation;
+    }
+
+    try {
+      await Repositories.reading.saveInterpretation(_userId, toSave, summary: summary);
+    } on InterpretationLockedException {
+      _showMessage(AppStrings.saveLockedNotice);
+      return;
+    } catch (e) {
+      _showMessage(AppStrings.saveFailed);
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
     Navigator.of(context).pushNamedAndRemoveUntil(
       AppRoutes.comparison(widget.poemId),
       (route) => route.isFirst,
     );
   }
 
+  void _showMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isSaving = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final poem = FakeData.poemById(widget.poemId);
-    final evidenceLines =
-        FakeData.readingFor(widget.poemId)?.evidenceLines ?? const <int>[];
+    List<int> evidenceLines = [];
+    if (_reading != null) {
+      evidenceLines = _reading!.evidenceLines;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -138,7 +194,7 @@ class _SaveScreenState extends State<SaveScreen> {
             title: const Text(AppStrings.savePublicLabel),
             subtitle: const Text(AppStrings.savePublicCaption),
             value: _isPublic,
-            onChanged: _isLocked ? null : (value) => setState(() => _isPublic = value),
+            onChanged: (_isLocked || _wasPublic) ? null : (value) => setState(() => _isPublic = value),
           ),
         ],
       ),
@@ -153,7 +209,7 @@ class _SaveScreenState extends State<SaveScreen> {
               // 잠금을 여는 버튼은 와인색 (화면설계 PDF)
               style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
               onPressed:
-                  _interpretationController.text.trim().isEmpty ? null : _save,
+                  (_interpretationController.text.trim().isEmpty || _isSaving) ? null : _save,
               child: const Text(AppStrings.saveButton),
             ),
             const SizedBox(height: 8),

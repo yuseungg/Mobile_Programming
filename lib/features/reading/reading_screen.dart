@@ -1,7 +1,4 @@
 // S04 읽기 — 주인: B
-// B의 part-b `S04ReadingScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
-// - AI 없이 혼자 읽기. 마음이 멈춘 행을 눌러 표시
-// - 떠오른 낱말 하나 (최대 20자) → 대화의 출발점
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,26 +7,8 @@ import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
 import '../../data/models/reading.dart';
-import '../../data/models/user_profile.dart';
+import '../../data/repositories.dart';
 import '../../shared/widgets/poem_view.dart';
-
-
-//AI
-// S04 들어올 때 누적일수 셈. 같은 날이면 그대로, 날짜 바뀌면 +1 (연속 아님)
-UserProfile countReadingDay(UserProfile me, DateTime today) {
-  DateTime last = me.lastCountedDate;
-  bool isSameDay = last.year==today.year && last.month == today.month && last.day==today.day;
-  if (isSameDay) {
-    return me;
-  }
-
-  int newDays = me.totalReadingDays + 1;
-  DateTime newDate = DateTime(today.year, today.month, today.day);
-  return UserProfile(userId: me.userId, nickname: me.nickname,
-      totalReadingDays: newDays,
-      lastCountedDate: newDate,
-      badgeIds: me.badgeIds);
-}
 
 class ReadingScreen extends StatefulWidget {
   const ReadingScreen({super.key, required this.poemId});
@@ -41,47 +20,84 @@ class ReadingScreen extends StatefulWidget {
 }
 
 class _ReadingScreenState extends State<ReadingScreen> {
-  Reading? _saved;
+  // S01이 아직 진짜 로그인을 안 시켜서 없으면 가짜 계정으로
+  final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
+
   final Set<int> _markedLines = {};
+  Map<int, int> _stopCounts = {};
   final TextEditingController _firstWordController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    // 들어올 때 누적일수 셈 (한국 시간 기준 하루 한 번, 저장소에서 처리)
+    Repositories.user.countReadingDay(_userId);
+    _load();
+  }
 
+  Future<void> _load() async {
     // 전에 읽던 시면 멈춘 행이랑 첫 낱말 그대로 불러옴
-    _saved = FakeData.readingFor(widget.poemId);
-    if (_saved != null) {
-      _markedLines.addAll(_saved!.markedLines);
-      _firstWordController.text = _saved!.firstWord;
-    }
+    Reading? saved = await Repositories.reading.fetchReading(_userId, widget.poemId);
+    Map<int, int> counts = await Repositories.reading.fetchStopCounts(widget.poemId);
+    // print(counts);
 
-    // 지금은 기기 날짜로 가짜 프로필에 반영. 저장소 붙이면 서버 시간으로 바꿔야 함
-    UserProfile me = FakeData.profileById(FakeData.myUserId);
-    FakeData.profiles[FakeData.myUserId] = countReadingDay(me, DateTime.now());
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      if (saved != null) {
+        _markedLines.addAll(saved.markedLines);
+        _firstWordController.text = saved.firstWord;
+      }
+      _stopCounts = counts;
+    });
   }
 
 
 
   //AI
-  // 집계엔 저장돼 있던 내 멈춤이 이미 들어 있어서 그건 빼고 지금 누른 걸 더함
-  Map<int, int> _stopCountsWithMe(String poemId) {
-    Map<int, int> counts = {};
-    Map<int, int>? others = FakeData.stopCounts[poemId];
-    if (others != null) {
-      counts.addAll(others);
-    }
-
-    if (_saved != null) {
-      for (int lineNo in _saved!.markedLines) {
-        counts[lineNo] = (counts[lineNo] ?? 0) - 1;
+  // 누르면 내 멈춘 행이랑 집계가 같이 바뀜. 집계엔 나도 들어가 있어서 다시 받아옴
+  Future<void> _toggleLine(int lineNo) async {
+    bool isMarked = !_markedLines.contains(lineNo);
+    setState(() {
+      if (isMarked) {
+        _markedLines.add(lineNo);
+      } else {
+        _markedLines.remove(lineNo);
       }
+    });
+
+    await Repositories.reading.setMarkedLine(_userId, widget.poemId, lineNo, isMarked: isMarked);
+    Map<int, int> counts = await Repositories.reading.fetchStopCounts(widget.poemId);
+    if (!mounted) {
+      return;
     }
-    for (int lineNo in _markedLines) {
-      counts[lineNo] = (counts[lineNo] ?? 0) + 1;
+    setState(() {
+      _stopCounts = counts;
+    });
+  }
+
+  // 첫 낱말 저장. S05가 저장소에서 이걸 꺼내 씀
+  Future<void> _saveFirstWord() async {
+    Reading? latest = await Repositories.reading.fetchReading(_userId, widget.poemId);
+    latest ??= Reading(poemId: widget.poemId);
+    await Repositories.reading.saveProgress(_userId, latest.copyWith(firstWord: _firstWordController.text.trim()));
+  }
+
+  Future<void> _startChat() async {
+    await _saveFirstWord();
+    if (!mounted) {
+      return;
     }
-    // print(counts);
-    return counts;
+    Navigator.of(context).pushNamed(AppRoutes.chat(widget.poemId));
+  }
+
+  Future<void> _endWithWord() async {
+    await _saveFirstWord();
+    if (!mounted) {
+      return;
+    }
+    AppRouter.goToTab(context, AppRoutes.home);
   }
 
   @override
@@ -124,12 +140,8 @@ class _ReadingScreenState extends State<ReadingScreen> {
           PoemView(
             poem: poem,
             markedLines: _markedLines,
-            stopCounts: _stopCountsWithMe(poem.poemId),
-            onLineTap: (lineNo) => setState(
-              () => _markedLines.contains(lineNo)
-                  ? _markedLines.remove(lineNo)
-                  : _markedLines.add(lineNo),
-            ),
+            stopCounts: _stopCounts,
+            onLineTap: _toggleLine,
           ),
           const SizedBox(height: 8),
           const Text(
@@ -156,17 +168,12 @@ class _ReadingScreenState extends State<ReadingScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: !hasFirstWord
-                ? null
-                : () => Navigator.of(context)
-                    .pushNamed(AppRoutes.chat(poem.poemId)),
+            onPressed: !hasFirstWord ? null : _startChat,
             child: const Text(AppStrings.readingStartChat),
           ),
           const SizedBox(height: 8),
           OutlinedButton(
-            onPressed: !hasFirstWord
-                ? null
-                : () => AppRouter.goToTab(context, AppRoutes.home),
+            onPressed: !hasFirstWord ? null : _endWithWord,
             child: const Text(AppStrings.readingEndWithWord),
           ),
         ],
