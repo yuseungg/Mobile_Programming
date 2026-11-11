@@ -34,9 +34,11 @@ class FakeReadingRepository implements ReadingRepository {
   Future<void> saveProgress(String userId, Reading reading) async {
     _checkLock(userId, reading);
     final saved = _of(userId)[reading.poemId];
+    final alreadyPublic = saved != null && saved.isSaved && saved.isPublic;
     _of(userId)[reading.poemId] = reading.copyWith(
       isSaved: saved?.isSaved ?? false,
       hasOpenedComparison: saved?.hasOpenedComparison ?? false,
+      isPublic: alreadyPublic || reading.isPublic, // 공개는 되돌릴 수 없다
     );
   }
 
@@ -44,20 +46,27 @@ class FakeReadingRepository implements ReadingRepository {
   Future<String?> saveInterpretation(
     String userId,
     Reading reading, {
-    required String summary,
+    required String? summary,
   }) async {
     _checkLock(userId, reading);
     final before = _of(userId)[reading.poemId];
     final profile = _store.profiles[userId];
     if (profile == null) throw StateError('no profile: $userId');
 
-    // 여기서부터 Firestore에서는 한 트랜잭션
     final alreadyPublic = before != null && before.isSaved && before.isPublic;
     final saved = reading.copyWith(
       isSaved: true,
       hasOpenedComparison: before?.hasOpenedComparison ?? false,
       isPublic: alreadyPublic || reading.isPublic, // 공개는 되돌릴 수 없다
     );
+    final createsConversation = saved.isPublic &&
+        !alreadyPublic &&
+        saved.interpretation.trim().isNotEmpty;
+    if (createsConversation && (summary == null || summary.trim().isEmpty)) {
+      throw ArgumentError.value(summary, 'summary', '공개 저장에는 요약이 필요함');
+    }
+
+    // 여기서부터 Firestore에서는 한 트랜잭션
     _of(userId)[reading.poemId] = saved;
 
     if (!profile.badgeIds.contains(reading.poemId)) {
@@ -66,18 +75,14 @@ class FakeReadingRepository implements ReadingRepository {
       );
     }
 
-    if (!saved.isPublic ||
-        alreadyPublic ||
-        saved.interpretation.trim().isEmpty) {
-      return null;
-    }
+    if (!createsConversation) return null;
     final conversationId = _store.newId('post');
     _store.conversations[conversationId] = PublicConversation(
       conversationId: conversationId,
       userId: userId,
       poemId: saved.poemId,
       firstWord: saved.firstWord,
-      summary: summary,
+      summary: summary!.trim(),
       interpretation: saved.interpretation,
       empathyCount: 0,
       evidenceLines: List<int>.unmodifiable(saved.evidenceLines),

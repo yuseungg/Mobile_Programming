@@ -71,8 +71,8 @@ void main() {
 
     test('저장하면 뱃지를 받고, 다시 저장해도 뱃지는 하나다', () async {
       const reading = Reading(poemId: 'seosi', interpretation: '해석');
-      await readings.saveInterpretation('u1', reading, summary: '');
-      await readings.saveInterpretation('u1', reading, summary: '');
+      await readings.saveInterpretation('u1', reading, summary: null);
+      await readings.saveInterpretation('u1', reading, summary: null);
 
       expect((await users.fetchProfile('u1')).badgeIds, ['seosi']);
       expect((await readings.fetchReading('u1', 'seosi'))!.isSaved, isTrue);
@@ -106,13 +106,13 @@ void main() {
       expect(
         await readings.saveInterpretation(
             'u1', const Reading(poemId: 'seosi', interpretation: '해석'),
-            summary: ''),
+            summary: null),
         isNull,
       );
       expect(
         await readings.saveInterpretation(
             'u1', const Reading(poemId: 'jindallae', isPublic: true),
-            summary: ''),
+            summary: null),
         isNull,
       );
     });
@@ -131,16 +131,43 @@ void main() {
       expect(store.conversations.length, before + 1);
     });
 
+    test('공개 저장인데 요약이 없으면 아무것도 쓰지 않고 오류', () async {
+      const reading =
+          Reading(poemId: 'seosi', interpretation: '해석', isPublic: true);
+      final before = store.conversations.length;
+
+      for (final summary in [null, '  ']) {
+        await expectLater(
+          readings.saveInterpretation('u1', reading, summary: summary),
+          throwsA(isA<ArgumentError>()),
+        );
+      }
+      expect(await readings.fetchReading('u1', 'seosi'), isNull);
+      expect((await users.fetchProfile('u1')).badgeIds, isEmpty);
+      expect(store.conversations.length, before);
+    });
+
+    test('공개로 저장한 뒤 중간 저장(saveProgress)을 해도 공개가 꺼지지 않는다', () async {
+      const reading =
+          Reading(poemId: 'seosi', interpretation: '해석', isPublic: true);
+      await readings.saveInterpretation('u1', reading, summary: '요약');
+      await readings.saveProgress('u1', reading.copyWith(isPublic: false));
+
+      final saved = await readings.fetchReading('u1', 'seosi');
+      expect(saved!.isPublic, isTrue);
+      expect(saved.isSaved, isTrue);
+    });
+
     test('대조를 연 뒤에는 해석을 고칠 수 없다', () async {
       const reading = Reading(poemId: 'bomgoyangi', interpretation: '처음 해석');
-      await readings.saveInterpretation('u1', reading, summary: '');
+      await readings.saveInterpretation('u1', reading, summary: null);
       await readings.openComparison('u1', 'bomgoyangi');
 
       expect(
         () => readings.saveInterpretation(
           'u1',
           reading.copyWith(interpretation: '고친 해석'),
-          summary: '',
+          summary: null,
         ),
         throwsA(isA<InterpretationLockedException>()),
       );
