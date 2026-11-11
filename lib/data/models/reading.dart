@@ -26,4 +26,26 @@ class Reading {
   final bool isSaved; // 저장했는가 — 유일한 잠금 해제 지점
   final bool hasOpenedComparison; // true면 해석 수정 불가
   final bool isPublic; // 기본 꺼짐
+
+  Reading copyWith({
+    String? firstWord,
+    List<int>? markedLines,
+    List<ChatMessage>? conversation,
+    List<int>? evidenceLines,
+    String? interpretation,
+    bool? isSaved,
+    bool? hasOpenedComparison,
+    bool? isPublic,
+  }) =>
+      Reading(
+        poemId: poemId,
+        firstWord: firstWord ?? this.firstWord,
+        markedLines: markedLines ?? this.markedLines,
+        conversation: conversation ?? this.conversation,
+        evidenceLines: evidenceLines ?? this.evidenceLines,
+        interpretation: interpretation ?? this.interpretation,
+        isSaved: isSaved ?? this.isSaved,
+        hasOpenedComparison: hasOpenedComparison ?? this.hasOpenedComparison,
+        isPublic: isPublic ?? this.isPublic,
+      );
 }
