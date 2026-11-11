@@ -32,12 +32,16 @@ abstract interface class ReadingRepository {
   ///  2. 그 시의 뱃지가 없으면 지급 (시마다 한 번)
   ///  3. reading.isPublic이고 해석이 비어 있지 않으면 공개 대화를 만든다.
   ///     [summary]는 D의 요약 생성기가 만든 것. 이미 공개한 시를 다시 저장하면 새로 만들지 않는다.
+  ///
+  /// 공개는 되돌릴 수 없다 (기획서에 공개 취소 기능 없음). 한 번 공개로 저장한 읽기는
+  /// isPublic=false로 다시 저장해도 isPublic이 true로 남고, 공개 대화도 그대로 남는다.
+  /// → S06은 공개로 저장한 뒤에는 공개 토글을 끈 채 보여준다.
   /// 만든 공개 대화의 conversationId를 돌려준다. 만들지 않았으면 null.
   /// 대조를 연 뒤에 해석이 바뀌어 있으면 [InterpretationLockedException].
   Future<String?> saveInterpretation(
     String userId,
     Reading reading, {
-    String summary = '',
+    required String summary,
   });
 
   /// S07을 처음 열 때. hasOpenedComparison을 true로 만든다. 저장 전이면 아무 일도 하지 않는다.

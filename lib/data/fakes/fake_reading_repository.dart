@@ -44,7 +44,7 @@ class FakeReadingRepository implements ReadingRepository {
   Future<String?> saveInterpretation(
     String userId,
     Reading reading, {
-    String summary = '',
+    required String summary,
   }) async {
     _checkLock(userId, reading);
     final before = _of(userId)[reading.poemId];
@@ -52,9 +52,11 @@ class FakeReadingRepository implements ReadingRepository {
     if (profile == null) throw StateError('no profile: $userId');
 
     // 여기서부터 Firestore에서는 한 트랜잭션
+    final alreadyPublic = before != null && before.isSaved && before.isPublic;
     final saved = reading.copyWith(
       isSaved: true,
       hasOpenedComparison: before?.hasOpenedComparison ?? false,
+      isPublic: alreadyPublic || reading.isPublic, // 공개는 되돌릴 수 없다
     );
     _of(userId)[reading.poemId] = saved;
 
@@ -64,7 +66,6 @@ class FakeReadingRepository implements ReadingRepository {
       );
     }
 
-    final alreadyPublic = before != null && before.isSaved && before.isPublic;
     if (!saved.isPublic ||
         alreadyPublic ||
         saved.interpretation.trim().isEmpty) {

@@ -1,7 +1,7 @@
 // 주인: C — 가짜 공개 대화 저장소.
 //
 // 보안 규칙과 똑같이, 지금 로그인한 사람이 그 시의 해석을 저장하지 않았으면
-// 목록 · 상세를 읽을 때 ConversationsLockedException을 던진다.
+// 목록 · 상세 읽기와 공감 쓰기에서 ConversationsLockedException을 던진다.
 // 공개 대화는 여기서 만들지 않는다 — ReadingRepository.saveInterpretation이 만든다.
 
 import '../models/public_conversation.dart';
@@ -15,12 +15,14 @@ class FakePublicConversationRepository implements PublicConversationRepository {
   final FakeStore _store;
   final AuthRepository _auth;
 
-  void _checkUnlocked(String poemId) {
+  bool _isUnlocked(String poemId) {
     final userId = _auth.currentUserId;
     final reading = userId == null ? null : _store.readingsOf(userId)[poemId];
-    if (reading == null || !reading.isSaved) {
-      throw ConversationsLockedException(poemId);
-    }
+    return reading != null && reading.isSaved;
+  }
+
+  void _checkUnlocked(String poemId) {
+    if (!_isUnlocked(poemId)) throw ConversationsLockedException(poemId);
   }
 
   @override
@@ -43,8 +45,11 @@ class FakePublicConversationRepository implements PublicConversationRepository {
   }
 
   @override
-  Future<bool> hasEmpathized(String conversationId, String userId) async =>
-      _store.empathies[conversationId]?.contains(userId) ?? false;
+  Future<bool> hasEmpathized(String conversationId, String userId) async {
+    final conversation = _store.conversations[conversationId];
+    if (conversation == null || !_isUnlocked(conversation.poemId)) return false;
+    return _store.empathies[conversationId]?.contains(userId) ?? false;
+  }
 
   @override
   Future<void> setEmpathy(
@@ -54,6 +59,7 @@ class FakePublicConversationRepository implements PublicConversationRepository {
   }) async {
     final conversation = _store.conversations[conversationId];
     if (conversation == null) return;
+    _checkUnlocked(conversation.poemId);
     final users = _store.empathies.putIfAbsent(conversationId, () => {});
     final changed = hasEmpathized ? users.add(userId) : users.remove(userId);
     if (!changed) return;

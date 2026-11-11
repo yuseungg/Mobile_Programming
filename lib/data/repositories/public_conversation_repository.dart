@@ -22,9 +22,11 @@ abstract interface class PublicConversationRepository {
 
   Future<PublicConversation> fetchById(String conversationId);
 
+  /// 잠긴 시(해석을 저장하지 않은 시)의 대화면 false.
   Future<bool> hasEmpathized(String conversationId, String userId);
 
   /// 공감 켜기/끄기. empathies 문서와 empathyCount를 한 번에 바꾼다.
+  /// 잠긴 시의 대화면 [ConversationsLockedException] (보안 규칙도 쓰기를 막는다).
   Future<void> setEmpathy(
     String conversationId,
     String userId, {

@@ -71,8 +71,8 @@ void main() {
 
     test('저장하면 뱃지를 받고, 다시 저장해도 뱃지는 하나다', () async {
       const reading = Reading(poemId: 'seosi', interpretation: '해석');
-      await readings.saveInterpretation('u1', reading);
-      await readings.saveInterpretation('u1', reading);
+      await readings.saveInterpretation('u1', reading, summary: '');
+      await readings.saveInterpretation('u1', reading, summary: '');
 
       expect((await users.fetchProfile('u1')).badgeIds, ['seosi']);
       expect((await readings.fetchReading('u1', 'seosi'))!.isSaved, isTrue);
@@ -97,32 +97,50 @@ void main() {
       expect(created.evidenceLines, [2, 4]);
       expect(created.empathyCount, 0);
 
-      expect(await readings.saveInterpretation('u1', reading), isNull);
+      expect(await readings.saveInterpretation('u1', reading, summary: '요약'),
+          isNull);
       expect(store.conversations.length, before + 1);
     });
 
     test('공개를 고르지 않거나 해석이 비어 있으면 공개 대화를 만들지 않는다', () async {
       expect(
         await readings.saveInterpretation(
-            'u1', const Reading(poemId: 'seosi', interpretation: '해석')),
+            'u1', const Reading(poemId: 'seosi', interpretation: '해석'),
+            summary: ''),
         isNull,
       );
       expect(
         await readings.saveInterpretation(
-            'u1', const Reading(poemId: 'jindallae', isPublic: true)),
+            'u1', const Reading(poemId: 'jindallae', isPublic: true),
+            summary: ''),
         isNull,
       );
     });
 
+    test('공개는 되돌릴 수 없다 — 비공개로 다시 저장해도 공개로 남는다', () async {
+      const reading =
+          Reading(poemId: 'seosi', interpretation: '해석', isPublic: true);
+      final before = store.conversations.length;
+      await readings.saveInterpretation('u1', reading, summary: '요약');
+
+      final again = await readings.saveInterpretation(
+          'u1', reading.copyWith(isPublic: false),
+          summary: '요약');
+      expect(again, isNull);
+      expect((await readings.fetchReading('u1', 'seosi'))!.isPublic, isTrue);
+      expect(store.conversations.length, before + 1);
+    });
+
     test('대조를 연 뒤에는 해석을 고칠 수 없다', () async {
       const reading = Reading(poemId: 'bomgoyangi', interpretation: '처음 해석');
-      await readings.saveInterpretation('u1', reading);
+      await readings.saveInterpretation('u1', reading, summary: '');
       await readings.openComparison('u1', 'bomgoyangi');
 
       expect(
         () => readings.saveInterpretation(
           'u1',
           reading.copyWith(interpretation: '고친 해석'),
+          summary: '',
         ),
         throwsA(isA<InterpretationLockedException>()),
       );
@@ -195,6 +213,18 @@ void main() {
 
       await conversations.setEmpathy('post_1', 'u1', hasEmpathized: false);
       expect((await conversations.fetchById('post_1')).empathyCount, before);
+    });
+
+    test('저장하지 않은 시의 대화에는 공감할 수 없고, 공감 여부는 false', () async {
+      // 서시를 저장하지 않은 새 사용자로 로그인
+      final locked = FakePublicConversationRepository(
+          FakeStore(), FakeAuthRepository(signedInUserId: 'new_user'));
+
+      expect(
+        () => locked.setEmpathy('post_1', 'new_user', hasEmpathized: true),
+        throwsA(isA<ConversationsLockedException>()),
+      );
+      expect(await locked.hasEmpathized('post_1', 'new_user'), isFalse);
     });
   });
 
