@@ -8,6 +8,11 @@
 
 import '../models/public_conversation.dart';
 
+/// 공개 대화 문서 id. 사용자 · 시마다 하나로 고정한다 (`{userId}_{poemId}`).
+/// 같은 시를 여러 번 공개 저장해도 중복으로 생기지 않고, Firestore에서 재시도에도 안전하다.
+String publicConversationIdOf(String userId, String poemId) =>
+    '${userId}_$poemId';
+
 class ConversationsLockedException implements Exception {
   const ConversationsLockedException(this.poemId);
   final String poemId;
