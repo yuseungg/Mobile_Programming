@@ -15,6 +15,14 @@ const modelOptions = <({String model, String description})>[
   ),
 ];
 
+/// 모델 이름 → S10 · S11에 함께 보여 줄 짧은 설명. 목록에 없으면 ''.
+String modelDescriptionOf(String model) {
+  for (final option in modelOptions) {
+    if (option.model == model) return option.description;
+  }
+  return '';
+}
+
 /// 처음 설치했을 때의 설정. 질문은 신중한 모델, 비교는 빠른 모델 (기획서 6장).
 const defaultSettings = Settings(
   questionModel: 'google/gemma-3-27b-it:free',
