@@ -141,11 +141,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
               const SizedBox(height: 12),
               Text(
                 poem.creationBackground,
-                style: const TextStyle(
-                  fontSize: 15,
-                  height: 1.6,
-                  color: AppColors.textSub,
-                ),
+                style: AppText.body.copyWith(color: AppColors.textSub),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -230,11 +226,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                   ),
                   Text(
                     AppStrings.comparisonMyEvidence(myEvidenceLines),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.confirmed,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppText.evidenceTag,
                   ),
                 ],
               ),
@@ -264,11 +256,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                         ),
                         child: const Text(
                           AppStrings.comparisonMine,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.card,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppText.tagOnAccent,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -282,12 +270,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                   const SizedBox(height: 12),
                   Text(
                     myInterpretation,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.6,
-                      color: AppColors.text,
-                      fontFamily: AppFonts.myeongjo,
-                    ),
+                    style: AppText.interpretationSmall,
                   ),
                 ],
               ),
@@ -393,11 +376,7 @@ class _ExpertCard extends StatelessWidget {
             children: [
               Text(
                 expert.label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textSub,
-                ),
+                style: AppText.label.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(width: 8),
               Flexible(
@@ -434,11 +413,7 @@ class _ExpertCard extends StatelessWidget {
               ),
               child: Text(
                 comparison,
-                style: const TextStyle(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: AppColors.text,
-                ),
+                style: AppText.caption.copyWith(fontSize: 13, color: AppColors.text),
               ),
             ),
           ],
