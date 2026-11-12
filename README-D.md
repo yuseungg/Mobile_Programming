@@ -122,77 +122,28 @@ flutter pub get && flutter analyze && flutter test
 
 즉 **어댑터를 끼우지 않으면, 저장해도 S08 잠금이 안 풀리고 S12에 뱃지가 안 생깁니다.** 화면은 멀쩡히 돌아가서 더 위험합니다.
 
-고치는 방법은 파일 하나를 더하고 기본값을 바꾸는 것입니다. 아래 어댑터는 **합쳐진 트리에서 컴파일과 테스트(160개)를 통과하는 것을 확인했습니다.**
-
-`lib/ports/repository_reading_source.dart`:
-
-```dart
-// 주인: D — ReadingSource를 C의 저장소로 잇는 어댑터
-import '../compare/expert_parser.dart';
-import '../data/fakes/fake_data.dart';
-import '../data/models/expert_interpretation.dart';
-import '../data/models/poem.dart';
-import '../data/models/public_conversation.dart';
-import '../data/models/reading.dart';
-import '../data/models/user_profile.dart';
-import '../data/repositories.dart';
-import 'reading_source.dart';
-
-class RepositoryReadingSource implements ReadingSource {
-  const RepositoryReadingSource();
-
-  @override
-  String get myUserId => Repositories.auth.currentUserId ?? '';
-
-  @override
-  String get todayPoemId => FakeData.todayPoemId;
-
-  // 시 본문과 미리 쓴 비교 문장은 저장소가 아니라 앱 번들에 있다 (기획서 7장)
-  @override
-  Future<List<Poem>> poems() async => FakeData.poems;
-
-  @override
-  Future<Poem> poemById(String poemId) async => FakeData.poemById(poemId);
-
-  @override
-  Future<Reading?> readingFor(String poemId) =>
-      Repositories.reading.fetchReading(myUserId, poemId);
-
-  @override
-  Future<UserProfile> profileById(String userId) =>
-      Repositories.user.fetchProfile(userId);
-
-  @override
-  Future<List<PublicConversation>> conversationsFor(String poemId) =>
-      Repositories.publicConversation.fetchForPoem(poemId);
-
-  @override
-  Future<PublicConversation> conversationById(String conversationId) =>
-      Repositories.publicConversation.fetchById(conversationId);
-
-  @override
-  Future<List<ExpertInterpretation>> expertsFor(String poemId) async {
-    final file = await loadExpertFile(poemId);
-    if (file != null) return file.readings;
-    return FakeData.expertInterpretations[poemId] ?? const [];
-  }
-
-  @override
-  Future<List<String>> comparisonTextsFor(String poemId) async =>
-      FakeData.comparisonTexts[poemId] ?? const [];
-}
-```
-
-그리고 화면 네 곳의 기본값을 바꿉니다 (`const FakeReadingSource()` → `const RepositoryReadingSource()`):
+**어댑터는 이제 이 브랜치에 들어 있습니다** — `lib/ports/repository_reading_source.dart` (테스트 `test/ports/repository_reading_source_test.dart` 11개). 가짜 저장소 위에서 가짜 구현과 **같은 답을 주는 것**을 테스트로 고정했습니다. 남은 것은 화면 네 곳의 기본값 한 줄씩입니다:
 
 ```
-lib/features/compare/comparison_screen.dart
-lib/features/community/community_list_screen.dart
-lib/features/community/community_detail_screen.dart
-lib/features/profile/profile_screen.dart
+lib/features/compare/comparison_screen.dart:44
+lib/features/community/community_list_screen.dart:45
+lib/features/community/community_detail_screen.dart:47
+lib/features/profile/profile_screen.dart:34
+    this.source = const FakeReadingSource(),   →   const RepositoryReadingSource(),
 ```
 
-테스트는 `source:`를 직접 넘기므로 영향받지 않습니다. `FakeReadingSource`는 지우지 말아 주세요 — 테스트와 Firebase 없는 화면 확인에 씁니다.
+**다만 지금 바꾸면 1단계 시연이 깨집니다. 실제로 바꿔서 재 봤습니다.**
+
+`main.dart`가 `Repositories.useFakes()`를 **로그인 없이** 부르므로 `currentUserId`가 null입니다. 그러면 어댑터는 내 읽기를 묻지 않고 null을 돌려주고(빈 사용자 id로 Firestore 경로를 만들면 던지기 때문입니다), 결과적으로 **모든 시가 「저장하지 않은 시」로 보입니다** — S08은 전부 잠기고 S12에는 뱃지가 없습니다. 위젯 테스트도 5개가 깨집니다(기본값으로 돌던 것들).
+
+그래서 기본값 교체는 **둘 중 하나가 먼저** 있어야 합니다. 둘 다 `main.dart`(C 소유)의 한 줄입니다:
+
+| 방법 | 바꿀 것 | 언제 |
+| --- | --- | --- |
+| 로그인 분기 | S01에서 로그인한 uid가 들어온다 | 제대로 된 쪽. C가 로그인 PR에서 예정 |
+| 시연용 임시 | `useFakes(signedInUserId: FakeData.myUserId)` | 그 전에 1단계 시연을 살려 두려면 |
+
+`FakeReadingSource`는 지우지 말아 주세요 — 테스트와 Firebase 없는 화면 확인에 씁니다. 테스트는 대부분 `source:`를 직접 넘기므로, 기본값을 바꿀 때 깨지는 5개만 `source: const FakeReadingSource()`를 명시하면 됩니다.
 
 > C의 저장소는 저장하지 않은 시의 대화를 읽으면 `ConversationsLockedException`을 던집니다. D 화면은 이미 `snapshot.hasError`를 받아 안내를 보여 주므로 스피너가 멈추지 않는 일은 없습니다. 다만 **잠금인지 네트워크 실패인지 구분하지 않습니다.** 예외 타입으로 문구를 나누는 건 어댑터를 끼운 뒤에 하면 됩니다.
 
@@ -239,13 +190,15 @@ final summary = (await const FakeSummaryWriter().write(SummaryRequest(
 
 ### 뱃지·공개 대화 규칙이 두 곳에 있습니다
 
-C의 `saveInterpretation` 안에도, D의 `lib/rewards/save_rewards.dart`에도 같은 규칙이 있습니다. **어느 쪽으로 모을지는 토의로 정하기로** 했고, 그때 같은 조건에서 비교되도록 C 쪽에만 있던 `alreadyPublic` 규칙(이미 공개한 시를 다시 저장하면 새로 만들지 않음)을 D 쪽에도 채웠습니다. **지금 두 구현의 규칙은 같습니다.**
+C의 `saveInterpretation` 안에도, D의 `lib/rewards/save_rewards.dart`에도 같은 규칙이 있습니다. **어느 쪽으로 모을지는 토의로 정하기로** 했고, 그때 같은 조건에서 비교되도록 두 구현의 규칙을 맞춰 두었습니다. **지금 두 구현의 규칙은 같습니다.**
+
+규칙이 두 곳에 있으면 구멍도 두 곳에 생긴다는 걸 실제로 겪었습니다. PR #12에서 「이미 공개했나」로 판정하면 **해석이 빈 채로 공개 저장한 시는 영구히 공개 대화를 갖지 못한다**는 것이 나왔고(제가 재현해 올렸고 C가 고쳤습니다), 규칙을 드린 쪽이 D라 같은 구멍이 `publicConversationToCreate`에도 있었습니다. 지금은 양쪽 모두 **「그 id의 공개 대화가 이미 있나」**로 판정합니다 — 문서 id가 `publicConversationIdOf(userId, poemId)`로 고정되어 질의 없이 알 수 있고, Firestore에서 `set`이 멱등이라 중복 생성이 구조적으로 불가능합니다.
 
 | | `lib/rewards/` (D) | `saveInterpretation` 안 (C) |
 | --- | --- | --- |
 | 뱃지는 시마다 한 번 | ✓ | ✓ |
 | 공개 꺼짐 / 해석 빈칸이면 안 만듦 | ✓ | ✓ |
-| 이미 공개한 시면 다시 안 만듦 | ✓ | ✓ |
+| 그 id의 공개 대화가 있으면 안 만듦 | ✓ (`conversationExists`) | ✓ (트랜잭션에서 읽음) |
 | 단위 테스트 | 13개 | 저장소 테스트에 섞임 |
 | 시계를 읽지 않음 | ✓ (`createdAt` 주입) | 구현 안에서 |
 

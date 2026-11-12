@@ -66,11 +66,11 @@ void main() {
     test('공개가 꺼져 있으면 만들지 않는다 (기본 꺼짐)', () {
       expect(
         publicConversationToCreate(
-          conversationId: 'c1',
           userId: 'u1',
           reading: savedReading(isPublic: false),
           summary: '요약',
           createdAt: createdAt,
+          conversationExists: false,
         ),
         isNull,
       );
@@ -79,11 +79,11 @@ void main() {
     test('저장되지 않은 읽기는 공개하지 않는다', () {
       expect(
         publicConversationToCreate(
-          conversationId: 'c1',
           userId: 'u1',
           reading: savedReading(isPublic: true, isSaved: false),
           summary: '요약',
           createdAt: createdAt,
+          conversationExists: false,
         ),
         isNull,
       );
@@ -92,11 +92,11 @@ void main() {
     test('해석이 공백뿐이면 공개하지 않는다', () {
       expect(
         publicConversationToCreate(
-          conversationId: 'c1',
           userId: 'u1',
           reading: savedReading(isPublic: true, interpretation: '   '),
           summary: '요약',
           createdAt: createdAt,
+          conversationExists: false,
         ),
         isNull,
       );
@@ -104,13 +104,13 @@ void main() {
 
     test('공개면 문서를 만들고, 공감 수는 0에서 시작한다', () {
       final doc = publicConversationToCreate(
-        conversationId: 'c1',
         userId: 'u1',
         reading: savedReading(isPublic: true),
         summary: '대화 요약',
         createdAt: createdAt,
+        conversationExists: false,
       )!;
-      expect(doc.conversationId, 'c1');
+      expect(doc.conversationId, 'u1_seosi'); // 사용자 · 시마다 하나
       expect(doc.userId, 'u1');
       expect(doc.poemId, 'seosi');
       expect(doc.firstWord, '다짐');
@@ -125,61 +125,71 @@ void main() {
       // 기획서 7장: 날짜는 기기 시간이 아니라 서버 시간 기준으로 센다.
       final past = DateTime.utc(2020, 1, 1);
       final doc = publicConversationToCreate(
-        conversationId: 'c1',
         userId: 'u1',
         reading: savedReading(isPublic: true),
         summary: '요약',
         createdAt: past,
+        conversationExists: false,
       )!;
       expect(doc.createdAt, past);
     });
 
-    test('이미 공개한 시를 다시 저장하면 만들지 않는다', () {
+    test('공개 대화가 이미 있으면 만들지 않는다', () {
       // 같은 대화가 목록에 두 번 올라가면 안 된다.
       expect(
         publicConversationToCreate(
-          conversationId: 'c2',
           userId: 'u1',
           reading: savedReading(isPublic: true),
           summary: '요약',
           createdAt: createdAt,
-          previous: savedReading(isPublic: true),
+          conversationExists: true,
         ),
         isNull,
       );
     });
 
-    test('저장했지만 공개는 아니었던 시는 이제 만든다', () {
+    test('공개 대화가 아직 없으면 만든다', () {
       final doc = publicConversationToCreate(
-        conversationId: 'c2',
         userId: 'u1',
         reading: savedReading(isPublic: true),
         summary: '요약',
         createdAt: createdAt,
-        previous: savedReading(isPublic: false),
+        conversationExists: false,
       );
       expect(doc, isNotNull);
     });
 
-    test('아직 저장 전이었던 시도 만든다', () {
-      final doc = publicConversationToCreate(
-        conversationId: 'c2',
+    test('해석 없이 공개 저장한 뒤 해석을 채워 저장하면 그때 만든다', () {
+      // PR #12에서 C의 저장소에 났던 구멍. "이미 공개했나"로 판정하면
+      // 1차에서 공개가 켜지고, 2차에서 "이미 공개했다"며 영영 안 만들어졌다.
+      final first = publicConversationToCreate(
         userId: 'u1',
-        reading: savedReading(isPublic: true),
+        reading: savedReading(isPublic: true, interpretation: ''),
         summary: '요약',
         createdAt: createdAt,
-        previous: savedReading(isPublic: true, isSaved: false),
+        conversationExists: false,
       );
-      expect(doc, isNotNull);
+      expect(first, isNull); // 해석이 비었으니 대화는 아직 없다
+
+      final second = publicConversationToCreate(
+        userId: 'u1',
+        reading: savedReading(isPublic: true, interpretation: '이제 쓴 해석'),
+        summary: '요약',
+        createdAt: createdAt,
+        conversationExists: false, // 1차에서 만들지 않았으므로 아직 없다
+      );
+      expect(second, isNotNull);
+      expect(second!.interpretation, '이제 쓴 해석');
+      expect(second.conversationId, 'u1_seosi');
     });
 
     test('근거 행이 없어도 만든다', () {
       final doc = publicConversationToCreate(
-        conversationId: 'c1',
         userId: 'u1',
         reading: savedReading(isPublic: true, evidenceLines: const []),
         summary: '요약',
         createdAt: createdAt,
+        conversationExists: false,
       )!;
       expect(doc.evidenceLines, isEmpty);
     });
