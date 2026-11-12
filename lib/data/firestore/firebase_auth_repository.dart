@@ -16,8 +16,17 @@ class FirebaseAuthRepository implements AuthRepository {
   Future<void>? _googleReady;
 
   /// google_sign_in 7은 authenticate 전에 initialize를 딱 한 번 불러야 한다.
-  Future<void> _ensureGoogleReady() =>
-      _googleReady ??= _google.initialize(serverClientId: googleServerClientId);
+  /// 실패하면 기억해 둔 것을 지워서, 다음에 누르면 다시 시도한다.
+  Future<void> _ensureGoogleReady() async {
+    final ready = _googleReady ??=
+        _google.initialize(serverClientId: googleServerClientId);
+    try {
+      await ready;
+    } catch (_) {
+      _googleReady = null;
+      rethrow;
+    }
+  }
 
   @override
   String? get currentUserId => _auth.currentUser?.uid;
@@ -91,11 +100,12 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {
+    // 구글 쪽이 어떻게 되든 Firebase 로그아웃은 반드시 한다
     try {
       await _ensureGoogleReady();
       await _google.signOut();
-    } on GoogleSignInException {
-      // 구글로 로그인하지 않았으면 할 일이 없다
+    } catch (_) {
+      // 구글로 로그인하지 않았거나 구글 초기화가 실패한 경우 — 할 일이 없다
     }
     await _auth.signOut();
   }

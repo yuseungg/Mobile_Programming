@@ -6,7 +6,9 @@ rules_version = '2';
 //  - 내 읽기 기록은 나만
 //  - 저장 · 대조 열람 · 공개는 되돌릴 수 없고, 대조를 연 뒤에는 해석을 못 고친다
 //  - 누적일수는 하루(한국 시간)에 +1만, 서버 시각 기준
-//  - 뱃지는 해석을 저장한 시만, 추가만
+//  - 가입은 gmail.com 계정만
+//  - 뱃지는 해석을 저장한 시만, 하나씩 추가만
+//  - 멈춤 집계는 내 표시와 함께 한 줄씩 ±1만
 //  - 공개 대화는 그 시의 해석을 저장한 사람만 읽는다
 //  - 공감 수는 공감 문서와 함께 ±1만
 // 테스트: firestore_test/ (README 참고)
@@ -68,22 +70,27 @@ service cloud.firestore {
         && kstDay(request.time) != kstDay(resource.data.lastCountedDate);
     }
 
-    // arrayUnion은 끝에 붙인다 → 새 뱃지는 after[before.size()]
+    // 새로 생긴 뱃지는 정확히 하나, 해석을 저장한 시여야 한다.
+    // 위치를 가정하지 않는다 (배열 순서는 요청하는 쪽이 정한다). 중복도 막는다.
     function addsBadge(userId) {
       let before = resource.data.badgeIds;
       let after = request.resource.data.badgeIds;
+      let added = after.removeAll(before);
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       return changed.hasOnly(['badgeIds'])
         && after.size() == before.size() + 1
         && after.hasAll(before)
-        && hasSavedAfter(userId, after[before.size()]);
+        && added.size() == 1
+        && hasSavedAfter(userId, added[0]);
     }
 
     match /users/{userId} {
       allow read: if signedIn();
 
-      // 가입: 닉네임 예약(nicknames)과 같은 트랜잭션에서만
+      // 가입: gmail.com 계정만, 닉네임 예약(nicknames)과 같은 트랜잭션에서만
+      // (앱을 거치지 않고 Firebase에 직접 가입한 계정도 여기서 막힌다)
       allow create: if isMe(userId)
+        && request.auth.token.email.lower().matches('.*@gmail[.]com')
         && request.resource.data.keys().hasOnly(['nickname', 'totalReadingDays', 'lastCountedDate', 'badgeIds'])
         && request.resource.data.nickname is string
         && request.resource.data.nickname.size() > 0
@@ -115,9 +122,9 @@ service cloud.firestore {
                                'interpretation', 'isSaved', 'hasOpenedComparison', 'isPublic'])
         && r.firstWord is string && r.firstWord.size() <= 20
         && r.interpretation is string && r.interpretation.size() <= 500
-        && r.markedLines is list
-        && r.evidenceLines is list
-        && r.conversation is list
+        && r.markedLines is list && r.markedLines.size() <= 100
+        && r.evidenceLines is list && r.evidenceLines.size() <= 100
+        && r.conversation is list && r.conversation.size() <= 200
         && r.isSaved is bool
         && r.hasOpenedComparison is bool
         && r.isPublic is bool
@@ -141,8 +148,8 @@ service cloud.firestore {
     }
 
     // ── lineStops/{poemId} — 멈춤 집계 ──────────────
-    // 한 번에 한 줄만, 내 markedLines가 같이 바뀔 때만.
-    // 한계: 값이 정확히 ±1인지는 규칙으로 못 본다 (어느 키가 바뀌었는지 꺼낼 수 없음).
+    // 한 번에 한 줄만, 내 markedLines가 같이 바뀔 때만, 정확히 ±1.
+    // 어느 줄이 바뀌었는지는 같은 배치에서 바뀐 내 markedLines에서 꺼낸다.
 
     function myMarksChanged(poemId) {
       let after = getAfter(readingPath(request.auth.uid, poemId)).data.markedLines;
@@ -151,16 +158,42 @@ service cloud.firestore {
         : after.size() == 1;
     }
 
+    // 내 markedLines에서 늘어난 줄 / 줄어든 줄
+    function marksAdded(poemId) {
+      let p = readingPath(request.auth.uid, poemId);
+      return getAfter(p).data.markedLines.removeAll(exists(p) ? get(p).data.markedLines : []);
+    }
+
+    function marksRemoved(poemId) {
+      let p = readingPath(request.auth.uid, poemId);
+      return exists(p)
+        ? get(p).data.markedLines.removeAll(getAfter(p).data.markedLines)
+        : [];
+    }
+
+    // 늘어난 줄은 정확히 +1, 줄어든 줄은 정확히 -1
+    function countsOneStep(poemId, before) {
+      let after = request.resource.data.counts;
+      let added = marksAdded(poemId);
+      let removed = marksRemoved(poemId);
+      return added.size() + removed.size() == 1
+        && (added.size() == 1
+              ? after[string(added[0])] == before.get(string(added[0]), 0) + 1
+              : after[string(removed[0])] == before.get(string(removed[0]), 0) - 1);
+    }
+
     match /lineStops/{poemId} {
       allow read: if signedIn();
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['counts'])
         && request.resource.data.counts.size() == 1
-        && myMarksChanged(poemId);
+        && myMarksChanged(poemId)
+        && countsOneStep(poemId, {});
       allow update: if signedIn()
         && request.resource.data.keys().hasOnly(['counts'])
         && request.resource.data.counts.diff(resource.data.counts).affectedKeys().size() == 1
-        && myMarksChanged(poemId);
+        && myMarksChanged(poemId)
+        && countsOneStep(poemId, resource.data.counts);
       allow delete: if false;
     }
 
