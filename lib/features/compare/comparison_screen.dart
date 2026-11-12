@@ -8,16 +8,97 @@ import 'package:flutter/material.dart';
 
 import '../../app/router.dart';
 import '../../app/strings.dart';
+import '../community/locked_notice.dart';
 import '../../app/theme.dart';
 import '../../compare/relation.dart';
-import '../../data/fakes/fake_data.dart';
 import '../../data/models/expert_interpretation.dart';
 import '../../data/models/poem.dart';
+import '../../ports/repository_reading_source.dart';
+import '../../ports/reading_source.dart';
+import '../../writers/comparison_writer.dart';
+import '../../writers/fake_comparison_writer.dart';
 
-class ComparisonScreen extends StatelessWidget {
-  const ComparisonScreen({super.key, required this.poemId});
+/// 화면 한 번에 필요한 것
+class _ComparisonData {
+  const _ComparisonData({
+    required this.poem,
+    required this.myInterpretation,
+    required this.myEvidenceLines,
+    required this.experts,
+    required this.comparisons,
+  });
+
+  final Poem poem;
+  final String myInterpretation;
+  final List<int> myEvidenceLines;
+  final List<ExpertInterpretation> experts;
+
+  /// 전문가 해석과 같은 순서. 모델이 못 썼으면 isFallback이 참이다.
+  final List<ComparisonText> comparisons;
+}
+
+class ComparisonScreen extends StatefulWidget {
+  const ComparisonScreen({
+    super.key,
+    required this.poemId,
+    this.source = const RepositoryReadingSource(),
+    this.writer,
+  });
 
   final String poemId;
+  final ReadingSource source;
+
+  /// 비교 문장을 쓰는 쪽. 비워 두면 미리 쓴 문장과 관계 한 줄로 채운다.
+  /// A의 PR이 병합되면 OpenRouter를 쓰는 구현체를 여기에 넣는다.
+  final ComparisonWriter? writer;
+
+  @override
+  State<ComparisonScreen> createState() => _ComparisonScreenState();
+}
+
+class _ComparisonScreenState extends State<ComparisonScreen> {
+  late final Future<_ComparisonData> _data = _load();
+
+  Future<_ComparisonData> _load() async {
+    final source = widget.source;
+    final poemId = widget.poemId;
+    final reading = await source.readingFor(poemId);
+    // 대조를 본 뒤에는 해석을 고칠 수 없다 (기획서 4장) — 그 잠금을 여기서 건다
+    await source.markComparisonOpened(poemId);
+    final myInterpretation = reading?.interpretation ?? '';
+    final myEvidenceLines = reading?.evidenceLines ?? const <int>[];
+    final experts = await source.expertsFor(poemId);
+
+    // 미리 쓴 문장은 폴백의 재료다. 모델이 쓰면 그것이 이긴다.
+    final writer = widget.writer ??
+        FakeComparisonWriter(
+          prewritten: {poemId: await source.comparisonTextsFor(poemId)},
+        );
+
+    final comparisons = <ComparisonText>[];
+    for (var i = 0; i < experts.length; i++) {
+      comparisons.add(
+        await writer.write(
+          ComparisonRequest(
+            poemId: poemId,
+            myInterpretation: myInterpretation,
+            myEvidenceLines: myEvidenceLines,
+            expert: experts[i],
+            relation: computeRelation(myEvidenceLines, experts[i]),
+            expertIndex: i,
+          ),
+        ),
+      );
+    }
+
+    return _ComparisonData(
+      poem: await source.poemById(poemId),
+      myInterpretation: myInterpretation,
+      myEvidenceLines: myEvidenceLines,
+      experts: experts,
+      comparisons: comparisons,
+    );
+  }
 
   String _relationText(Relation relation, ExpertInterpretation expert) =>
       switch (relation) {
@@ -55,12 +136,7 @@ class ComparisonScreen extends StatelessWidget {
               ),
               const Text(
                 AppStrings.comparisonCreationBackgroundTitle,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.text,
-                  fontFamily: AppFonts.myeongjo,
-                ),
+                style: AppText.poemTitleSmall,
               ),
               const SizedBox(height: 12),
               Text(
@@ -96,28 +172,37 @@ class ComparisonScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final poem = FakeData.poemById(poemId);
-    final reading = FakeData.readingFor(poemId);
-    final myInterpretation = reading?.interpretation ?? '';
-    final myEvidenceLines = reading?.evidenceLines ?? const <int>[];
-    final experts = FakeData.expertInterpretations[poemId] ?? const [];
-    final comparisonTexts = FakeData.comparisonTexts[poemId] ?? const [];
+    return FutureBuilder<_ComparisonData>(
+      future: _data,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        if (snapshot.hasError) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(child: UnavailableNotice()),
+          );
+        }
+        if (data == null) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return _content(context, data);
+      },
+    );
+  }
+
+  Widget _content(BuildContext context, _ComparisonData data) {
+    final poem = data.poem;
+    final myInterpretation = data.myInterpretation;
+    final myEvidenceLines = data.myEvidenceLines;
+    final experts = data.experts;
+    final comparisons = data.comparisons;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          AppStrings.comparisonTitle(poem.title),
-          style: const TextStyle(
-            color: AppColors.text,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.text),
-      ),
+      appBar: AppBar(title: Text(AppStrings.comparisonTitle(poem.title))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
@@ -140,11 +225,7 @@ class ComparisonScreen extends StatelessWidget {
                     child: Text(
                       AppStrings.comparisonPoemInfo(
                           poem.title, poem.author, poem.year),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSub,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: AppText.label,
                     ),
                   ),
                   Text(
@@ -194,7 +275,7 @@ class ComparisonScreen extends StatelessWidget {
                       const Text(
                         AppStrings.comparisonMineCaption,
                         style:
-                            TextStyle(fontSize: 12, color: AppColors.textFaint),
+                            AppText.caption,
                       ),
                     ],
                   ),
@@ -219,7 +300,7 @@ class ComparisonScreen extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: 20),
                 child: Text(
                   AppStrings.comparisonNoExperts,
-                  style: TextStyle(color: AppColors.textSub),
+                  style: AppText.bodySub,
                 ),
               ),
             for (var i = 0; i < experts.length; i++)
@@ -230,7 +311,7 @@ class ComparisonScreen extends StatelessWidget {
                   experts[i],
                 ),
                 comparisonText:
-                    i < comparisonTexts.length ? comparisonTexts[i] : null,
+                    i < comparisons.length ? comparisons[i].text : null,
               ),
 
             const SizedBox(height: 12),
@@ -324,17 +405,13 @@ class _ExpertCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.confirmed.withValues(alpha: 0.12),
+                    color: AppColors.info.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text(
-                    relationText,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.confirmed,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  // 관계는 세 가지 모두 같은 색이다. 겹쳤다고 초록(confirmed)을
+                  // 쓰면 「맞췄다」로 읽힌다 — 기획서 4장은 어느 해석도 정답이
+                  // 아니라고 못박는다. A가 준비해 둔 AppText.relation을 쓴다.
+                  child: Text(relationText, style: AppText.relation),
                 ),
               ),
             ],
@@ -343,11 +420,7 @@ class _ExpertCard extends StatelessWidget {
           // 입장 (stance)
           Text(
             expert.stance,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.info,
-            ),
+            style: AppText.relation,
           ),
           if (comparison != null) ...[
             const SizedBox(height: 10),
@@ -381,21 +454,13 @@ class _ExpertCard extends StatelessWidget {
                     width: 64,
                     child: Text(
                       AppStrings.lineList(claim.lines),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.6,
-                        color: AppColors.textFaint,
-                      ),
+                      style: AppText.caption,
                     ),
                   ),
                   Expanded(
                     child: Text(
                       claim.point,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: AppColors.textSub,
-                      ),
+                      style: AppText.bodySub,
                     ),
                   ),
                 ],
