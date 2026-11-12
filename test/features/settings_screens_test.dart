@@ -79,8 +79,12 @@ void main() {
   });
 
   testWidgets('S11에서 바꾸고 저장하면 기억되고 S10에 바로 보인다', (tester) async {
-    final newQuestionModel = modelOptions.last.model;
-    expect(newQuestionModel, isNot(defaultSettings.questionModel));
+    // 기본 질문 모델 · 비교 모델 둘 다와 다른 모델 — S10에 한 번만 보여야 한다
+    final newQuestionModel = modelOptions
+        .map((option) => option.model)
+        .firstWhere((model) =>
+            model != defaultSettings.questionModel &&
+            model != defaultSettings.comparisonModel);
 
     await pumpSettings(tester);
     await openEdit(tester);
