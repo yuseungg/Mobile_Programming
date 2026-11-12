@@ -40,7 +40,6 @@ class FakeStore {
   final empathies = <String, Set<String>>{};
 
   final _profileChanges = StreamController<UserProfile>.broadcast();
-  var _nextId = 1;
 
   Stream<UserProfile> get profileChanges => _profileChanges.stream;
 
@@ -51,7 +50,4 @@ class FakeStore {
 
   Map<String, Reading> readingsOf(String userId) =>
       readings.putIfAbsent(userId, () => {});
-
-  /// Firestore 자동 문서 id 대신.
-  String newId(String prefix) => '${prefix}_fake_${_nextId++}';
 }

@@ -2,6 +2,7 @@
 
 import '../models/public_conversation.dart';
 import '../models/reading.dart';
+import '../repositories/public_conversation_repository.dart';
 import '../repositories/reading_repository.dart';
 import 'fake_store.dart';
 
@@ -59,8 +60,10 @@ class FakeReadingRepository implements ReadingRepository {
       hasOpenedComparison: before?.hasOpenedComparison ?? false,
       isPublic: alreadyPublic || reading.isPublic, // 공개는 되돌릴 수 없다
     );
+    // 공개 대화 id는 사용자 · 시마다 하나로 고정 — 있으면 다시 만들지 않는다
+    final conversationId = publicConversationIdOf(userId, saved.poemId);
     final createsConversation = saved.isPublic &&
-        !alreadyPublic &&
+        !_store.conversations.containsKey(conversationId) &&
         saved.interpretation.trim().isNotEmpty;
     if (createsConversation && (summary == null || summary.trim().isEmpty)) {
       throw ArgumentError.value(summary, 'summary', '공개 저장에는 요약이 필요함');
@@ -76,7 +79,6 @@ class FakeReadingRepository implements ReadingRepository {
     }
 
     if (!createsConversation) return null;
-    final conversationId = _store.newId('post');
     _store.conversations[conversationId] = PublicConversation(
       conversationId: conversationId,
       userId: userId,

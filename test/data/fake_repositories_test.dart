@@ -90,7 +90,7 @@ void main() {
 
       final id = await readings.saveInterpretation('u1', reading,
           summary: '요약');
-      expect(id, isNotNull);
+      expect(id, 'u1_seosi'); // 사용자 · 시마다 하나로 고정된 id
       final created = store.conversations[id]!;
       expect(created.userId, 'u1');
       expect(created.summary, '요약');
@@ -156,6 +156,21 @@ void main() {
       final saved = await readings.fetchReading('u1', 'seosi');
       expect(saved!.isPublic, isTrue);
       expect(saved.isSaved, isTrue);
+    });
+
+    test('해석 없이 공개 저장한 뒤 해석을 채워 저장하면 그때 공개 대화가 생긴다', () async {
+      await readings.saveInterpretation(
+          'u1', const Reading(poemId: 'seosi', isPublic: true),
+          summary: null);
+      expect(store.conversations.containsKey('u1_seosi'), isFalse);
+
+      final id = await readings.saveInterpretation(
+        'u1',
+        const Reading(poemId: 'seosi', interpretation: '내 해석', isPublic: true),
+        summary: '요약',
+      );
+      expect(id, 'u1_seosi');
+      expect(store.conversations['u1_seosi']!.interpretation, '내 해석');
     });
 
     test('대조를 연 뒤에는 해석을 고칠 수 없다', () async {
