@@ -38,6 +38,11 @@ class StubReadingSource implements ReadingSource {
   String get myUserId => _fallback.myUserId;
 
   @override
+  Future<void> markComparisonOpened(String poemId) async {
+    calls.add('markComparisonOpened:$poemId');
+  }
+
+  @override
   String get todayPoemId => todayPoemIdOverride ?? _fallback.todayPoemId;
 
   @override

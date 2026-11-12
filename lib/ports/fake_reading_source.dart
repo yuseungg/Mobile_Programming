@@ -54,4 +54,8 @@ class FakeReadingSource implements ReadingSource {
   @override
   Future<List<String>> comparisonTextsFor(String poemId) async =>
       FakeData.comparisonTexts[poemId] ?? const [];
+
+  /// FakeData는 const라 바꿀 수 없다 — 1단계에서는 잠금이 걸리지 않는다.
+  @override
+  Future<void> markComparisonOpened(String poemId) async {}
 }

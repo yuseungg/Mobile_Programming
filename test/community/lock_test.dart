@@ -6,12 +6,17 @@ import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/features/community/community_detail_screen.dart';
 import 'package:yeobaek/features/community/community_list_screen.dart';
 import 'package:yeobaek/features/community/locked_notice.dart';
+import 'package:yeobaek/data/fakes/fake_data.dart';
 import 'package:yeobaek/data/models/public_conversation.dart';
 import 'package:yeobaek/data/models/reading.dart';
+import 'package:yeobaek/data/repositories.dart';
 
 import '../support/stub_reading_source.dart';
 
 void main() {
+  // source를 넘기지 않는 테스트는 화면 기본값(RepositoryReadingSource)으로 돈다.
+  // 그쪽이 시연과 같은 경로이므로, 가짜 저장소를 깔고 그대로 시험한다.
+  setUp(() => Repositories.useFakes(signedInUserId: FakeData.myUserId));
   group('S08 대화 목록', () {
     testWidgets('저장한 시(서시)는 대화 목록이 보인다', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: CommunityListScreen()));
@@ -20,6 +25,28 @@ void main() {
       expect(find.byType(LockedNotice), findsNothing);
       expect(find.text(AppStrings.communityLockedTitle), findsNothing);
       expect(find.textContaining('#'), findsWidgets); // 첫 낱말 태그
+    });
+
+    testWidgets('S06에서 저장하면 그 시의 잠금이 풀린다 (저장소 연결)', (tester) async {
+      // PR #8 리뷰에서 B가 짚은 지점. 화면이 저장소를 보지 않으면, 저장해도
+      // S08은 「저장하지 않은 시」로 본다. 어댑터가 끼워졌는지를 여기서 지킨다.
+      await tester.pumpWidget(const MaterialApp(home: CommunityListScreen()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('진달래꽃'));
+      await tester.pumpAndSettle();
+      expect(find.byType(LockedNotice), findsOneWidget); // 아직 안 저장했다
+
+      await Repositories.reading.saveInterpretation(
+        FakeData.myUserId,
+        const Reading(poemId: 'jindallae', interpretation: '진달래꽃 내 해석'),
+        summary: null,
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: CommunityListScreen()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('진달래꽃'));
+      await tester.pumpAndSettle();
+      expect(find.byType(LockedNotice), findsNothing); // 이제 열린다
     });
 
     testWidgets('저장하지 않은 시를 고르면 목록 대신 잠금 안내', (tester) async {

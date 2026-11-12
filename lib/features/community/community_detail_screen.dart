@@ -12,7 +12,7 @@ import '../../app/theme.dart';
 import '../../data/models/poem.dart';
 import '../../data/models/public_conversation.dart';
 import '../../data/models/user_profile.dart';
-import '../../ports/fake_reading_source.dart';
+import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
 import '../../writers/fake_summary_writer.dart';
 import '../../writers/summary_writer.dart';
@@ -44,7 +44,7 @@ class CommunityDetailScreen extends StatefulWidget {
   const CommunityDetailScreen({
     super.key,
     required this.conversationId,
-    this.source = const FakeReadingSource(),
+    this.source = const RepositoryReadingSource(),
     this.summaryWriter = const FakeSummaryWriter(),
   });
 

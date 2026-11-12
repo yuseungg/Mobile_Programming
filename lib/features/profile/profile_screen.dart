@@ -10,7 +10,7 @@ import '../../app/strings.dart';
 import '../community/locked_notice.dart';
 import '../../app/theme.dart';
 import '../../data/models/user_profile.dart';
-import '../../ports/fake_reading_source.dart';
+import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
 import 'badge_image.dart';
 
@@ -31,7 +31,7 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
     super.key,
     required this.userId,
-    this.source = const FakeReadingSource(),
+    this.source = const RepositoryReadingSource(),
   });
 
   final String userId;

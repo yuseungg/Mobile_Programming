@@ -13,7 +13,7 @@ import '../../app/theme.dart';
 import '../../compare/relation.dart';
 import '../../data/models/expert_interpretation.dart';
 import '../../data/models/poem.dart';
-import '../../ports/fake_reading_source.dart';
+import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
 import '../../writers/comparison_writer.dart';
 import '../../writers/fake_comparison_writer.dart';
@@ -41,7 +41,7 @@ class ComparisonScreen extends StatefulWidget {
   const ComparisonScreen({
     super.key,
     required this.poemId,
-    this.source = const FakeReadingSource(),
+    this.source = const RepositoryReadingSource(),
     this.writer,
   });
 
@@ -63,6 +63,8 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     final source = widget.source;
     final poemId = widget.poemId;
     final reading = await source.readingFor(poemId);
+    // 대조를 본 뒤에는 해석을 고칠 수 없다 (기획서 4장) — 그 잠금을 여기서 건다
+    await source.markComparisonOpened(poemId);
     final myInterpretation = reading?.interpretation ?? '';
     final myEvidenceLines = reading?.evidenceLines ?? const <int>[];
     final experts = await source.expertsFor(poemId);

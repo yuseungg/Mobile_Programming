@@ -11,7 +11,7 @@ import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/models/poem.dart';
 import '../../data/models/public_conversation.dart';
-import '../../ports/fake_reading_source.dart';
+import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
 import 'locked_notice.dart';
 
@@ -42,7 +42,7 @@ class _ListData {
 class CommunityListScreen extends StatefulWidget {
   const CommunityListScreen({
     super.key,
-    this.source = const FakeReadingSource(),
+    this.source = const RepositoryReadingSource(),
   });
 
   final ReadingSource source;

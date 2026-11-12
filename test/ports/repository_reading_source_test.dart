@@ -55,22 +55,39 @@ void main() {
     });
   });
 
-  group('로그인 전에는', () {
+  group('로그인 전에는 (로그인 분기가 들어오기 전까지의 임시 동작)', () {
     setUp(() => Repositories.useFakes());
 
-    test('내 사용자 id가 비어 있고 어떤 uid와도 같지 않다', () {
-      expect(source.myUserId, isEmpty);
-      expect(source.myUserId == FakeData.myUserId, isFalse);
+    test('가짜 사용자 id로 둔다 — A · B 화면과 같은 방식', () {
+      // 이래야 1단계 시연에서 읽기 → 저장 → 대조가 이어진다.
+      // 로그인 분기가 들어오면 이 폴백과 이 테스트를 함께 지운다.
+      expect(source.myUserId, FakeData.myUserId);
     });
 
-    test('내 읽기를 묻지 않고 null을 돌려준다 (빈 id로 경로를 만들지 않는다)',
-        () async {
-      expect(await source.readingFor(FakeData.todayPoemId), isNull);
+    test('그 id로 내 읽기를 찾는다', () async {
+      expect(await source.readingFor(FakeData.todayPoemId), isNotNull);
     });
 
-    test('시 본문과 전문가 해석은 그래도 읽힌다 (번들 콘텐츠)', () async {
+    test('시 본문과 전문가 해석도 읽힌다 (번들 콘텐츠)', () async {
       expect(await source.poems(), isNotEmpty);
       expect(await source.expertsFor('seosi'), isNotEmpty);
+    });
+  });
+
+  group('대조 열람 알림', () {
+    setUp(() => Repositories.useFakes(signedInUserId: FakeData.myUserId));
+
+    test('저장한 시는 대조를 열면 해석이 잠긴다', () async {
+      const poemId = 'seosi';
+      expect((await source.readingFor(poemId))!.hasOpenedComparison, isFalse);
+
+      await source.markComparisonOpened(poemId);
+
+      expect((await source.readingFor(poemId))!.hasOpenedComparison, isTrue);
+    });
+
+    test('저장하지 않은 시에 불러도 던지지 않는다 — 대조는 보여야 한다', () async {
+      await expectLater(source.markComparisonOpened('jindallae'), completes);
     });
   });
 

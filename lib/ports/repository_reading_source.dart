@@ -8,8 +8,8 @@
 //   시 본문 · 오늘의 시 · 전문가 해석 → 앱 번들 (콘텐츠. Firestore에 없다)
 //   비교 문장 → 아직 가짜. 모델 호출 구현체가 들어오면 lib/writers/로 옮긴다.
 //
-// 로그인 전에는 내 것을 읽을 수 없다. 그때 빈 사용자 id로 경로를 만들면
-// Firestore가 던지므로, 아예 묻지 않고 비어 있는 결과를 돌려준다.
+// 로그인 전에는 FakeData.myUserId를 쓴다 (A · B 화면과 같은 임시 방식).
+// 로그인 분기가 들어오면 그 폴백을 지운다.
 
 import '../compare/expert_parser.dart';
 import '../data/fakes/fake_data.dart';
@@ -24,9 +24,12 @@ import 'reading_source.dart';
 class RepositoryReadingSource implements ReadingSource {
   const RepositoryReadingSource();
 
-  /// 로그인 전에는 빈 문자열. 어떤 uid와도 같지 않으므로 「내 것」 판정이 false가 된다.
+  /// 로그인 전에는 가짜 사용자 id로 둔다 — 다른 화면들(A · B)도 같은 방식이고,
+  /// 그래야 1단계 시연(`useFakes()`, 로그인 없음)에서 읽기 → 저장 → 대조가 이어진다.
+  /// **로그인 분기가 들어오면 이 폴백을 지운다** (PR #8 리뷰에서 B와 확인).
   @override
-  String get myUserId => Repositories.auth.currentUserId ?? '';
+  String get myUserId =>
+      Repositories.auth.currentUserId ?? FakeData.myUserId;
 
   @override
   String get todayPoemId => FakeData.todayPoemId;
@@ -38,11 +41,8 @@ class RepositoryReadingSource implements ReadingSource {
   Future<Poem> poemById(String poemId) async => FakeData.poemById(poemId);
 
   @override
-  Future<Reading?> readingFor(String poemId) async {
-    final userId = Repositories.auth.currentUserId;
-    if (userId == null) return null; // 아직 로그인 전 = 아직 읽지 않았다
-    return Repositories.reading.fetchReading(userId, poemId);
-  }
+  Future<Reading?> readingFor(String poemId) =>
+      Repositories.reading.fetchReading(myUserId, poemId);
 
   @override
   Future<UserProfile> profileById(String userId) =>
@@ -68,4 +68,15 @@ class RepositoryReadingSource implements ReadingSource {
   @override
   Future<List<String>> comparisonTextsFor(String poemId) async =>
       FakeData.comparisonTexts[poemId] ?? const [];
+
+  /// 대조 열람을 저장소에 알린다. 대조는 이 호출이 실패해도 보여야 하므로
+  /// 예외를 먹는다 (잠금이 안 걸리는 것이 화면이 안 열리는 것보다 가볍다).
+  @override
+  Future<void> markComparisonOpened(String poemId) async {
+    try {
+      await Repositories.reading.openComparison(myUserId, poemId);
+    } catch (_) {
+      // 저장 전이거나 권한이 없으면 저장소가 막는다 — 대조는 그대로 보여 준다
+    }
+  }
 }

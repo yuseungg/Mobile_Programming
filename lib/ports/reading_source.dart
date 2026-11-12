@@ -43,4 +43,13 @@ abstract interface class ReadingSource {
 
   /// 전문가 해석과 같은 순서의 비교 문장. 아직 없으면 빈 목록
   Future<List<String>> comparisonTextsFor(String poemId);
+
+  /// S07을 열었다고 알린다 — **읽기 창구에서 유일하게 쓰는 쪽이다.**
+  ///
+  /// 대조를 한 번 보면 그 뒤로 해석을 고칠 수 없다 (기획서 4장). 그 잠금을
+  /// 거는 지점이 S07을 여는 순간이고, 화면이 C의 저장소를 직접 알지 않도록
+  /// 여기로 받는다. 이미 열었거나 아직 저장 전이면 저장소가 알아서 넘긴다.
+  ///
+  /// 저장이 실패해도 대조는 보여야 하므로 **예외를 던지지 않는다.**
+  Future<void> markComparisonOpened(String poemId);
 }
