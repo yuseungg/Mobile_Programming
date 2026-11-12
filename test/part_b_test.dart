@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yeobaek/app/router.dart';
 import 'package:yeobaek/data/fakes/fake_data.dart';
 import 'package:yeobaek/data/models/poem.dart';
+import 'package:yeobaek/data/models/public_conversation.dart';
 import 'package:yeobaek/data/models/reading.dart';
 import 'package:yeobaek/data/models/user_profile.dart';
 import 'package:yeobaek/data/repositories.dart';
@@ -164,5 +165,32 @@ void main() {
     expect(reading!.isSaved, true);
     UserProfile me = await Repositories.user.fetchProfile(FakeData.myUserId);
     expect(me.badgeIds, contains('jindallae'));
+  });
+
+  testWidgets('공개로 저장하면 요약 붙은 공개 대화 생김', (tester) async {
+    // 공개 대화 목록은 로그인한 사람 기준으로 잠금 확인해서 로그인된 상태로 시작
+    Repositories.useFakes(signedInUserId: FakeData.myUserId);
+    await tester.pumpWidget(const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: SaveScreen(poemId: 'jindallae')));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.byType(SwitchListTile), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pump();
+    await tester.tap(find.text('저장하기'));
+    // S07(D)은 불러오는 동안 스피너가 계속 돌아서 settle 말고 저장 끝날 만큼만 기다림
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    List<PublicConversation> list = await Repositories.publicConversation.fetchForPoem('jindallae');
+    PublicConversation? mine;
+    for (PublicConversation c in list) {
+      if (c.userId == FakeData.myUserId) {
+        mine = c;
+      }
+    }
+    expect(mine, isNotNull);
+    expect(mine!.summary.trim().isNotEmpty, true);
   });
 }

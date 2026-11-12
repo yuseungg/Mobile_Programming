@@ -10,11 +10,16 @@ import '../../data/fakes/fake_data.dart';
 import '../../data/models/chat_message.dart';
 import '../../data/models/reading.dart';
 import '../../data/repositories.dart';
+import '../../writers/fake_summary_writer.dart';
+import '../../writers/summary_writer.dart';
 
 class SaveScreen extends StatefulWidget {
-  const SaveScreen({super.key, required this.poemId});
+  const SaveScreen({super.key, required this.poemId,
+      this.summaryWriter = const FakeSummaryWriter()});
 
   final String poemId;
+  // 공개 저장할 때 요약 쓰는 거 (D 담당). 모델 붙으면 진짜 구현으로 바꿔 끼움
+  final SummaryWriter summaryWriter;
 
   @override
   State<SaveScreen> createState() => _SaveScreenState();
@@ -85,11 +90,14 @@ class _SaveScreenState extends State<SaveScreen> {
     Reading base = _reading ?? Reading(poemId: widget.poemId);
     Reading toSave = base.copyWith(interpretation: _interpretationController.text.trim(), isPublic: _isPublic);
 
-    // TODO: D 요약기(#8) 머지되면 그걸로 바꿔야 함. 지금은 내 해석을 그대로 요약 자리에 넣음
+    // 공개일 때만 D 요약기로 요약 만듦 (실패해도 예외 안 던지고 대신 문장 줌)
     // 비공개면 요약 안 씀
     String? summary;
     if (_isPublic) {
-      summary = toSave.interpretation;
+      SummaryRequest request = SummaryRequest(poemId: widget.poemId, firstWord: toSave.firstWord,
+          conversation: toSave.conversation, interpretation: toSave.interpretation);
+      SummaryText result = await widget.summaryWriter.write(request);
+      summary = result.text;
     }
 
     try {
