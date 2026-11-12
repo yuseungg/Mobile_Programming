@@ -1,5 +1,6 @@
 // 주인: A — 공용 입력칸 (위에 라벨, 아래에 도움말·글자 수)
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/theme.dart';
 import 'char_counter.dart';
@@ -13,6 +14,7 @@ class AppTextField extends StatelessWidget {
     this.helperText,
     this.obscureText = false,
     this.keyboardType,
+    this.inputFormatters,
     this.maxLines = 1,
     this.minLines,
     this.counterMax,
@@ -27,6 +29,9 @@ class AppTextField extends StatelessWidget {
   final String? helperText;
   final bool obscureText;
   final TextInputType? keyboardType;
+
+  /// 입력 자체를 막는 규칙 (예: 비밀번호는 영문 소문자·숫자만). TextField에 그대로 넘긴다.
+  final List<TextInputFormatter>? inputFormatters;
   final int? maxLines;
   final int? minLines;
 
@@ -60,6 +65,7 @@ class AppTextField extends StatelessWidget {
           controller: textController,
           obscureText: obscureText,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           maxLines: obscureText ? 1 : maxLines,
           minLines: minLines,
           style: style,
