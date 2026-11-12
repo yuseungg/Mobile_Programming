@@ -4,7 +4,8 @@
 //   final profile = await Repositories.user.fetchProfile(userId);
 //
 // 가짜 → 진짜 교체는 main.dart에서 useFakes() 대신 useFirebase()를 부르는 것 하나뿐이다.
-// (useFirebase()는 Firebase 패키지가 들어온 뒤 추가한다.)
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fakes/fake_auth_repository.dart';
 import 'fakes/fake_public_conversation_repository.dart';
@@ -12,6 +13,11 @@ import 'fakes/fake_reading_repository.dart';
 import 'fakes/fake_settings_repository.dart';
 import 'fakes/fake_store.dart';
 import 'fakes/fake_user_repository.dart';
+import 'firestore/firebase_auth_repository.dart';
+import 'firestore/firestore_public_conversation_repository.dart';
+import 'firestore/firestore_reading_repository.dart';
+import 'firestore/firestore_user_repository.dart';
+import 'local/prefs_settings_repository.dart';
 import 'repositories/auth_repository.dart';
 import 'repositories/public_conversation_repository.dart';
 import 'repositories/reading_repository.dart';
@@ -42,5 +48,15 @@ class Repositories {
     reading = FakeReadingRepository(store);
     publicConversation = FakePublicConversationRepository(store, auth);
     settings = FakeSettingsRepository();
+  }
+
+  /// 진짜 Firebase (Auth · Firestore)와 기기 저장소(SharedPreferences)로 돈다.
+  /// 부르기 전에 Firebase.initializeApp이 끝나 있어야 한다.
+  static Future<void> useFirebase() async {
+    auth = FirebaseAuthRepository();
+    user = FirestoreUserRepository();
+    reading = FirestoreReadingRepository();
+    publicConversation = FirestorePublicConversationRepository();
+    settings = PrefsSettingsRepository(await SharedPreferences.getInstance());
   }
 }

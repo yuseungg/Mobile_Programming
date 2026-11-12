@@ -56,3 +56,4 @@ ios/Runner/GoogleService-Info.plist
 *.jks
 *.keystore
 key.properties
+firestore_test/node_modules/
