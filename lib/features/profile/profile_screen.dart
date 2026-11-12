@@ -12,7 +12,7 @@ import '../../app/theme.dart';
 import '../../data/models/user_profile.dart';
 import '../../ports/fake_reading_source.dart';
 import '../../ports/reading_source.dart';
-import '../../shared/widgets/badge_image.dart';
+import 'badge_image.dart';
 
 /// 화면 한 번에 필요한 것 — 읽기를 한 곳에 모아 둔다
 class _ProfileData {

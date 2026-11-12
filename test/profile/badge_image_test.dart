@@ -1,7 +1,7 @@
 // 주인: D — 뱃지 이미지와 누락 시 대체 표시
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yeobaek/shared/widgets/badge_image.dart';
+import 'package:yeobaek/features/profile/badge_image.dart';
 
 Future<void> pumpBadge(WidgetTester tester, String poemId,
     {double size = 72}) async {
