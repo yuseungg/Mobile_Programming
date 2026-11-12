@@ -1,9 +1,10 @@
-// B의 part-b 흐름 테스트를 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
-// 1단계 흐름: S01 → S03 → S04 행 표시 → S05 → S06 → S07
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/data/fakes/fake_data.dart';
+import 'package:yeobaek/data/models/poem.dart';
 import 'package:yeobaek/features/compare/comparison_screen.dart';
+import 'package:yeobaek/features/home/home_screen.dart';
 import 'package:yeobaek/features/reading/reading_screen.dart';
 import 'package:yeobaek/main.dart';
 
@@ -12,16 +13,17 @@ void main() {
     await tester.pumpWidget(const YeobaekApp());
     await tester.pumpAndSettle();
 
-    // S01 → S03
     await tester.ensureVisible(find.text('로그인'));
     await tester.tap(find.text('로그인'));
     await tester.pumpAndSettle();
 
-    // S03 → S04
-    await tester.tap(find.text('혼자 읽기 시작'));
+    //오늘의 시는 날마다 바뀌어서 목록에서 서시 고름
+    final seosiTile = find.widgetWithText(ListTile,'서시');
+    await tester.scrollUntilVisible(seosiTile, 200, scrollable: find.byType(Scrollable).first);
+
+    await tester.tap(seosiTile);
     await tester.pumpAndSettle();
 
-    // 멈춘 사람 수는 그 행을 눌러야 보임
     expect(find.text('12명'), findsNothing);
     await tester.tap(find.text('한 점 부끄럼이 없기를,'));
     await tester.pump();
@@ -42,16 +44,32 @@ void main() {
     await tester.tap(find.text('이 낱말로 대화 시작'));
     await tester.pumpAndSettle();
 
-    // S05 → S06
     await tester.tap(find.text('내 해석 정리하기'));
     await tester.pumpAndSettle();
 
-    // S06 → S07 (저장 버튼은 화면 아래 고정이라 스크롤 불필요)
+    // 저장 버튼은 하단 고정이라 스크롤 안 함
     await tester.tap(find.text('저장하기'));
     await tester.pumpAndSettle();
     expect(find.byType(ComparisonScreen), findsOneWidget);
   });
 
+
+
+  //AI
+  test('오늘의 시는 추가된 순서로 하루에 한 편씩 돌아간다', () {
+    List<Poem> poems = FakeData.poems;
+    DateTime day = DateTime(2026,11,10, 9);
+    Poem first =todayPoem(poems, day);
+    int i = poems.indexOf(first);
+    expect(todayPoem(poems, DateTime(2026, 11, 10, 23, 59)), first);
+
+
+    // 목록 끝 다음 날엔 처음 시로 돌아가는지 확인
+    for (int d = 1; d <= poems.length; d++) {
+      Poem next = todayPoem(poems, day.add(Duration(days: d)));
+        expect(next, poems[(i + d) % poems.length]);
+    }
+  });
 
   //AI
   // 크롬에서 한글 계속 치면 조합 중이라 20자 제한 뚫리던 버그
