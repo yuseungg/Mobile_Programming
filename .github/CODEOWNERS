@@ -1,0 +1,53 @@
+# 코드 주인 — docs/여백-코딩분업.md 2장 「폴더 구조와 주인」 그대로.
+# 분업표에 "저장소 루트에 .github/CODEOWNERS를 두고 위 표대로 적는다"고
+# 적혀 있던 그 파일이다.
+#
+# 자기 영역이 바뀌는 PR에 리뷰 요청이 자동으로 간다. 뒤에 나온 줄이 이기므로
+# 아래쪽일수록 구체적인 규칙이다.
+#
+# 기본 주인은 두지 않는다 — 모든 PR에 한 사람을 부르면 알림이 무의미해진다.
+
+# ── 앱 뼈대
+/lib/main.dart                      @yuseungg
+/lib/app/router.dart                @yuseungg
+/lib/app/theme.dart                 @kangminlee20235615
+# lib/app/strings.dart은 전원이 자기 화면 문구만 추가한다 → 주인을 두지 않는다
+
+# ── 데이터
+/lib/data/                          @yuseungg
+
+# ── 에이전트
+/lib/agent/                         @kangminlee20235615
+
+# ── 공용 위젯 (poem_view만 B)
+/lib/shared/widgets/                @kangminlee20235615
+/lib/shared/widgets/poem_view.dart  @jaehyeok-roh
+
+# ── 화면
+/lib/features/auth/                 @yuseungg
+/lib/features/home/                 @jaehyeok-roh
+/lib/features/reading/              @jaehyeok-roh
+/lib/features/chat/                 @kangminlee20235615
+/lib/features/save/                 @jaehyeok-roh
+/lib/features/settings/             @yuseungg
+/lib/features/compare/              @cream-simon
+/lib/features/community/            @cream-simon
+/lib/features/profile/              @cream-simon
+
+# ── D 폴더 (분업표에 아직 없다 — 줄 추가를 따로 부탁해 두었다)
+/lib/compare/                       @cream-simon
+/lib/ports/                         @cream-simon
+/lib/rewards/                       @cream-simon
+/lib/writers/                       @cream-simon
+
+# ── 에셋 (파서는 D, 내용은 전원)
+/assets/poems/                      @cream-simon
+/assets/badges/                     @cream-simon
+
+# ── 서버 규칙
+/firestore.rules                    @yuseungg
+/firestore.indexes.json             @yuseungg
+/firestore_test/                    @yuseungg
+
+# android/ · docs/ · .github/ · pubspec.yaml은 분업표에 주인이 없어서 비워 둔다.
+# 정해지면 줄을 추가하면 된다.
