@@ -22,4 +22,17 @@ class PublicConversation {
   final int empathyCount; // 정렬·순위에 쓰지 않는다
   final List<int> evidenceLines; // 대화에서 확인된 근거 행 (1부터) — 기획서 F7 "근거 구절과 함께 표시"
   final DateTime createdAt; // 대화 목록 최신순 정렬용 (기획서 9장 2번)
+
+  PublicConversation copyWith({String? conversationId, int? empathyCount}) =>
+      PublicConversation(
+        conversationId: conversationId ?? this.conversationId,
+        userId: userId,
+        poemId: poemId,
+        firstWord: firstWord,
+        summary: summary,
+        interpretation: interpretation,
+        empathyCount: empathyCount ?? this.empathyCount,
+        evidenceLines: evidenceLines,
+        createdAt: createdAt,
+      );
 }
