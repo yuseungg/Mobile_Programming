@@ -98,6 +98,30 @@ class AppText {
     color: AppColors.accent,
   );
 
+  /// 사용자 해석을 작게 (대조 화면, 공개 대화 상세)
+  static const interpretationSmall = TextStyle(
+    fontFamily: AppFonts.myeongjo,
+    fontSize: 15,
+    height: 1.6,
+    color: AppColors.text,
+  );
+
+  /// 사용자 해석 미리보기 (공개 대화 카드, 두 줄 자르기)
+  static const interpretationPreview = TextStyle(
+    fontFamily: AppFonts.myeongjo,
+    fontSize: 13,
+    height: 1.4,
+    color: AppColors.text,
+  );
+
+  /// 프로필 동그라미 안의 닉네임 첫 글자
+  static const avatarInitial = TextStyle(
+    fontFamily: AppFonts.myeongjo,
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    color: AppColors.accent,
+  );
+
   // ── 고딕 (앱의 편) ──────────────────────────────
   static const userMessage = TextStyle(
     fontFamily: AppFonts.gothic,
@@ -184,6 +208,67 @@ class AppText {
     fontWeight: FontWeight.w500,
     color: AppColors.accent,
   );
+
+  /// 카드 제목 (공개 대화 카드 등)
+  static const cardTitle = TextStyle(
+    fontFamily: AppFonts.gothic,
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.text,
+  );
+
+  /// 화면 안 구역 제목
+  static const sectionTitle = TextStyle(
+    fontFamily: AppFonts.gothic,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: AppColors.text,
+  );
+
+  /// 프로필 닉네임. 값은 화면 제목과 같다.
+  static const profileName = screenTitle;
+
+  /// 와인 배경 위의 작은 태그 글자 (예: 대조 화면의 「나」)
+  static const tagOnAccent = TextStyle(
+    fontFamily: AppFonts.gothic,
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    color: AppColors.card,
+  );
+
+  /// 근거 행 번호 태그 (초록 = 확인됨)
+  static const evidenceTag = TextStyle(
+    fontFamily: AppFonts.gothic,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: AppColors.confirmed,
+  );
+
+  /// 첫 낱말 태그 (공개 대화 카드)
+  static const firstWordTag = TextStyle(
+    fontFamily: AppFonts.gothic,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: AppColors.accent,
+  );
+
+  /// 받은 뱃지 개수 (프로필)
+  static const badgeCount = TextStyle(
+    fontFamily: AppFonts.gothic,
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: AppColors.accent,
+  );
+
+  /// 흐린 안내문, 기울임 (프로필 선반 아래)
+  static const captionItalic = TextStyle(
+    fontFamily: AppFonts.gothic,
+    fontSize: 12,
+    height: 1.5,
+    fontStyle: FontStyle.italic,
+    color: AppColors.textFaint,
+  );
+
   static const button = TextStyle(
     fontFamily: AppFonts.gothic,
     fontSize: 15,

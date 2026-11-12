@@ -13,8 +13,8 @@ import '../models/expert_interpretation.dart';
 import '../models/poem.dart';
 import '../models/public_conversation.dart';
 import '../models/reading.dart';
-import '../models/settings.dart';
 import '../models/user_profile.dart';
+import '../settings_options.dart' as options;
 
 class FakeData {
   FakeData._();
@@ -298,18 +298,9 @@ class FakeData {
   ];
 
   // ── 설정 ──────────────────────────────────────
-  /// S11 모델 선택지 (목업: 3개 중 하나). 이름은 임시 값.
-  static const modelOptions = <({String model, String description})>[
-    (model: 'google/gemma-3-27b-it:free', description: '가장 신중함 · 느림'),
-    (model: 'meta-llama/llama-4-maverick:free', description: '균형 · 보통'),
-    (model: 'mistralai/mistral-small-3.2-24b-instruct:free', description: '가장 빠름'),
-  ];
-
-  static const settings = Settings(
-    questionModel: 'google/gemma-3-27b-it:free',
-    comparisonModel: 'mistralai/mistral-small-3.2-24b-instruct:free',
-    tone: Tone.plain,
-  );
+  /// S11 모델 선택지 · 기본 설정 — 진짜 값은 settings_options.dart 한 곳에 둔다.
+  static const modelOptions = options.modelOptions;
+  static const settings = options.defaultSettings;
 
   static const usageQuestionCount = 42;
   static const usageComparisonCount = 18;

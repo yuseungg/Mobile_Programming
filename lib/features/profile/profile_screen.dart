@@ -7,19 +7,83 @@
 import 'package:flutter/material.dart';
 
 import '../../app/strings.dart';
+import '../community/locked_notice.dart';
 import '../../app/theme.dart';
-import '../../data/fakes/fake_data.dart';
-import '../../shared/widgets/badge_image.dart';
+import '../../data/models/user_profile.dart';
+import '../../ports/repository_reading_source.dart';
+import '../../ports/reading_source.dart';
+import 'badge_image.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key, required this.userId});
+/// 화면 한 번에 필요한 것 — 읽기를 한 곳에 모아 둔다
+class _ProfileData {
+  const _ProfileData({
+    required this.profile,
+    required this.isMe,
+    required this.badgeTitles,
+  });
+
+  final UserProfile profile;
+  final bool isMe;
+  final Map<String, String> badgeTitles; // 뱃지 id(=poemId) → 시 제목
+}
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({
+    super.key,
+    required this.userId,
+    this.source = const RepositoryReadingSource(),
+  });
 
   final String userId;
+  final ReadingSource source;
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late final Future<_ProfileData> _data = _load();
+
+  Future<_ProfileData> _load() async {
+    final source = widget.source;
+    final profile = await source.profileById(widget.userId);
+    final badgeTitles = <String, String>{};
+    for (final badgeId in profile.badgeIds) {
+      badgeTitles[badgeId] = (await source.poemById(badgeId)).title;
+    }
+    return _ProfileData(
+      profile: profile,
+      isMe: profile.userId == source.myUserId,
+      badgeTitles: badgeTitles,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final profile = FakeData.profileById(userId);
-    final isMe = profile.userId == FakeData.myUserId;
+    return FutureBuilder<_ProfileData>(
+      future: _data,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        if (snapshot.hasError) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(child: UnavailableNotice()),
+          );
+        }
+        if (data == null) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return _content(context, data);
+      },
+    );
+  }
+
+  Widget _content(BuildContext context, _ProfileData data) {
+    final profile = data.profile;
+    final isMe = data.isMe;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -28,15 +92,7 @@ class ProfileScreen extends StatelessWidget {
           isMe
               ? AppStrings.profileMyTitle
               : AppStrings.profileOtherTitle(profile.nickname),
-          style: const TextStyle(
-            color: AppColors.text,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
         ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.text),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -88,7 +144,7 @@ class ProfileScreen extends StatelessWidget {
                       child: Text(
                         AppStrings.profileEmailLinked,
                         style:
-                            TextStyle(fontSize: 12, color: AppColors.textFaint),
+                            AppText.caption,
                       ),
                     ),
                 ],
@@ -170,7 +226,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 6),
             const Text(
               AppStrings.profileBadgesCaption,
-              style: TextStyle(fontSize: 12, color: AppColors.textFaint),
+              style: AppText.caption,
             ),
             const SizedBox(height: 16),
 
@@ -184,8 +240,13 @@ class ProfileScreen extends StatelessWidget {
                 mainAxisSpacing: 14,
                 childAspectRatio: 0.85,
               ),
-              itemBuilder: (context, index) =>
-                  _BadgeItem(badgeId: profile.badgeIds[index]),
+              itemBuilder: (context, index) {
+                final badgeId = profile.badgeIds[index];
+                return _BadgeItem(
+                  badgeId: badgeId,
+                  poemTitle: data.badgeTitles[badgeId] ?? '',
+                );
+              },
             ),
 
             if (profile.badgeIds.isEmpty)
@@ -228,14 +289,13 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _BadgeItem extends StatelessWidget {
-  const _BadgeItem({required this.badgeId});
+  const _BadgeItem({required this.badgeId, required this.poemTitle});
 
   final String badgeId; // 뱃지 id = poemId
+  final String poemTitle;
 
   @override
   Widget build(BuildContext context) {
-    final poem = FakeData.poemById(badgeId);
-
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
@@ -257,9 +317,9 @@ class _BadgeItem extends StatelessWidget {
           const SizedBox(height: 10),
           // 어느 시의 뱃지인지 (뱃지 자체에는 문구가 없다)
           Text(
-            poem.title,
+            poemTitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, color: AppColors.textFaint),
+            style: AppText.lineNumber,
           ),
         ],
       ),

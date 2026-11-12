@@ -34,6 +34,11 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  firebase_core: ^5.1.0
+  firebase_auth: ^7.0.1
+  cloud_firestore: ^7.1.0
+  google_sign_in: ^7.2.0
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +61,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # 전문가 해석 (기획서 7장) — 시 하나를 추가할 때 본문·해석·뱃지가 한 세트다
+  assets:
+    - assets/poems/
+    - assets/badges/
 
   # 글꼴 — 명조는 시·사용자 해석·앱 이름, 고딕은 앱 UI (기획서 부록 B)
   # 시 본문은 네트워크 없이 보여야 하므로 앱에 직접 넣는다.

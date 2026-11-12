@@ -56,7 +56,8 @@ class AppStrings {
   static const homeProfileTooltip = '내 프로필';
   static const homeTodayPoem = '오늘의 시';
   static const homeStartReading = '혼자 읽기 시작';
-  static const homeMyPoems = '내가 읽은 시';
+  static const homePoemList = '시 목록';
+  static const homeReadMark =  '읽음';
 
   // ── S04 읽기 ──────────────────────────────────
   static String readingAppBarTitle(String author, String title) =>
@@ -74,6 +75,8 @@ class AppStrings {
   static const chatSummarizeButton = '내 해석 정리하기';
   static const chatInputHint = '생각을 적어 보세요';
   static const chatSendButton = '보내기';
+  static const chatStopButton = '중단';
+  static const chatResponding = '질문을 고르는 중…';
 
   // ── S06 정리 · 저장 (B) ────────────────────────
   static const saveTitle = '내 해석';
@@ -97,6 +100,14 @@ class AppStrings {
   static String comparisonRelationDifferentLines(List<int> lines) =>
       '이 해석은 ${lines.join(', ')}행을 중심으로 읽었어요';
   static const comparisonNoExperts = '이 시의 전문가 해석은 준비 중이에요.';
+
+  /// 비교 문장을 모델이 쓰지 못했을 때 (키 없음 · 실패 · 취소).
+  /// 공통점부터 말하고, 내가 놓친 것을 가리키지 않는다 (기획서 4장).
+  static String comparisonFallbackSameLines(List<int> lines) =>
+      '두 읽기 모두 ${lines.join(', ')}행을 근거로 삼았어요.';
+  static String comparisonFallbackPartialOverlap(List<int> lines) =>
+      '두 읽기 모두 ${lines.join(', ')}행을 지나가요.';
+  static const comparisonFallbackDifferentLines = '두 읽기는 서로 다른 줄에서 출발해요.';
   static const comparisonCreationBackground = '창작 배경 보기';
   static const comparisonCreationBackgroundTitle = '창작 배경';
   static const comparisonGoCommunity = '다른 사람의 대화 보기';
@@ -106,12 +117,29 @@ class AppStrings {
   static const communityEmpty = '아직 공개된 대화가 없어요.';
   static String communityFirstWordTag(String word) => '#$word';
 
+  /// 잠금 — 그 시의 해석을 저장해야 남의 대화가 열린다 (기획서 5장 「잠금 한 곳」)
+  static const communityLockedTitle = '아직 열리지 않았어요';
+  static const communityLockedBody =
+      '이 시를 끝까지 읽고 내 해석을 저장하면 다른 사람의 대화가 열려요.';
+  static const communityLockedAction = '이 시 읽으러 가기';
+
+  /// 읽어 오지 못했을 때. 이유를 단정하지 않는다 — 잠금일 수도, 네트워크일
+  /// 수도 있다. 화면이 영원히 도는 것보다 낫다.
+  static const noticeUnavailable = '지금은 가져올 수 없어요.';
+  static const noticeUnavailableAction = '다시 시도';
+
   // ── S09 대화 보기 (D) ─────────────────────────
   static String communityDetailTitle(String poemTitle) => '$poemTitle · 읽은이의 대화';
   static const communityDetailFirstWord = '1. 첫 낱말';
   static const communityDetailFirstWordCaption = '시를 읽고 가장 먼저 떠올린 말';
   static const communityDetailFirstWordNote = '이 낱말에서 AI와의 대화가 시작되었습니다.';
   static const communityDetailSummary = '2. 대화 과정';
+
+  /// 요약을 모델이 쓰지 못했을 때 (키 없음 · 실패 · 취소). 사실만 적는다.
+  static String communitySummaryFallback(String firstWord, int questionCount) =>
+      questionCount > 0
+          ? '「$firstWord」에서 시작해 질문 $questionCount개를 지난 대화예요.'
+          : '「$firstWord」에서 시작한 대화예요.';
   static const communityDetailSummaryCaption = 'AI 질문과 사유의 요약';
   static String communityDetailEvidence(List<int> lines) =>
       '확인된 근거 구절: ${lineList(lines)}';

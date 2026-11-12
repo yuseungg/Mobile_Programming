@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "publicConversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "poemId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

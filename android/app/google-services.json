@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1070919901756",
+    "project_id": "yeobaek-e2386",
+    "storage_bucket": "yeobaek-e2386.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1070919901756:android:5c586d7bc82af29be45939",
+        "android_client_info": {
+          "package_name": "com.yeobaek.yeobaek"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1070919901756-7m57q9oh32rb55fokff7sfmhdabgtsid.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yeobaek.yeobaek",
+            "certificate_hash": "9086fbb1a1ff20ced6fca8ee3a87308f328ade9f"
+          }
+        },
+        {
+          "client_id": "1070919901756-o888f8i1d7f7hkru477893fs87ooonua.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yeobaek.yeobaek",
+            "certificate_hash": "df4e66fcb3147a3da26bdd8202381d1ac5a2250d"
+          }
+        },
+        {
+          "client_id": "1070919901756-l3agtkv8jblg1qvd6bbn39ehuiad3i5g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7ZJyLUchG5ZuG7am_qeKE3HhsYpJN_eA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1070919901756-l3agtkv8jblg1qvd6bbn39ehuiad3i5g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

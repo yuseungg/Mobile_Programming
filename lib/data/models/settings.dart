@@ -15,4 +15,11 @@ class Settings {
   final String questionModel; // OpenRouter 모델 이름 — 질문 · 힌트
   final String comparisonModel; // OpenRouter 모델 이름 — 비교 · 요약
   final Tone tone;
+
+  Settings copyWith({String? questionModel, String? comparisonModel, Tone? tone}) =>
+      Settings(
+        questionModel: questionModel ?? this.questionModel,
+        comparisonModel: comparisonModel ?? this.comparisonModel,
+        tone: tone ?? this.tone,
+      );
 }

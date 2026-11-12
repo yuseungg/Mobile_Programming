@@ -6,9 +6,10 @@ import '../../app/theme.dart';
 import '../../data/models/chat_message.dart';
 
 class ChatBubble extends StatelessWidget {
-  const ChatBubble({super.key, required this.message});
+  const ChatBubble({super.key, required this.message, this.isPending = false});
 
   final ChatMessage message;
+  final bool isPending; // AI 응답을 기다리는 동안 보이는 자리 표시 말풍선
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +38,9 @@ class ChatBubble extends StatelessWidget {
           ),
           child: Text(
             message.text,
-            style: isUser ? AppText.userMessage : AppText.aiMessage,
+            style: isPending
+                ? AppText.caption
+                : (isUser ? AppText.userMessage : AppText.aiMessage),
           ),
         ),
       ),
