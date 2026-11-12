@@ -24,6 +24,7 @@ void main() {
   Future<void> openEdit(WidgetTester tester) async {
     final editButton = find.byType(AppPrimaryButton);
     await tester.ensureVisible(editButton);
+    await tester.pumpAndSettle(); // 스크롤한 자리를 그려야 누를 수 있다
     await tester.tap(editButton);
     await tester.pumpAndSettle();
   }
@@ -116,6 +117,7 @@ void main() {
 
     // 취소
     await tester.ensureVisible(deleteButton);
+    await tester.pumpAndSettle();
     await tester.tap(deleteButton);
     await tester.pumpAndSettle();
     expect(find.text('대화 기록을 지울까요?'), findsOneWidget);
