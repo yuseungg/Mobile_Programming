@@ -13,7 +13,16 @@ import 'package:yeobaek/shared/widgets/app_button.dart';
 void main() {
   setUp(Repositories.useFakes);
 
+  // 기본 테스트 화면(800×600)은 S11 아래쪽(말투 · 기록 지우기)이 잘려 아예 만들어지지 않는다.
+  // 세로로 긴 화면에서 돌린다.
+  void useTallScreen(WidgetTester tester) {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+  }
+
   Future<void> pumpSettings(WidgetTester tester) async {
+    useTallScreen(tester);
     await tester.pumpWidget(const MaterialApp(
       home: SettingsScreen(),
       onGenerateRoute: AppRouter.onGenerateRoute,
@@ -140,6 +149,7 @@ void main() {
   });
 
   testWidgets('설정 탭을 다시 누르면 사용량을 새로 읽는다', (tester) async {
+    useTallScreen(tester);
     await tester.pumpWidget(const MaterialApp(
       home: TabShell(initialTab: AppTab.settings),
       onGenerateRoute: AppRouter.onGenerateRoute,

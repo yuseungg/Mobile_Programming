@@ -46,7 +46,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _openEdit() async {
     await Navigator.of(context).pushNamed(AppRoutes.settingsEdit);
     if (!mounted) return;
-    setState(() => _data = _loadSettingsData());
+    // 화살표 함수로 쓰면 대입한 Future가 setState에 돌아가 오류가 난다
+    setState(() {
+      _data = _loadSettingsData();
+    });
   }
 
   @override
