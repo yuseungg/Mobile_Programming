@@ -418,11 +418,7 @@ class _ExpertCard extends StatelessWidget {
           // 입장 (stance)
           Text(
             expert.stance,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.info,
-            ),
+            style: AppText.relation,
           ),
           if (comparison != null) ...[
             const SizedBox(height: 10),
@@ -456,11 +452,7 @@ class _ExpertCard extends StatelessWidget {
                     width: 64,
                     child: Text(
                       AppStrings.lineList(claim.lines),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.6,
-                        color: AppColors.textFaint,
-                      ),
+                      style: AppText.caption,
                     ),
                   ),
                   Expanded(

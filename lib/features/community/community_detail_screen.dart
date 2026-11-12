@@ -264,11 +264,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                 children: [
                   Text(
                     data.summary,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.6,
-                      color: AppColors.text,
-                    ),
+                    style: AppText.aiMessage,
                   ),
                   if (conversation.evidenceLines.isNotEmpty) ...[
                     const SizedBox(height: 14),

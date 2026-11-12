@@ -251,21 +251,37 @@ C의 `saveInterpretation` 안에도, D의 `lib/rewards/save_rewards.dart`에도 
 
 하나를 고르면 다른 쪽을 지우면 됩니다. D 쪽을 고르면 C는 직접 구현한 14줄을 2줄로 바꿉니다.
 
-### `AppText` 토큰 9종이 필요합니다 (A)
+### `AppText` 토큰이 필요합니다 (A)
 
-inline `TextStyle` 47개 중 18개를 걷었고 **29개가 남았습니다.** 값이 같은 토큰이 없어서입니다. 가까운 토큰에 억지로 맞추면 D가 디자인을 바꾸는 셈이고 `theme.dart`는 A 소유라 남겨 두었습니다.
+inline `TextStyle` 47개 중 21개를 걷었고 **26개가 남았습니다.** 값이 같은 토큰이 없어서입니다. 가까운 토큰에 억지로 맞추면 D가 디자인을 바꾸는 셈이고 `theme.dart`는 A 소유라 남겨 두었습니다.
 
-| 쓰임 | 값 | 곳 |
-| --- | --- | --- |
-| 카드 제목 | 고딕 14 bold text | 2 |
-| 구역 제목 | 고딕 15 bold text | 2 |
-| 프로필 이름 | 고딕 18 bold text | 1 |
-| 누적일수 숫자 | 명조 28 bold accent | 1 |
-| 강조 위의 글자 | 고딕 12 bold card | 1 |
-| 근거 행 태그 | 고딕 12 bold/w600 confirmed | 2 |
-| 첫 낱말 태그 | 고딕 12·14 w600 accent | 2 |
-| 작은 인용 | 명조 13 h1.4 / 15 h1.6 / 15 h1.7 text | 3 |
-| 흐린 기울임 | 고딕 12 italic textFaint | 1 |
+아래가 **남은 26곳 전부**입니다. `fontFamily`를 안 적은 것은 테마 기본값(고딕)입니다. `FontWeight.bold`는 `w700`과 같은 값이라, bold와 w600이 섞인 줄은 **어느 쪽으로 통일할지 A가 정해 주시면** 제가 맞추겠습니다.
+
+| 쓰임 | 값 | 곳 | 위치 |
+| --- | --- | --- | --- |
+| 카드 제목 | 고딕 14 bold text | 2 | `community_list:230` · `community_detail:391` |
+| 구역 제목 | 고딕 15 bold text | 2 | `community_detail:180` · `profile:190` |
+| 선반 제목 | 고딕 16 bold text | 1 | `profile:209` |
+| 프로필 이름 | 고딕 18 bold text | 1 | `profile:135` |
+| 누적일수 숫자 | 명조 28 bold accent | 1 | `profile:124` |
+| 강조 위의 글자 | 고딕 12 bold card | 1 | `comparison:265` |
+| 근거 행 태그 | 고딕 12 bold/w600 confirmed | 2 | `comparison:231` · `community_detail:289` |
+| 첫 낱말 태그 | 고딕 12·14 w600 accent | 2 | `community_list:247` · `profile:218` |
+| 작성자 이름 | 고딕 14 bold accent | 1 | `community_detail:230` |
+| 이름 링크 (크기 상속) | 고딕 bold accent | 1 | `community_detail:163` |
+| 공감 버튼 (색이 상태마다) | 고딕 14 w600 + `copyWith(color:)` | 1 | `community_detail:342` |
+| 작은 인용 | 명조 13 h1.4 / 15 h1.6 / 15 h1.7 text | 3 | `community_list:298` · `comparison:283` · `community_detail:320` |
+| 인용 (고딕) | 고딕 15 h1.6 textSub | 1 | `comparison:142` |
+| 본문 작게 | 고딕 13 h1.5 text | 1 | `comparison:435` |
+| 보조 본문 | 고딕 13 h1.5 textSub | 1 | `community_list:275` |
+| 흐린 본문 | 고딕 13 h1.5 textFaint | 1 | `profile:259` |
+| 꼬리말 라벨 | 고딕 12·13 textSub (height 없음) | 2 | `community_detail:241` · `profile:185` |
+| 작은 제목 | 고딕 13 bold textSub | 1 | `comparison:394` |
+| 흐린 기울임 | 고딕 12 italic textFaint | 1 | `profile:275` |
+
+**토큰 19종은 많습니다.** 줄이는 쪽이 맞다고 보는데, 무엇을 합쳐도 되는지는 디자인 판단이라 A가 정하는 게 맞습니다. 예를 들어 `13 h1.5`의 색 세 가지(text · textSub · textFaint)를 한 토큰 + `copyWith(color:)`로 쓰면 세 줄이 한 줄이 되고, `bold` 계열 네 줄(14·15·16·18)도 크기만 다릅니다. **"하나 주고 `copyWith`로 쓰라"고 하셔도 됩니다** — 그러면 D가 디자인을 바꾸는 게 아니라 A가 정한 범위 안에서 쓰는 셈이니 괜찮습니다.
+
+이미 값이 같아 걷은 것 세 개는 반영해 두었습니다 (`community_detail:267`→`aiMessage`, `comparison:421`→`relation`, `comparison:459`→`caption`). 뒤의 둘은 w600→w700, h1.6→h1.5로 **눈에 안 보이는 차이**라 토큰 쪽으로 맞췄습니다.
 
 ### 공개 대화 문서에 닉네임이 없습니다 (C)
 
