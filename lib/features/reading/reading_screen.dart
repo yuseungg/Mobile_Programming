@@ -30,9 +30,18 @@ class _ReadingScreenState extends State<ReadingScreen> {
   @override
   void initState() {
     super.initState();
-    // 들어올 때 누적일수 셈 (한국 시간 기준 하루 한 번, 저장소에서 처리)
-    Repositories.user.countReadingDay(_userId);
+    _countReadingDay();
     _load();
+  }
+
+  // 들어올 때 누적일수 셈 (한국 시간 기준 하루 한 번, 저장소에서 처리)
+  // 네트워크 문제로 못 세도 읽기는 그냥 되게 함
+  Future<void> _countReadingDay() async {
+    try {
+      await Repositories.user.countReadingDay(_userId);
+    } catch (e) {
+      // print(e);
+    }
   }
 
   Future<void> _load() async {

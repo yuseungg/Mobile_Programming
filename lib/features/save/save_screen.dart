@@ -86,8 +86,8 @@ class _SaveScreenState extends State<SaveScreen> {
     Reading toSave = base.copyWith(interpretation: _interpretationController.text.trim(), isPublic: _isPublic);
 
     // TODO: D 요약기(#8) 머지되면 그걸로 바꿔야 함. 지금은 내 해석을 그대로 요약 자리에 넣음
-    // 비공개면 요약 안 씀 (#12 머지되면 '' 대신 null)
-    String summary = '';
+    // 비공개면 요약 안 씀
+    String? summary;
     if (_isPublic) {
       summary = toSave.interpretation;
     }
