@@ -89,12 +89,12 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text(
             _me == null ? '' : AppStrings.homeTotalDays(_me!.totalReadingDays),
-            style: const TextStyle(fontSize: 16, color: AppColors.textSub),
+            style: AppText.bodySub,
           ),
           const SizedBox(height: 24),
           const Text(
             AppStrings.homeTodayPoem,
-            style: TextStyle(color: AppColors.textFaint),
+            style: AppText.label,
           ),
           const SizedBox(height: 8),
           Card(
@@ -106,23 +106,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     poem.title,
-                    style: const TextStyle(
-                      fontFamily: AppFonts.myeongjo,
-                      fontSize: 22,
-                    ),
+                    style: AppText.poemTitle,
                   ),
                   Text(
                     poem.author,
-                    style: const TextStyle(color: AppColors.textSub),
+                    style:  AppText.bodySub,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     poem.lines.take(2).join('\n'),
-                    style: const TextStyle(
-                      fontFamily: AppFonts.myeongjo,
-                      fontSize: 16,
-                      height: 1.6,
-                    ),
+                    style: AppText.poemQuote,
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -139,13 +132,13 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 24),
           const Text(
             AppStrings.homePoemList,
-            style: TextStyle(color: AppColors.textFaint),
+            style: AppText.label,
           ),
 
 
           for (final p in FakeData.poems) //AI
             ListTile(
-              title: Text(p.title, style: const TextStyle(fontFamily: AppFonts.myeongjo)),
+              title: Text(p.title, style: AppText.poemTitleSmall),
               subtitle: Text(p.author),
               trailing: _readPoemIds.contains(p.poemId)
                     ? const Text(AppStrings.homeReadMark, style: AppText.caption)
