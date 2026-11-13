@@ -6,6 +6,9 @@ import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
 import '../../data/models/poem.dart';
+import '../../data/models/reading.dart';
+import '../../data/models/user_profile.dart';
+import '../../data/repositories.dart';
 
 
 //AI
@@ -21,16 +24,51 @@ Poem todayPoem(List<Poem> poems, DateTime now) {
 
 
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // S01이 아직 진짜 로그인을 안 시켜서 없으면 가짜 계정으로
+  final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
+
+  UserProfile? _me;
+  Set<String> _readPoemIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    UserProfile me = await Repositories.user.fetchProfile(_userId);
+    List<Reading> readings = await Repositories.reading.fetchMyReadings(_userId);
+
+    Set<String> ids = {};
+    for (Reading reading in readings) {
+      ids.add(reading.poemId);
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _me = me;
+      _readPoemIds = ids;
+    });
+  }
+
+  // 읽기 화면에서 돌아오면 누적일수랑 읽음 표시 다시 불러옴
+  void openReading(String poemId) {
+    Navigator.of(context).pushNamed(AppRoutes.reading(poemId)).then((_) => _load());
+  }
 
   @override
   Widget build(BuildContext context) {
     final poem =  todayPoem(FakeData.poems, DateTime.now());
-    final me = FakeData.profileById(FakeData.myUserId);
-
-    void openReading(String poemId) =>
-        Navigator.of(context).pushNamed(AppRoutes.reading(poemId));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -42,7 +80,7 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.person_outline),
             tooltip: AppStrings.homeProfileTooltip,
             onPressed: () => Navigator.of(context)
-                .pushNamed(AppRoutes.profile(FakeData.myUserId)),
+                .pushNamed(AppRoutes.profile(_userId)),
           ),
         ],
       ),
@@ -50,7 +88,7 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            AppStrings.homeTotalDays(me.totalReadingDays),
+            _me == null ? '' : AppStrings.homeTotalDays(_me!.totalReadingDays),
             style: const TextStyle(fontSize: 16, color: AppColors.textSub),
           ),
           const SizedBox(height: 24),
@@ -109,9 +147,9 @@ class HomeScreen extends StatelessWidget {
             ListTile(
               title: Text(p.title, style: const TextStyle(fontFamily: AppFonts.myeongjo)),
               subtitle: Text(p.author),
-              trailing: FakeData.readingFor(p.poemId)==null
-                    ? const Icon(Icons.chevron_right)
-                    : const Text(AppStrings.homeReadMark, style: AppText.caption),
+              trailing: _readPoemIds.contains(p.poemId)
+                    ? const Text(AppStrings.homeReadMark, style: AppText.caption)
+                    : const Icon(Icons.chevron_right),
                 onTap: () => openReading(p.poemId)
             ),
         ],

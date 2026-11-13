@@ -86,6 +86,8 @@ class AppStrings {
   static const savePublicCaption = 'AI가 대화에서 의미 있는 내용만 뽑아 닉네임과 함께 올립니다';
   static const saveLockNotice = '저장한 뒤에야 전문가 해석과 다른 사람의 대화가 열립니다.';
   static const saveButton = '저장하기';
+  static const saveLockedNotice ='대조를 연 뒤라 해석은 더 고칠 수 없어요.';
+  static const saveFailed = '저장하지 못했어요. 다시 눌러 주세요.';
 
   // ── S07 대조 (D) ──────────────────────────────
   static String comparisonTitle(String poemTitle) => '$poemTitle — 대조';

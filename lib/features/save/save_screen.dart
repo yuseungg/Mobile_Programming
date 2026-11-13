@@ -1,8 +1,5 @@
 // S06 정리 · 저장 — 주인: B
-// B의 part-b `S06SaveScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
-// - 대화에서 사용자가 한 말만 모은 초안을 직접 고침 (최대 500자)
-// - 근거 구절 모음, 공개 선택 (기본 꺼짐)
-// - 저장 → S07. 대조를 연 뒤에는 수정 불가라 되돌아오지 않게 교체 이동
+// 저장 뒤 S07로 갈 땐 앞 화면 다 닫음 (대조 연 뒤엔 못 고쳐서 돌아오면 안 됨)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -11,25 +8,69 @@ import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
 import '../../data/models/chat_message.dart';
+import '../../data/models/reading.dart';
+import '../../data/repositories.dart';
+import '../../writers/fake_summary_writer.dart';
+import '../../writers/summary_writer.dart';
 
 class SaveScreen extends StatefulWidget {
-  const SaveScreen({super.key, required this.poemId});
+  const SaveScreen({super.key, required this.poemId,
+      this.summaryWriter = const FakeSummaryWriter()});
 
   final String poemId;
+  // 공개 저장할 때 요약 쓰는 거 (D 담당). 모델 붙으면 진짜 구현으로 바꿔 끼움
+  final SummaryWriter summaryWriter;
 
   @override
   State<SaveScreen> createState() => _SaveScreenState();
 }
 
 class _SaveScreenState extends State<SaveScreen> {
-  // 초안 = 대화에서 사용자가 한 말만 (AI가 다듬지 않음)
-  late final _interpretationController = TextEditingController(
-    text: (FakeData.readingFor(widget.poemId)?.conversation ?? const [])
-        .where((message) => message.role == ChatRole.user)
-        .map((message) => message.text)
-        .join('\n'),
-  );
+  // S01이 아직 진짜 로그인을 안 시켜서 없으면 가짜 계정으로
+  final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
+
+  Reading? _reading;
+  bool _isLocked = false; // 대조 연 뒤엔 해석 못 고침 (기획서 F4)
   bool _isPublic = false;
+  bool _wasPublic = false; // 공개로 한 번 저장하면 못 되돌림
+  bool _isSaving = false;
+  final TextEditingController _interpretationController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    Reading? reading = await Repositories.reading.fetchReading(_userId, widget.poemId);
+    if (!mounted || reading == null) {
+      return;
+    }
+
+    String text;
+    if (reading.isSaved) {
+      // 이미 저장한 해석 있으면 그거 보여줌
+      text = reading.interpretation;
+    } else {
+      // 없으면 대화에서 내가 한 말만 모아서 초안
+      List<String> myMessages = [];
+      for (ChatMessage message in reading.conversation) {
+        if (message.role == ChatRole.user) {
+          myMessages.add(message.text);
+        }
+      }
+      text = myMessages.join('\n');
+    }
+
+    setState(() {
+      _reading = reading;
+      _isLocked = reading.hasOpenedComparison;
+      _isPublic = reading.isPublic;
+      _wasPublic = reading.isSaved && reading.isPublic;
+      _interpretationController.text = text;
+    });
+  }
 
   @override
   void dispose() {
@@ -37,18 +78,64 @@ class _SaveScreenState extends State<SaveScreen> {
     super.dispose();
   }
 
-  void _save() {
+
+
+  //AI
+  // 해석 저장 = 잠금 해제. 뱃지랑 공개 대화도 저장소에서 같이 처리됨
+  Future<void> _save() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    Reading base = _reading ?? Reading(poemId: widget.poemId);
+    Reading toSave = base.copyWith(interpretation: _interpretationController.text.trim(), isPublic: _isPublic);
+
+    // 공개일 때만 D 요약기로 요약 만듦 (실패해도 예외 안 던지고 대신 문장 줌)
+    // 비공개면 요약 안 씀
+    String? summary;
+    if (_isPublic) {
+      SummaryRequest request = SummaryRequest(poemId: widget.poemId, firstWord: toSave.firstWord,
+          conversation: toSave.conversation, interpretation: toSave.interpretation);
+      SummaryText result = await widget.summaryWriter.write(request);
+      summary = result.text;
+    }
+
+    try {
+      await Repositories.reading.saveInterpretation(_userId, toSave, summary: summary);
+    } on InterpretationLockedException {
+      _showMessage(AppStrings.saveLockedNotice);
+      return;
+    } catch (e) {
+      _showMessage(AppStrings.saveFailed);
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
     Navigator.of(context).pushNamedAndRemoveUntil(
       AppRoutes.comparison(widget.poemId),
       (route) => route.isFirst,
     );
   }
 
+  void _showMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isSaving = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final poem = FakeData.poemById(widget.poemId);
-    final evidenceLines =
-        FakeData.readingFor(widget.poemId)?.evidenceLines ?? const <int>[];
+    List<int> evidenceLines = [];
+    if (_reading != null) {
+      evidenceLines = _reading!.evidenceLines;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -59,13 +146,14 @@ class _SaveScreenState extends State<SaveScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
-            AppStrings.saveDraftNotice,
-            style: TextStyle(color: AppColors.textSub),
+          Text(
+            _isLocked ? AppStrings.saveLockedNotice : AppStrings.saveDraftNotice,
+            style: const TextStyle(color: AppColors.textSub),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _interpretationController,
+            readOnly: _isLocked,
             maxLength: 500,
             // 웹 기본값은 한글 조합 중엔 제한을 풀어서 500자 넘어감
             maxLengthEnforcement:MaxLengthEnforcement.enforced, //AI
@@ -114,7 +202,7 @@ class _SaveScreenState extends State<SaveScreen> {
             title: const Text(AppStrings.savePublicLabel),
             subtitle: const Text(AppStrings.savePublicCaption),
             value: _isPublic,
-            onChanged: (value) => setState(() => _isPublic = value),
+            onChanged: (_isLocked || _wasPublic) ? null : (value) => setState(() => _isPublic = value),
           ),
         ],
       ),
@@ -129,7 +217,7 @@ class _SaveScreenState extends State<SaveScreen> {
               // 잠금을 여는 버튼은 와인색 (화면설계 PDF)
               style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
               onPressed:
-                  _interpretationController.text.trim().isEmpty ? null : _save,
+                  (_interpretationController.text.trim().isEmpty || _isSaving) ? null : _save,
               child: const Text(AppStrings.saveButton),
             ),
             const SizedBox(height: 8),
