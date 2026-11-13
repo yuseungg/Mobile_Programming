@@ -296,4 +296,18 @@ void main() {
     expect(after!.isSaved, true);
     expect(find.text('이어 읽기'), findsNothing); // 저장돼서 이어 읽기에서도 빠짐
   });
+
+
+  test('보관한 뒤 대화 기록 지웠으면 다시 저장해도 대화 안 살아남', () async {
+    Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    expect(reading!.conversation, isNotEmpty);
+    await keepPendingSave(FakeData.myUserId, reading.copyWith(interpretation: '꽃을 밟고 가라는 말이 오히려 붙잡는 말 같음'), null);
+
+    await Repositories.reading.clearConversations(FakeData.myUserId); // S11 기록 지우기
+    expect(await retryPendingSaves(), 1);
+
+    Reading? after = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    expect(after!.isSaved, true);
+    expect(after.conversation, isEmpty);
+  });
 }
