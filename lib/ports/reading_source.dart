@@ -31,6 +31,10 @@ abstract interface class ReadingSource {
   /// 그 시에 대한 내 읽기. 없으면 null (= 아직 읽지 않았다)
   Future<Reading?> readingFor(String poemId);
 
+  /// 내 읽기 전체 — S13이 학습 현황과 인상깊은 문구를 모을 때 쓴다.
+  /// 아직 아무 시도 안 읽었으면 빈 목록이다.
+  Future<List<Reading>> myReadings();
+
   Future<UserProfile> profileById(String userId);
 
   /// 그 시의 공개 대화. 최신순이고 공감 수로 정렬하지 않는다 (기획서 9장)

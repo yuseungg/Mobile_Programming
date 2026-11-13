@@ -188,4 +188,10 @@ class AppStrings {
 
   // ── S13 안내 ──────────────────────────────────
   static const introStart = '시 학습하러 가기';
+  static const introLinesTitle = '마음에 남은 줄';
+  static const introLinesEmpty = '시를 한 편 읽고 나면, 가장 마음에 남은 줄이 여기에 남습니다.';
+  static const introStatusTitle = '지금까지';
+  static String introDays(int count) => '시를 읽은 날 $count일';
+  static String introShared(int count) => '모두에게 나눈 글 $count편';
+  static String introBadges(int count) => '받은 뱃지 $count개';
 }

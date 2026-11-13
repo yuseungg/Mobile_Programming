@@ -119,7 +119,8 @@ service cloud.firestore {
 
     function validReading(r) {
       return r.keys().hasOnly(['firstWord', 'markedLines', 'conversation', 'evidenceLines',
-                               'interpretation', 'isSaved', 'hasOpenedComparison', 'isPublic'])
+                               'interpretation', 'isSaved', 'hasOpenedComparison', 'isPublic',
+                               'impressiveLine'])
         && r.firstWord is string && r.firstWord.size() <= 20
         && r.interpretation is string && r.interpretation.size() <= 500
         && r.markedLines is list && r.markedLines.size() <= 100
@@ -128,7 +129,11 @@ service cloud.firestore {
         && r.isSaved is bool
         && r.hasOpenedComparison is bool
         && r.isPublic is bool
-        && (!r.hasOpenedComparison || r.isSaved);
+        && (!r.hasOpenedComparison || r.isSaved)
+        // 가장 인상깊은 행 — 고르지 않았으면 키가 없다. 있으면 반드시
+        // 내가 멈춘 행 중 하나다 (선택지가 멈춘 행이기 때문이다).
+        && (!r.keys().hasAny(['impressiveLine'])
+            || (r.impressiveLine is int && r.impressiveLine in r.markedLines));
     }
 
     function keepsLocks(old, r) {

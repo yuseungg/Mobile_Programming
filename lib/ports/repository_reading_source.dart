@@ -45,6 +45,10 @@ class RepositoryReadingSource implements ReadingSource {
       Repositories.reading.fetchReading(myUserId, poemId);
 
   @override
+  Future<List<Reading>> myReadings() =>
+      Repositories.reading.fetchMyReadings(myUserId);
+
+  @override
   Future<UserProfile> profileById(String userId) =>
       Repositories.user.fetchProfile(userId);
 

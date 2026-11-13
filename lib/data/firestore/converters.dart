@@ -62,6 +62,9 @@ Map<String, dynamic> readingToDoc(Reading reading) => {
       'isSaved': reading.isSaved,
       'hasOpenedComparison': reading.hasOpenedComparison,
       'isPublic': reading.isPublic,
+      // 고르지 않았으면 키 자체를 넣지 않는다 — 규칙이 있을 때만 검사하도록.
+      if (reading.impressiveLine != null)
+        'impressiveLine': reading.impressiveLine,
     };
 
 Reading readingFromDoc(String poemId, Map<String, dynamic> data) => Reading(
@@ -77,6 +80,7 @@ Reading readingFromDoc(String poemId, Map<String, dynamic> data) => Reading(
       isSaved: data['isSaved'] as bool? ?? false,
       hasOpenedComparison: data['hasOpenedComparison'] as bool? ?? false,
       isPublic: data['isPublic'] as bool? ?? false,
+      impressiveLine: (data['impressiveLine'] as num?)?.toInt(),
     );
 
 // ── publicConversations/{conversationId} ───────────────
