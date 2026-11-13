@@ -12,8 +12,10 @@ import '../../shared/widgets/app_text_field.dart';
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
 
+  // 로그인하면 S13 안내를 거쳐 홈으로 간다 (안내는 15초 뒤 저절로 넘어간다)
   void _goHome(BuildContext context) {
-    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
+    Navigator.of(context)
+        .pushNamedAndRemoveUntil(AppRoutes.intro, (_) => false);
   }
 
   @override

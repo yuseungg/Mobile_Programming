@@ -185,4 +185,7 @@ class AppStrings {
   static const profileBadgesCaption = '끝까지 읽고 생각을 저장한 시마다 그 시를 닮은 뱃지가 남습니다.';
   static const profileNoBadges = '아직 모은 뱃지가 없습니다.\n시를 읽고 해석을 저장해 보세요.';
   static const profileShelfNote = '프로필은 당신의 생각을 모아두는 조용한 선반입니다.';
+
+  // ── S13 안내 ──────────────────────────────────
+  static const introStart = '시 학습하러 가기';
 }

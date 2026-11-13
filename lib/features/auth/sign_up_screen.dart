@@ -94,7 +94,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               AppPrimaryButton(
                 label: AppStrings.signUpButton,
                 onPressed: () => Navigator.of(context)
-                    .pushNamedAndRemoveUntil(AppRoutes.home, (_) => false),
+                    .pushNamedAndRemoveUntil(AppRoutes.intro, (_) => false),
               ),
               const SizedBox(height: 16),
               Row(
