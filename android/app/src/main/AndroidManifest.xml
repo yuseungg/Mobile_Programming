@@ -1,8 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 릴리스 APK에도 필요 — 로그인 · Firestore · 모델 호출 (debug/profile에만 있었음) -->
-    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="여백"
+        android:label="yeobaek"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
