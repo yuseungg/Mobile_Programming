@@ -29,7 +29,7 @@ void main() {
     await tester.tap(find.text('로그인'));
     await tester.pumpAndSettle();
 
-    // 로그인 다음은 S13 안내다. 15초 기다리면 저절로 홈으로 넘어간다.
+    // 로그인 다음은 S13 안내다. 30초 기다리면 저절로 홈으로 넘어간다.
     await tester.pump(IntroScreen.autoAdvanceDelay);
     await tester.pumpAndSettle();
 
@@ -142,7 +142,7 @@ void main() {
     await tester.tap(find.text('로그인'));
     await tester.pumpAndSettle();
 
-    // 로그인 다음은 S13 안내다. 15초 기다리면 저절로 홈으로 넘어간다.
+    // 로그인 다음은 S13 안내다. 30초 기다리면 저절로 홈으로 넘어간다.
     await tester.pump(IntroScreen.autoAdvanceDelay);
     await tester.pumpAndSettle();
     expect(find.text('지금까지 12일 시를 읽었어요'), findsOneWidget);
