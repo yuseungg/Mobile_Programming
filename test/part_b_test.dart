@@ -1,8 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yeobaek/app/router.dart';
+import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/data/fakes/fake_data.dart';
+import 'package:yeobaek/data/fakes/fake_reading_repository.dart';
+import 'package:yeobaek/data/fakes/fake_store.dart';
 import 'package:yeobaek/data/models/poem.dart';
 import 'package:yeobaek/data/models/public_conversation.dart';
 import 'package:yeobaek/data/models/reading.dart';
@@ -12,13 +16,26 @@ import 'package:yeobaek/features/chat/chat_screen.dart';
 import 'package:yeobaek/features/compare/comparison_screen.dart';
 import 'package:yeobaek/features/home/home_screen.dart';
 import 'package:yeobaek/features/reading/reading_screen.dart';
+import 'package:yeobaek/features/save/pending_saves.dart';
 import 'package:yeobaek/features/save/save_screen.dart';
 import 'package:yeobaek/main.dart';
+
+// 테스트용: 네트워크 끊긴 것처럼 저장만 실패하는 저장소
+class _NetworkDownReadingRepository extends FakeReadingRepository {
+  _NetworkDownReadingRepository(super.store);
+
+  @override
+  Future<String?> saveInterpretation(String userId, Reading reading, {required String? summary}) async {
+    throw Exception('network');
+  }
+}
 
 void main() {
   // 테스트마다 가짜 저장소 새로 (앞 테스트에서 저장한 게 안 남게)
   setUp(() {
     Repositories.useFakes();
+    // 저장 실패 보관용 기기 저장소도 테스트마다 빈 걸로
+    SharedPreferences.setMockInitialValues({});
   });
 
   testWidgets('B 흐름: S03 → S04 행 표시 → S05 → S06 → S07', (tester) async {
@@ -237,5 +254,46 @@ void main() {
     await tester.pumpWidget(homeApp());
     await tester.pumpAndSettle();
     expect(find.text('이어 읽기'), findsNothing);
+  });
+
+  //AI
+  testWidgets('저장 실패하면 기기에 보관했다가 다음에 다시 저장함', (tester) async {
+    FakeStore store = FakeStore();
+    Repositories.reading = _NetworkDownReadingRepository(store);
+
+    await tester.pumpWidget(const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: SaveScreen(poemId: 'jindallae')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '보내는 사람이 끝까지 꽃을 뿌리는 게 마음에 걸림');
+    await tester.pump();
+    await tester.tap(find.text('저장하기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text(AppStrings.saveKeptForLater), findsOneWidget);
+    expect(find.byType(SaveScreen), findsOneWidget); // 저장 안 됐으니 대조로 안 넘어감
+
+    // 네트워크 돌아옴
+    Repositories.reading = FakeReadingRepository(store);
+    int saved = await retryPendingSaves();
+    expect(saved, 1);
+    Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    expect(reading!.isSaved, true);
+    expect(reading.interpretation, '보내는 사람이 끝까지 꽃을 뿌리는 게 마음에 걸림');
+    expect(await retryPendingSaves(), 0); // 보관분은 지워짐
+  });
+
+  testWidgets('홈 열릴 때 보관해 둔 저장 다시 함', (tester) async {
+    Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    await keepPendingSave(FakeData.myUserId, reading!.copyWith(interpretation: '꽃을 밟고 가라는 말이 오히려 붙잡는 말 같음'), null);
+
+    await tester.pumpWidget(homeApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.homePendingSaved), findsOneWidget);
+    Reading? after = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    expect(after!.isSaved, true);
+    expect(find.text('이어 읽기'), findsNothing); // 저장돼서 이어 읽기에서도 빠짐
   });
 }
