@@ -25,6 +25,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
 
   final Set<int> _markedLines = {};
   Map<int, int> _stopCounts = {};
+  bool _hasConversation = false; // 하던 대화 있으면 버튼을 '대화 이어 하기'로
   final TextEditingController _firstWordController = TextEditingController();
 
   @override
@@ -57,6 +58,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
       if (saved != null) {
         _markedLines.addAll(saved.markedLines);
         _firstWordController.text = saved.firstWord;
+        _hasConversation = saved.conversation.isNotEmpty;
       }
       _stopCounts = counts;
     });
@@ -173,7 +175,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
           const SizedBox(height: 16),
           FilledButton(
             onPressed: !hasFirstWord ? null : _startChat,
-            child: const Text(AppStrings.readingStartChat),
+            child: Text(_hasConversation ? AppStrings.readingContinueChat : AppStrings.readingStartChat),
           ),
           const SizedBox(height: 8),
           OutlinedButton(
