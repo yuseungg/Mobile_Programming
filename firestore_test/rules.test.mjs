@@ -185,6 +185,14 @@ describe('읽기 기록: 나만, 잠금은 되돌릴 수 없다', () => {
       reading({ isSaved: true, isPublic: false })));
   });
 
+  test('저장 · 대조 열람 · 공개 뒤에도 대화는 비울 수 있다 (S11 기록 지우기)', async () => {
+    const locked = { isSaved: true, hasOpenedComparison: true, isPublic: true, interpretation: '내 해석' };
+    await seed((db) =>
+      setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ ...locked, conversation: [{ role: 'user', text: '가' }] })));
+    await assertSucceeds(updateDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM), { conversation: [] }));
+  });
+
   test('대화 · 멈춘 줄 목록이 너무 길면 막힌다', async () => {
     await assertFails(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
       reading({ conversation: Array.from({ length: 201 }, () => ({ role: 'user', text: '가' })) })));
