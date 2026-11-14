@@ -2,7 +2,8 @@
 // 상단 고정 시, 말풍선, 입력창, 힌트 · 정리하기 버튼.
 // 근거 검증은 이 화면의 상태: 확인된 근거 행 = 초록 실선, 가리키는 중 = 회색 점선.
 // 에이전트는 lib/agent/chat_agent.dart — 키가 있으면 OpenRouter, 없으면 가짜 에이전트가 답한다.
-// ⚠ 대화와 근거 행은 아직 이 화면 안에만 있다. C의 저장소가 생기면 Reading에 쓴다 (S06이 거기서 읽는다).
+// 설정(모델 · 말투)과 읽기 기록은 저장소에서 불러오고, 대화 · 근거 행이 바뀔 때마다
+// saveProgress로 저장한다. S06은 저장소에서 이 대화를 읽어 초안을 만든다.
 import 'package:flutter/material.dart';
 
 import '../../agent/cancel_token.dart';
@@ -14,6 +15,9 @@ import '../../data/fakes/fake_data.dart';
 import '../../data/models/chat_message.dart';
 import '../../data/models/poem.dart';
 import '../../data/models/reading.dart';
+import '../../data/models/settings.dart';
+import '../../data/repositories.dart';
+import '../../data/settings_options.dart';
 import '../../shared/widgets/chat_bubble.dart';
 import '../../shared/widgets/message_input.dart';
 import '../../shared/widgets/poem_view.dart';
@@ -31,13 +35,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   late final Poem _poem = FakeData.poemById(widget.poemId);
-  late final Reading? _reading = FakeData.readingFor(widget.poemId);
-  late final ChatAgent _agent = createChatAgent(
-    settings: FakeData.settings,
-    isSaved: _reading?.isSaved ?? false,
-  );
-  late final List<ChatMessage> _conversation = [...?_reading?.conversation];
-  late final Set<int> _evidenceLines = {...?_reading?.evidenceLines};
+  final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
+  late ChatAgent _agent;
+  bool _isLoading = true; // 설정 · 읽기 기록을 불러오는 동안
+  bool _canSave = true; // 읽기 기록을 못 불러왔으면 저장된 대화를 덮어쓰지 않게 막는다
+  Future<void> _saving = Future.value(); // 저장을 보낸 순서대로 잇는다
+  final List<ChatMessage> _conversation = [];
+  final Set<int> _evidenceLines = {};
   int? _pointingLine;
   CancelToken? _pendingReply; // 응답을 기다리는 동안만 있다
 
@@ -46,20 +50,81 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    Settings settings = defaultSettings;
+    try {
+      settings = await Repositories.settings.load();
+    } catch (error) {
+      debugPrint('[chat] 설정을 불러오지 못해 기본값으로 대화함: $error');
+    }
+    Reading? reading;
+    try {
+      reading = await Repositories.reading.fetchReading(_userId, widget.poemId);
+    } catch (error) {
+      _canSave = false;
+      debugPrint('[chat] 읽기 기록을 불러오지 못해 이번 대화는 저장하지 않음: $error');
+    }
+    if (!mounted) return;
+
+    setState(() {
+      _agent = createChatAgent(
+        settings: settings,
+        isSaved: reading?.isSaved ?? false,
+      );
+      _conversation.addAll(reading?.conversation ?? const []);
+      _evidenceLines.addAll(reading?.evidenceLines ?? const []);
+      _isLoading = false;
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
-      // 대화가 비어 있으면 첫 낱말에서 출발하는 첫 질문을 받는다
-      if (_conversation.isEmpty) {
-        _requestReply((cancelToken) => _agent.open(
-              poem: _poem,
-              firstWord: _reading?.firstWord ?? '',
-              cancelToken: cancelToken,
-            ));
+    });
+    // 대화가 비어 있으면 첫 낱말에서 출발하는 첫 질문을 받는다
+    if (_conversation.isEmpty) {
+      final firstWord = reading?.firstWord ?? '';
+      _requestReply((cancelToken) => _agent.open(
+            poem: _poem,
+            firstWord: firstWord,
+            cancelToken: cancelToken,
+          ));
+    }
+  }
+
+  /// 대화 · 근거 행만 바꿔 저장한다. 첫 낱말 · 멈춘 행 등 다른 화면이 쓴 값은
+  /// 저장 직전에 다시 읽어서 그대로 둔다.
+  void _saveProgress() {
+    if (!_canSave) return;
+    final conversation = List<ChatMessage>.of(_conversation);
+    final evidenceLines = _evidenceLines.toList()..sort();
+    _saving = _saving.then((_) async {
+      try {
+        final latest =
+            await Repositories.reading.fetchReading(_userId, widget.poemId) ??
+                Reading(poemId: widget.poemId);
+        await Repositories.reading.saveProgress(
+          _userId,
+          latest.copyWith(
+            conversation: conversation,
+            evidenceLines: evidenceLines,
+          ),
+        );
+      } catch (error) {
+        debugPrint('[chat] 대화를 저장하지 못함: $error');
       }
     });
+  }
+
+  /// 정리하기 — 마지막 저장이 끝난 뒤에 S06으로 간다 (S06이 저장소에서 대화를 읽는다)
+  Future<void> _goToSave() async {
+    await _saving;
+    if (!mounted) return;
+    Navigator.of(context).pushNamed(AppRoutes.save(_poem.poemId));
   }
 
   @override
@@ -85,14 +150,16 @@ class _ChatScreenState extends State<ChatScreen> {
       _evidenceLines.addAll(reply.evidenceLines);
       _pointingLine = reply.pointingLine;
     });
+    _saveProgress();
     _scrollToBottom();
   }
 
   void _send() {
     final text = _messageController.text.trim();
-    if (text.isEmpty || _isResponding) return;
+    if (text.isEmpty || _isResponding || _isLoading) return;
     _messageController.clear();
     setState(() => _conversation.add(ChatMessage(role: ChatRole.user, text: text)));
+    _saveProgress(); // 답을 중단해도 보낸 말은 남는다
 
     final conversation = List<ChatMessage>.unmodifiable(_conversation);
     _requestReply((cancelToken) => _agent.reply(
@@ -188,7 +255,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   MessageInput(
                     controller: _messageController,
-                    isResponding: _isResponding,
+                    isResponding: _isResponding || _isLoading,
                     onSend: _send,
                     onStop: _stop,
                   ),
@@ -197,15 +264,15 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _isResponding ? null : _showHint,
+                          onPressed:
+                              _isResponding || _isLoading ? null : _showHint,
                           child: const Text(AppStrings.chatHintButton),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => Navigator.of(context)
-                              .pushNamed(AppRoutes.save(_poem.poemId)),
+                          onPressed: _isLoading ? null : _goToSave,
                           child: const Text(AppStrings.chatSummarizeButton),
                         ),
                       ),

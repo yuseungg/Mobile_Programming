@@ -29,6 +29,7 @@ class OpenRouterChatAgent implements ChatAgent {
     required this.model,
     required this.tone,
     required this.isSaved,
+    this.onModelCall,
   });
 
   static const maxToolRounds = 5;
@@ -38,6 +39,34 @@ class OpenRouterChatAgent implements ChatAgent {
   final String model; // 질문 모델 — 설정(S10 · S11)의 questionModel
   final Tone tone;
   final bool isSaved; // 그 시의 해석을 저장했는가 — 툴 권한이 달라진다
+
+  /// 모델을 한 번 부를 때마다 (툴 라운드 · 다시 쓰기 포함). 설정 화면의 이번 달 사용량.
+  final Future<void> Function()? onModelCall;
+
+  Future<ChatCompletion> _complete({
+    required List<Map<String, Object?>> messages,
+    required List<Map<String, Object?>> tools,
+    String? toolChoice,
+    CancelToken? cancelToken,
+  }) {
+    _countModelCall();
+    return client.complete(
+      model: model,
+      messages: messages,
+      tools: tools,
+      toolChoice: toolChoice,
+      cancelToken: cancelToken,
+    );
+  }
+
+  /// 횟수를 못 세도 대화는 이어 간다
+  void _countModelCall() {
+    final count = onModelCall;
+    if (count == null) return;
+    count().catchError((Object error) {
+      debugPrint('[agent] 호출 횟수를 세지 못함: $error');
+    });
+  }
 
   @override
   Future<AgentReply> open({
@@ -133,8 +162,7 @@ class OpenRouterChatAgent implements ChatAgent {
       var answer = '';
       for (var round = 1; round <= maxToolRounds; round++) {
         final isLastRound = round == maxToolRounds;
-        final completion = await client.complete(
-          model: model,
+        final completion = await _complete(
           messages: messages,
           tools: tools.definitions,
           toolChoice: isLastRound ? 'none' : null,
@@ -171,8 +199,7 @@ class OpenRouterChatAgent implements ChatAgent {
           if (answer.isNotEmpty) {'role': 'assistant', 'content': answer},
           {'role': 'user', 'content': rewriteInstruction(check.violations)},
         ]);
-        final completion = await client.complete(
-          model: model,
+        final completion = await _complete(
           messages: messages,
           tools: tools.definitions,
           toolChoice: 'none',

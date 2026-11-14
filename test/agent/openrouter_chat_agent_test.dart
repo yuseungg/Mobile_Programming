@@ -210,4 +210,40 @@ void main() {
     expect(transport.requests, isEmpty);
     expect(reply.isFallback, isTrue);
   });
+
+  test('모델을 부를 때마다 사용량을 센다 — 툴 라운드 · 다시 쓰기 포함', () async {
+    final transport = _ScriptedTransport([
+      _toolCall('verify_quote', {'quote': '별을 그리워하며'}),
+      _text('이 시는 부끄러움을 뜻합니다.'), // 출력 필터에 걸려 다시 쓴다
+      _text(goodQuestion),
+    ]);
+    var callCount = 0;
+    final agent = OpenRouterChatAgent(
+      client: OpenRouterClient(apiKey: 'test-key', postJson: transport.post),
+      model: 'test/model',
+      tone: Tone.plain,
+      isSaved: false,
+      onModelCall: () async => callCount++,
+    );
+    await agent.reply(poem: seosi, conversation: const [quoteMessage]);
+
+    expect(transport.requests, hasLength(3));
+    expect(callCount, 3);
+  });
+
+  test('사용량을 못 세도 답은 온다', () async {
+    final transport = _ScriptedTransport([_text(goodQuestion)]);
+    final agent = OpenRouterChatAgent(
+      client: OpenRouterClient(apiKey: 'test-key', postJson: transport.post),
+      model: 'test/model',
+      tone: Tone.plain,
+      isSaved: false,
+      onModelCall: () async => throw StateError('저장 실패'),
+    );
+    final reply =
+        await agent.reply(poem: seosi, conversation: const [quoteMessage]);
+
+    expect(reply.text, goodQuestion);
+    expect(reply.isFallback, isFalse);
+  });
 }
