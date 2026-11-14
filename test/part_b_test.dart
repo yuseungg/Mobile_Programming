@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/features/intro/intro_screen.dart';
 import 'package:yeobaek/app/router.dart';
 import 'package:yeobaek/data/fakes/fake_data.dart';
 import 'package:yeobaek/data/models/poem.dart';
@@ -26,6 +27,10 @@ void main() {
 
     await tester.ensureVisible(find.text('로그인'));
     await tester.tap(find.text('로그인'));
+    await tester.pumpAndSettle();
+
+    // 로그인 다음은 S13 안내다. 30초 기다리면 저절로 홈으로 넘어간다.
+    await tester.pump(IntroScreen.autoAdvanceDelay);
     await tester.pumpAndSettle();
 
     //오늘의 시는 날마다 바뀌어서 목록에서 서시 고름
@@ -135,6 +140,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('로그인'));
     await tester.tap(find.text('로그인'));
+    await tester.pumpAndSettle();
+
+    // 로그인 다음은 S13 안내다. 30초 기다리면 저절로 홈으로 넘어간다.
+    await tester.pump(IntroScreen.autoAdvanceDelay);
     await tester.pumpAndSettle();
     expect(find.text('지금까지 12일 시를 읽었어요'), findsOneWidget);
 

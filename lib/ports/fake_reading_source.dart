@@ -33,6 +33,11 @@ class FakeReadingSource implements ReadingSource {
       FakeData.readingFor(poemId);
 
   @override
+  Future<List<Reading>> myReadings() async => [
+        for (final poem in FakeData.poems) ?FakeData.readingFor(poem.poemId),
+      ];
+
+  @override
   Future<UserProfile> profileById(String userId) async =>
       FakeData.profileById(userId);
 

@@ -196,4 +196,14 @@ class AppStrings {
   static const profileBadgesCaption = '끝까지 읽고 생각을 저장한 시마다 그 시를 닮은 뱃지가 남습니다.';
   static const profileNoBadges = '아직 모은 뱃지가 없습니다.\n시를 읽고 해석을 저장해 보세요.';
   static const profileShelfNote = '프로필은 당신의 생각을 모아두는 조용한 선반입니다.';
+
+  // ── S13 안내 ──────────────────────────────────
+  static const introStart = '시 읽으러 가기';
+  static const introSkip = '건너뛰기';
+  static const introLinesTitle = '마음에 남은 줄';
+  static const introLinesEmpty = '시를 한 편 읽고 나면, 가장 마음에 남은 줄이 여기에 남습니다.';
+  static const introStatusTitle = '지금까지';
+  static String introDays(int count) => '시를 읽은 날 $count일';
+  static String introShared(int count) => '모두에게 나눈 글 $count편';
+  static String introBadges(int count) => '받은 뱃지 $count개';
 }
