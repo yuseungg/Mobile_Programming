@@ -1,5 +1,5 @@
 // S10 설정 보기 — 주인: C · 요건 (c) 설정을 기억하는 화면
-// 용도별 모델 배정, 말투, 이번 달 사용량. 읽기 전용.
+// 용도별 모델 배정, 말투, 이번 달 사용량. 읽기 전용. 맨 아래에 로그아웃.
 // 값은 Repositories.settings에서 읽는다 (Firebase 모드는 기기의 SharedPreferences).
 // 탭을 다시 누르거나 S11에서 돌아오면 새로 읽는다 (사용량이 그사이 늘었을 수 있다).
 import 'package:flutter/material.dart';
@@ -60,13 +60,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         future: _data,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
+            // 설정을 못 읽어도 로그아웃은 할 수 있어야 한다
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Text(
-                  AppStrings.settingsLoadFailed,
-                  style: AppText.bodySub,
-                  textAlign: TextAlign.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      AppStrings.settingsLoadFailed,
+                      style: AppText.bodySub,
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 16),
+                    _SignOutButton(),
+                  ],
                 ),
               ),
             );
@@ -130,7 +138,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
           label: AppStrings.settingsEditButton,
           onPressed: _openEdit,
         ),
+        const SizedBox(height: 12),
+        const Center(child: _SignOutButton()),
       ],
+    );
+  }
+}
+
+/// 로그아웃 — 확인 창을 거쳐 S01로. 이전 화면은 모두 닫는다 (뒤로 가기로 못 돌아오게).
+class _SignOutButton extends StatefulWidget {
+  const _SignOutButton();
+
+  @override
+  State<_SignOutButton> createState() => _SignOutButtonState();
+}
+
+class _SignOutButtonState extends State<_SignOutButton> {
+  bool _isSigningOut = false;
+
+  Future<void> _signOut() async {
+    final isConfirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(AppStrings.settingsSignOutDialogTitle),
+        content: const Text(
+          AppStrings.settingsSignOutDialogBody,
+          style: AppText.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(AppStrings.settingsSignOutCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(AppStrings.settingsSignOut),
+          ),
+        ],
+      ),
+    );
+    if (isConfirmed != true || !mounted) return;
+
+    setState(() {
+      _isSigningOut = true;
+    });
+    try {
+      await Repositories.auth.signOut();
+      if (!mounted) return;
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(AppRoutes.signIn, (_) => false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSigningOut = false;
+      });
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text(AppStrings.settingsSignOutFailed)),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: _isSigningOut ? null : _signOut,
+      child: const Text(AppStrings.settingsSignOut),
     );
   }
 }
