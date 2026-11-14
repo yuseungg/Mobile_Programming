@@ -8,6 +8,7 @@ import 'package:yeobaek/data/models/public_conversation.dart';
 import 'package:yeobaek/data/models/reading.dart';
 import 'package:yeobaek/data/models/user_profile.dart';
 import 'package:yeobaek/data/repositories.dart';
+import 'package:yeobaek/features/chat/chat_screen.dart';
 import 'package:yeobaek/features/compare/comparison_screen.dart';
 import 'package:yeobaek/features/home/home_screen.dart';
 import 'package:yeobaek/features/reading/reading_screen.dart';
@@ -47,12 +48,13 @@ void main() {
     );
     await tester.enterText(find.byType(TextField), '부끄럼');
     await tester.pump();
+    // 서시는 가짜 데이터에 하던 대화가 있어서 버튼이 '대화 이어 하기'
     await tester.scrollUntilVisible(
-      find.text('이 낱말로 대화 시작'),
+      find.text('대화 이어 하기'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('이 낱말로 대화 시작'));
+    await tester.tap(find.text('대화 이어 하기'));
     await tester.pumpAndSettle();
 
     // 첫 낱말이 저장소에 들어갔는지 (S05가 여기서 꺼내 씀)
@@ -192,5 +194,48 @@ void main() {
     }
     expect(mine, isNotNull);
     expect(mine!.summary.trim().isNotEmpty, true);
+  });
+
+  // 홈은 탭 화면이라 라우터 붙여서 띄움
+  Widget homeApp() {
+    return const MaterialApp(onGenerateRoute: AppRouter.onGenerateRoute, home: HomeScreen());
+  }
+
+  testWidgets('대화하다 멈춘 시는 홈 이어 읽기에 뜨고 누르면 바로 대화로', (tester) async {
+    await tester.pumpWidget(homeApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('이어 읽기'), findsOneWidget);
+    Finder tile = find.widgetWithText(ListTile, '‘이별’에서 시작한 대화를 이어 가요'); // 진달래꽃
+    expect(tile, findsOneWidget);
+
+    await tester.tap(tile);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(ChatScreen), findsOneWidget);
+  });
+
+  testWidgets('S04 버튼은 하던 대화 있으면 대화 이어 하기', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'jindallae')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('대화 이어 하기'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('대화 이어 하기'), findsOneWidget);
+  });
+
+  testWidgets('처음 읽는 시는 원래 문구 그대로', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'bomgoyangi')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('이 낱말로 대화 시작'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('이 낱말로 대화 시작'), findsOneWidget);
+  });
+
+  testWidgets('저장하고 나면 이어 읽기에서 빠짐', (tester) async {
+    Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    await Repositories.reading.saveInterpretation(FakeData.myUserId,
+        reading!.copyWith(interpretation: '보내는 사람이 끝까지 꽃을 뿌리는 게 마음에 걸림'), summary: null);
+
+    await tester.pumpWidget(homeApp());
+    await tester.pumpAndSettle();
+    expect(find.text('이어 읽기'), findsNothing);
   });
 }
