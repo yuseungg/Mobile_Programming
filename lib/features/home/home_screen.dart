@@ -9,6 +9,7 @@ import '../../data/models/poem.dart';
 import '../../data/models/reading.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/repositories.dart';
+import '../save/pending_saves.dart';
 
 
 //AI
@@ -37,11 +38,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   UserProfile? _me;
   Set<String> _readPoemIds = {};
+  // 대화하다 저장 안 하고 나간 시 (이어 읽기, 기획서 F2)
+  List<Reading> _inProgress = [];
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _retryThenLoad();
+  }
+
+  // 홈 열릴 때 전에 저장 실패해서 기기에 보관해 둔 해석 있으면 먼저 다시 저장 (기획서 7장)
+  Future<void> _retryThenLoad() async {
+    int saved = 0;
+    try {
+      saved = await retryPendingSaves();
+    } catch (e) {
+      // 기기 저장소 못 쓰는 환경이면 그냥 넘어감
+    }
+    await _load();
+
+    if (saved > 0 && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.homePendingSaved)));
+    }
   }
 
   Future<void> _load() async {
@@ -49,8 +67,12 @@ class _HomeScreenState extends State<HomeScreen> {
     List<Reading> readings = await Repositories.reading.fetchMyReadings(_userId);
 
     Set<String> ids = {};
+    List<Reading> inProgress = [];
     for (Reading reading in readings) {
       ids.add(reading.poemId);
+      if (!reading.isSaved && reading.conversation.isNotEmpty) {
+        inProgress.add(reading);
+      }
     }
     if (!mounted) {
       return;
@@ -58,12 +80,18 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _me = me;
       _readPoemIds = ids;
+      _inProgress = inProgress;
     });
   }
 
   // 읽기 화면에서 돌아오면 누적일수랑 읽음 표시 다시 불러옴
   void openReading(String poemId) {
     Navigator.of(context).pushNamed(AppRoutes.reading(poemId)).then((_) => _load());
+  }
+
+  // 이어 읽기는 읽기 화면 거치지 않고 바로 대화로. S05가 저장된 대화 불러와서 이어 감
+  void openChat(String poemId) {
+    Navigator.of(context).pushNamed(AppRoutes.chat(poemId)).then((_) => _load());
   }
 
   @override
@@ -89,12 +117,12 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text(
             _me == null ? '' : AppStrings.homeTotalDays(_me!.totalReadingDays),
-            style: const TextStyle(fontSize: 16, color: AppColors.textSub),
+            style: AppText.bodySub,
           ),
           const SizedBox(height: 24),
           const Text(
             AppStrings.homeTodayPoem,
-            style: TextStyle(color: AppColors.textFaint),
+            style: AppText.label,
           ),
           const SizedBox(height: 8),
           Card(
@@ -106,23 +134,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     poem.title,
-                    style: const TextStyle(
-                      fontFamily: AppFonts.myeongjo,
-                      fontSize: 22,
-                    ),
+                    style: AppText.poemTitle,
                   ),
                   Text(
                     poem.author,
-                    style: const TextStyle(color: AppColors.textSub),
+                    style:  AppText.bodySub,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     poem.lines.take(2).join('\n'),
-                    style: const TextStyle(
-                      fontFamily: AppFonts.myeongjo,
-                      fontSize: 16,
-                      height: 1.6,
-                    ),
+                    style: AppText.poemQuote,
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -137,15 +158,27 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 24),
+
+          if (_inProgress.isNotEmpty) ...[
+            const Text(AppStrings.homeContinueTitle, style: AppText.label),
+            for (Reading reading in _inProgress)
+              ListTile(
+                title: Text(FakeData.poemById(reading.poemId).title, style: AppText.poemTitleSmall),
+                subtitle: Text(AppStrings.homeContinueSubtitle(reading.firstWord)),
+                trailing: const Icon(Icons.chat_bubble_outline),
+                onTap: () => openChat(reading.poemId),
+              ),
+            const SizedBox(height: 24),
+          ],
           const Text(
             AppStrings.homePoemList,
-            style: TextStyle(color: AppColors.textFaint),
+            style: AppText.label,
           ),
 
 
           for (final p in FakeData.poems) //AI
             ListTile(
-              title: Text(p.title, style: const TextStyle(fontFamily: AppFonts.myeongjo)),
+              title: Text(p.title, style: AppText.poemTitleSmall),
               subtitle: Text(p.author),
               trailing: _readPoemIds.contains(p.poemId)
                     ? const Text(AppStrings.homeReadMark, style: AppText.caption)

@@ -58,6 +58,8 @@ class AppStrings {
   static const homeStartReading = '혼자 읽기 시작';
   static const homePoemList = '시 목록';
   static const homeReadMark =  '읽음';
+  static const homeContinueTitle = '이어 읽기';
+  static String homeContinueSubtitle(String firstWord) => '‘$firstWord’에서 시작한 대화를 이어 가요';
 
   // ── S04 읽기 ──────────────────────────────────
   static String readingAppBarTitle(String author, String title) =>
@@ -66,6 +68,7 @@ class AppStrings {
   static const readingStopGuide = '마음이 멈춘 줄을 눌러 보세요. 아무것도 안 눌러도 됩니다.';
   static const readingFirstWordLabel = '읽고 떠오른 낱말 하나';
   static const readingStartChat = '이 낱말로 대화 시작';
+  static const readingContinueChat = '대화 이어 하기';
   static const readingEndWithWord = '낱말만 남기고 끝내기';
 
   // ── S05 대화 ──────────────────────────────────
@@ -88,6 +91,8 @@ class AppStrings {
   static const saveButton = '저장하기';
   static const saveLockedNotice ='대조를 연 뒤라 해석은 더 고칠 수 없어요.';
   static const saveFailed = '저장하지 못했어요. 다시 눌러 주세요.';
+  static const saveKeptForLater = '지금은 저장하지 못해서 기기에 보관해 뒀어요. 다음에 앱을 열면 다시 저장할게요.';
+  static const homePendingSaved = '보관해 둔 해석을 저장했어요.';
 
   // ── S07 대조 (D) ──────────────────────────────
   static String comparisonTitle(String poemTitle) => '$poemTitle — 대조';

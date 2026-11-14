@@ -12,6 +12,7 @@ import '../../data/models/reading.dart';
 import '../../data/repositories.dart';
 import '../../writers/fake_summary_writer.dart';
 import '../../writers/summary_writer.dart';
+import 'pending_saves.dart';
 
 class SaveScreen extends StatefulWidget {
   const SaveScreen({super.key, required this.poemId,
@@ -43,19 +44,32 @@ class _SaveScreenState extends State<SaveScreen> {
   }
 
   Future<void> _load() async {
-    Reading? reading = await Repositories.reading.fetchReading(_userId, widget.poemId);
-    if (!mounted || reading == null) {
+    Reading? reading;
+    try {
+      reading = await Repositories.reading.fetchReading(_userId, widget.poemId);
+    } catch (e) {
+      // 못 불러와도 기기에 보관해 둔 게 있으면 그걸로 보여줌
+    }
+    Reading? pending = await _findPending();
+    if (!mounted) {
       return;
     }
+    if (reading == null && pending == null) {
+      return;
+    }
+    Reading loaded = reading ?? pending!;
 
     String text;
-    if (reading.isSaved) {
+    if (pending != null) {
+      // 저장 실패해서 보관해 둔 해석이 제일 최신
+      text = pending.interpretation;
+    } else if (loaded.isSaved) {
       // 이미 저장한 해석 있으면 그거 보여줌
-      text = reading.interpretation;
+      text = loaded.interpretation;
     } else {
       // 없으면 대화에서 내가 한 말만 모아서 초안
       List<String> myMessages = [];
-      for (ChatMessage message in reading.conversation) {
+      for (ChatMessage message in loaded.conversation) {
         if (message.role == ChatRole.user) {
           myMessages.add(message.text);
         }
@@ -64,12 +78,21 @@ class _SaveScreenState extends State<SaveScreen> {
     }
 
     setState(() {
-      _reading = reading;
-      _isLocked = reading.hasOpenedComparison;
-      _isPublic = reading.isPublic;
-      _wasPublic = reading.isSaved && reading.isPublic;
+      _reading = loaded;
+      _isLocked = loaded.hasOpenedComparison;
+      _isPublic = pending != null ? pending.isPublic : loaded.isPublic;
+      _wasPublic = loaded.isSaved && loaded.isPublic;
       _interpretationController.text = text;
     });
+  }
+
+  // 기기 저장소를 못 쓰는 환경이면 그냥 없는 걸로
+  Future<Reading?> _findPending() async {
+    try {
+      return await findPendingSave(_userId, widget.poemId);
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
@@ -106,8 +129,21 @@ class _SaveScreenState extends State<SaveScreen> {
       _showMessage(AppStrings.saveLockedNotice);
       return;
     } catch (e) {
-      _showMessage(AppStrings.saveFailed);
+      // 네트워크 같은 문제면 기기에 보관해 두고 다음에 홈 열릴 때 다시 저장
+      try {
+        await keepPendingSave(_userId, toSave, summary);
+        _showMessage(AppStrings.saveKeptForLater);
+      } catch (e2) {
+        _showMessage(AppStrings.saveFailed);
+      }
       return;
+    }
+
+    // 저장됐으니 예전에 보관해 둔 게 있으면 지움 (나중에 옛날 해석으로 덮어쓰지 않게)
+    try {
+      await removePendingSave(_userId, widget.poemId);
+    } catch (e) {
+      // print(e);
     }
 
     if (!mounted) {
@@ -148,7 +184,7 @@ class _SaveScreenState extends State<SaveScreen> {
         children: [
           Text(
             _isLocked ? AppStrings.saveLockedNotice : AppStrings.saveDraftNotice,
-            style: const TextStyle(color: AppColors.textSub),
+            style: AppText.bodySub,
           ),
           const SizedBox(height: 16),
           TextField(
@@ -161,12 +197,7 @@ class _SaveScreenState extends State<SaveScreen> {
             minLines: 6,
             maxLines: null,
             onChanged: (_) => setState(() {}),
-            style: const TextStyle(
-              fontFamily: AppFonts.myeongjo,
-              fontSize: 18,
-              height: 1.7,
-              color: AppColors.text,
-            ),
+            style: AppText.interpretationLarge,
             decoration: const InputDecoration(
               filled: true,
               fillColor: AppColors.card,
@@ -176,7 +207,7 @@ class _SaveScreenState extends State<SaveScreen> {
           const SizedBox(height: 16),
           const Text(
             AppStrings.saveEvidenceLabel,
-            style: TextStyle(color: AppColors.textFaint),
+            style: AppText.label,
           ),
           for (final lineNo in evidenceLines)
             Padding(
@@ -188,10 +219,7 @@ class _SaveScreenState extends State<SaveScreen> {
                   Expanded(
                     child: Text(
                       poem.lineAt(lineNo),
-                      style: const TextStyle(
-                        fontFamily: AppFonts.myeongjo,
-                        color: AppColors.text,
-                      ),
+                      style: AppText.poemQuote,
                     ),
                   ),
                 ],
@@ -224,7 +252,7 @@ class _SaveScreenState extends State<SaveScreen> {
             const Text(
               AppStrings.saveLockNotice,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.textFaint),
+              style: AppText.caption,
             ),
           ],
         ),
