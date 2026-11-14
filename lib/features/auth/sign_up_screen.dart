@@ -93,8 +93,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 28),
               AppPrimaryButton(
                 label: AppStrings.signUpButton,
+                // 가입 직후에는 S13을 건너뛰고 바로 홈으로. 보여 줄 기록이
+                // 아직 없는 사람에게 안내 화면을 세워 둘 이유가 없다.
+                // (PR #27 리뷰 — 승민)
                 onPressed: () => Navigator.of(context)
-                    .pushNamedAndRemoveUntil(AppRoutes.intro, (_) => false),
+                    .pushNamedAndRemoveUntil(AppRoutes.home, (_) => false),
               ),
               const SizedBox(height: 16),
               Row(

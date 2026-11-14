@@ -1,6 +1,6 @@
 // 주인: D — S13 안내 화면
 // 기준: 로그인 다음 · 홈 앞, 두세 번 스크롤, 맨 밑 버튼, 30초 뒤 자동 전환,
-//       마음에 남은 줄 · 학습 현황
+//       마음에 남은 줄 · 지금까지, 위쪽 건너뛰기
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yeobaek/app/router.dart';
@@ -12,6 +12,7 @@ import 'package:yeobaek/data/models/user_profile.dart';
 import 'package:yeobaek/data/repositories.dart';
 import 'package:yeobaek/features/intro/intro_screen.dart';
 import 'package:yeobaek/ports/reading_source.dart';
+import 'package:yeobaek/shared/widgets/app_button.dart';
 
 import '../support/stub_reading_source.dart';
 
@@ -173,7 +174,7 @@ void main() {
     });
   });
 
-  group('학습 현황', () {
+  group('지금까지', () {
     testWidgets('읽은 날 · 나눈 글 · 받은 뱃지를 센다', (tester) async {
       final source = StubReadingSource(
         readings: {
@@ -211,6 +212,62 @@ void main() {
       await tester.scrollUntilVisible(find.text(AppStrings.introDays(0)), 400);
       expect(find.text(AppStrings.introShared(0)), findsOneWidget);
       expect(find.text(AppStrings.introBadges(0)), findsOneWidget);
+    });
+  });
+
+  group('건너뛰기 · 들어오는 길 (PR #27 리뷰 — 승민)', () {
+    final skip = find.text(AppStrings.introSkip);
+
+    testWidgets('건너뛰기는 스크롤하지 않아도 첫 화면에 보인다', (tester) async {
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+
+      final viewport = tester.getSize(find.byType(Scrollable)).height;
+      expect(tester.getTopLeft(skip).dy, lessThan(viewport));
+    });
+
+    testWidgets('건너뛰기를 누르면 바로 홈으로 간다', (tester) async {
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+
+      await tester.tap(skip);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TabShell), findsOneWidget);
+      expect(find.byType(IntroScreen), findsNothing);
+
+      // 타이머가 울릴 시각을 지나 보낸다 — 홈이 한 번 더 밀려들면 안 된다
+      await tester.pump(const Duration(seconds: 40));
+      await tester.pumpAndSettle();
+      expect(find.byType(TabShell), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('맨 아래까지 내려가도 건너뛰기는 그 자리에 있다', (tester) async {
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+
+      final before = tester.getTopLeft(skip);
+      await tester.scrollUntilVisible(button, 400);
+
+      expect(skip, findsOneWidget);
+      expect(tester.getTopLeft(skip), before);
+    });
+
+    testWidgets('가입 직후에는 S13을 건너뛰고 바로 홈으로 간다', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        initialRoute: AppRoutes.signUp,
+      ));
+      await tester.pumpAndSettle();
+
+      final signUp = find.byType(AppPrimaryButton);
+      await tester.ensureVisible(signUp);
+      await tester.tap(signUp);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(IntroScreen), findsNothing);
+      expect(find.byType(TabShell), findsOneWidget);
     });
   });
 }

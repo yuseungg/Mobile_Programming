@@ -3,7 +3,9 @@
 // S01 로그인(· S02 가입) 다음, S03 홈 앞에 들어가는 화면이다. 로그인할
 // 때마다 매번 보인다.
 //
-// 세 칸이 위에서 아래로 놓이고, 맨 밑에 「시 학습하러 가기」가 있다.
+// 세 칸이 위에서 아래로 놓이고, 맨 밑에 「시 읽으러 가기」가 있다.
+// 오른쪽 위의 「건너뛰기」는 스크롤과 무관하게 고정이다 — 세 화면을 내려가지
+// 않고도 바로 홈으로 갈 수 있다. (PR #27 리뷰 — 승민)
 //   1) 앱 이름
 //   2) 마음에 남은 줄 — 시마다 하나씩, 왼쪽부터 번지듯 드러난다
 //   3) 지금까지 — 읽은 날 · 나눈 글 · 받은 뱃지
@@ -115,53 +117,68 @@ class _IntroScreenState extends State<IntroScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(28, 56, 28, 32),
-          child: FutureBuilder<_IntroData>(
-            future: _data,
-            builder: (context, snapshot) {
-              final data = snapshot.data;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _Block(
-                    height: blockHeight,
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(AppStrings.appName, style: AppText.appName),
-                        SizedBox(height: 4),
-                        Text(AppStrings.appSubtitle, style: AppText.bodySub),
-                      ],
-                    ),
-                  ),
-                  _Block(
-                    height: blockHeight,
-                    // 읽어 오는 동안은 빈 칸이다 — 글이 번지는 것을 처음부터
-                    // 보여 주려고 자리만 잡아 둔다.
-                    child: data == null
-                        ? const SizedBox.shrink()
-                        : _ImpressiveLines(lines: data.lines),
-                  ),
-                  _Block(
-                    height: blockHeight,
-                    child: data == null
-                        ? const SizedBox.shrink()
-                        : _Status(
-                            days: data.days,
-                            shared: data.shared,
-                            badges: data.badges,
-                          ),
-                  ),
-                  AppPrimaryButton(
-                    label: AppStrings.introStart,
-                    onPressed: _goHome,
-                  ),
-                ],
-              );
-            },
-          ),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(28, 56, 28, 32),
+              child: FutureBuilder<_IntroData>(
+                future: _data,
+                builder: (context, snapshot) {
+                  final data = snapshot.data;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _Block(
+                        height: blockHeight,
+                        child: const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(AppStrings.appName, style: AppText.appName),
+                            SizedBox(height: 4),
+                            Text(AppStrings.appSubtitle, style: AppText.bodySub),
+                          ],
+                        ),
+                      ),
+                      _Block(
+                        height: blockHeight,
+                        // 읽어 오는 동안은 빈 칸이다 — 글이 번지는 것을 처음부터
+                        // 보여 주려고 자리만 잡아 둔다.
+                        child: data == null
+                            ? const SizedBox.shrink()
+                            : _ImpressiveLines(lines: data.lines),
+                      ),
+                      _Block(
+                        height: blockHeight,
+                        child: data == null
+                            ? const SizedBox.shrink()
+                            : _Status(
+                                days: data.days,
+                                shared: data.shared,
+                                badges: data.badges,
+                              ),
+                      ),
+                      AppPrimaryButton(
+                        label: AppStrings.introStart,
+                        onPressed: _goHome,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            // 스크롤과 함께 움직이지 않는다. 밑의 버튼까지 두어 번
+            // 넘기지 않아도 여기서 바로 나갈 수 있다.
+            Positioned(
+              top: 0,
+              right: 0,
+              child: TextButton(
+                onPressed: _goHome,
+                child: const Text(AppStrings.introSkip,
+                    style: AppText.caption),
+              ),
+            ),
+          ],
         ),
       ),
     );
