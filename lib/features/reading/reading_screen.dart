@@ -125,7 +125,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
       appBar: AppBar(
         title: Text(
           AppStrings.readingAppBarTitle(poem.author, poem.title),
-          style: const TextStyle(fontSize: 15, color: AppColors.textSub),
+          style: AppText.bodySub,
         ),
         backgroundColor: AppColors.background,
       ),
@@ -134,16 +134,11 @@ class _ReadingScreenState extends State<ReadingScreen> {
         children: [
           Text(
             poem.title,
-            style: const TextStyle(
-              fontFamily: AppFonts.myeongjo,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: AppColors.text,
-            ),
+            style: AppText.poemTitle,
           ),
           Text(
             AppStrings.readingAuthorYear(poem.author, poem.year),
-            style: const TextStyle(color: AppColors.textSub),
+            style:AppText.bodySub,
           ),
           const SizedBox(height: 24),
           PoemView(
@@ -155,12 +150,12 @@ class _ReadingScreenState extends State<ReadingScreen> {
           const SizedBox(height: 8),
           const Text(
             AppStrings.readingStopGuide,
-            style: TextStyle(fontSize: 12, color: AppColors.textFaint),
+            style: AppText.caption,
           ),
           const SizedBox(height: 32),
           const Text(
             AppStrings.readingFirstWordLabel,
-            style: TextStyle(fontSize: 13, color: AppColors.textSub),
+            style: AppText.label,
           ),
           const SizedBox(height: 8),
           TextField(

@@ -148,7 +148,7 @@ class _SaveScreenState extends State<SaveScreen> {
         children: [
           Text(
             _isLocked ? AppStrings.saveLockedNotice : AppStrings.saveDraftNotice,
-            style: const TextStyle(color: AppColors.textSub),
+            style: AppText.bodySub,
           ),
           const SizedBox(height: 16),
           TextField(
@@ -161,12 +161,7 @@ class _SaveScreenState extends State<SaveScreen> {
             minLines: 6,
             maxLines: null,
             onChanged: (_) => setState(() {}),
-            style: const TextStyle(
-              fontFamily: AppFonts.myeongjo,
-              fontSize: 18,
-              height: 1.7,
-              color: AppColors.text,
-            ),
+            style: AppText.interpretationLarge,
             decoration: const InputDecoration(
               filled: true,
               fillColor: AppColors.card,
@@ -176,7 +171,7 @@ class _SaveScreenState extends State<SaveScreen> {
           const SizedBox(height: 16),
           const Text(
             AppStrings.saveEvidenceLabel,
-            style: TextStyle(color: AppColors.textFaint),
+            style: AppText.label,
           ),
           for (final lineNo in evidenceLines)
             Padding(
@@ -188,10 +183,7 @@ class _SaveScreenState extends State<SaveScreen> {
                   Expanded(
                     child: Text(
                       poem.lineAt(lineNo),
-                      style: const TextStyle(
-                        fontFamily: AppFonts.myeongjo,
-                        color: AppColors.text,
-                      ),
+                      style: AppText.poemQuote,
                     ),
                   ),
                 ],
@@ -224,7 +216,7 @@ class _SaveScreenState extends State<SaveScreen> {
             const Text(
               AppStrings.saveLockNotice,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.textFaint),
+              style: AppText.caption,
             ),
           ],
         ),
