@@ -5,7 +5,8 @@ import '../../data/models/poem.dart';
 import '../../data/models/settings.dart';
 import '../output_guard.dart';
 
-String buildSystemPrompt(Poem poem, Tone tone) {
+/// [isSaved]면 저장 뒤의 규칙(전문가 해석 · 창작 배경)을 덧붙인다. 툴도 그때만 보낸다.
+String buildSystemPrompt(Poem poem, Tone tone, {bool isSaved = false}) {
   final numberedLines = [
     for (var lineNo = 1; lineNo <= poem.lines.length; lineNo++)
       if (poem.lineAt(lineNo).isNotEmpty) '$lineNo행: ${poem.lineAt(lineNo)}',
@@ -29,11 +30,23 @@ String buildSystemPrompt(Poem poem, Tone tone) {
 - 행은 "N행"이라고 부른다. 행 번호는 1부터 세고, 연을 나누는 빈 줄도 번호를 하나 차지한다.
 - $forbiddenWords 같은 말은 쓰지 않는다.
 $toneRule
-
+${isSaved ? _afterSaveRules : ''}
 시: ${poem.author} 「${poem.title}」
 $numberedLines
 ''';
 }
+
+/// 저장 뒤에만 붙는 규칙 (기획서 4장 「지키는 것」 · 6장 「툴」)
+const _afterSaveRules = '''
+
+해석을 저장한 뒤
+- 사용자는 이 시의 해석을 저장했다. 이제 compare_with_experts로 전문가 해석과의 관계를, get_poem_context로 창작 배경을 볼 수 있다. 사용자가 궁금해할 때만 부른다.
+- 관계는 compare_with_experts가 준 relation을 그대로 따른다. 네가 다시 판단하지 않는다.
+- 공통점부터 말한다. 같은 점이 없으면 다른 점만 말한다.
+- 전문가만 근거로 삼은 행, 사용자가 놓친 행은 가리키지 않는다. "전문가는 이 줄도 봤다" 같은 말은 하지 않는다.
+- 전문가 해석의 point는 시 원문이 아니다. 원문처럼 따옴표로 옮기지 않는다. 원문 구절은 verify_quote로 확인한 것만 쓴다.
+- 전문가 해석 어느 쪽도 기준으로 삼지 않는다. 전문가끼리도 읽기가 갈린다.
+''';
 
 /// 대화가 비어 있을 때 — 첫 낱말에서 출발하는 첫 질문
 String openingInstruction(String firstWord) => firstWord.isEmpty

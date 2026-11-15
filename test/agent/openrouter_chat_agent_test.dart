@@ -231,6 +231,85 @@ void main() {
     expect(callCount, 3);
   });
 
+  List<String> toolNamesOf(Map<String, Object?> request) => [
+        for (final tool in request['tools'] as List)
+          ((tool as Map)['function'] as Map)['name'] as String,
+      ];
+  String systemPromptOf(Map<String, Object?> request) =>
+      ((request['messages'] as List).first as Map)['content'] as String;
+
+  test('저장 전에는 D의 툴을 보내지 않고, 저장 뒤 규칙도 붙이지 않는다', () async {
+    final transport = _ScriptedTransport([_text(goodQuestion)]);
+    await agentWith(transport)
+        .reply(poem: seosi, conversation: const [quoteMessage]);
+
+    final request = transport.requests.single;
+    expect(toolNamesOf(request), ['verify_quote', 'search_poem_lines']);
+    expect(systemPromptOf(request), isNot(contains('해석을 저장한 뒤')));
+  });
+
+  test('저장 뒤에는 compare_with_experts를 불러 관계를 받고 질문으로 잇는다', () async {
+    const compareQuestion =
+        '10행을 근거로 든 점이 전문가 해석 B와 같아요. 그 행에서 무엇이 가장 먼저 보였나요?';
+    final transport = _ScriptedTransport([
+      _toolCall('compare_with_experts', const {}),
+      _text(compareQuestion),
+    ]);
+    var loadCount = 0;
+    final agent = OpenRouterChatAgent(
+      client: OpenRouterClient(apiKey: 'test-key', postJson: transport.post),
+      model: 'test/model',
+      tone: Tone.plain,
+      isSaved: true,
+      myEvidenceLines: const [10],
+      myInterpretation: '밤은 그대로 온다',
+      loadExperts: () async {
+        loadCount++;
+        return FakeData.expertInterpretations['seosi']!;
+      },
+    );
+    const askMessage =
+        ChatMessage(role: ChatRole.user, text: '전문가들은 어떻게 읽었어요?');
+    final reply =
+        await agent.reply(poem: seosi, conversation: const [askMessage]);
+
+    expect(reply.text, compareQuestion);
+    expect(reply.isFallback, isFalse);
+    expect(loadCount, 1);
+    final first = transport.requests.first;
+    expect(toolNamesOf(first), [
+      'verify_quote',
+      'search_poem_lines',
+      'compare_with_experts',
+      'get_poem_context',
+    ]);
+    expect(systemPromptOf(first), contains('해석을 저장한 뒤'));
+    final output = toolOutputs(transport.requests.last).single;
+    final relations = [
+      for (final expert in output['experts'] as List)
+        (expert as Map)['relation'],
+    ];
+    expect(relations, ['differentLines', 'sameLines']);
+  });
+
+  test('저장 뒤라도 compare_with_experts를 부르지 않으면 전문가 해석을 읽지 않는다', () async {
+    final transport = _ScriptedTransport([_text(goodQuestion)]);
+    var loadCount = 0;
+    final agent = OpenRouterChatAgent(
+      client: OpenRouterClient(apiKey: 'test-key', postJson: transport.post),
+      model: 'test/model',
+      tone: Tone.plain,
+      isSaved: true,
+      loadExperts: () async {
+        loadCount++;
+        return const [];
+      },
+    );
+    await agent.reply(poem: seosi, conversation: const [quoteMessage]);
+
+    expect(loadCount, 0);
+  });
+
   test('사용량을 못 세도 답은 온다', () async {
     final transport = _ScriptedTransport([_text(goodQuestion)]);
     final agent = OpenRouterChatAgent(
