@@ -37,6 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   UserProfile? _me;
   Set<String> _readPoemIds = {};
+  // 대화하다 저장 안 하고 나간 시 (이어 읽기, 기획서 F2)
+  List<Reading> _inProgress = [];
 
   @override
   void initState() {
@@ -49,8 +51,12 @@ class _HomeScreenState extends State<HomeScreen> {
     List<Reading> readings = await Repositories.reading.fetchMyReadings(_userId);
 
     Set<String> ids = {};
+    List<Reading> inProgress = [];
     for (Reading reading in readings) {
       ids.add(reading.poemId);
+      if (!reading.isSaved && reading.conversation.isNotEmpty) {
+        inProgress.add(reading);
+      }
     }
     if (!mounted) {
       return;
@@ -58,12 +64,18 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _me = me;
       _readPoemIds = ids;
+      _inProgress = inProgress;
     });
   }
 
   // 읽기 화면에서 돌아오면 누적일수랑 읽음 표시 다시 불러옴
   void openReading(String poemId) {
     Navigator.of(context).pushNamed(AppRoutes.reading(poemId)).then((_) => _load());
+  }
+
+  // 이어 읽기는 읽기 화면 거치지 않고 바로 대화로. S05가 저장된 대화 불러와서 이어 감
+  void openChat(String poemId) {
+    Navigator.of(context).pushNamed(AppRoutes.chat(poemId)).then((_) => _load());
   }
 
   @override
@@ -130,6 +142,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 24),
+
+          if (_inProgress.isNotEmpty) ...[
+            const Text(AppStrings.homeContinueTitle, style: AppText.label),
+            for (Reading reading in _inProgress)
+              ListTile(
+                title: Text(FakeData.poemById(reading.poemId).title, style: AppText.poemTitleSmall),
+                subtitle: Text(AppStrings.homeContinueSubtitle(reading.firstWord)),
+                trailing: const Icon(Icons.chat_bubble_outline),
+                onTap: () => openChat(reading.poemId),
+              ),
+            const SizedBox(height: 24),
+          ],
           const Text(
             AppStrings.homePoemList,
             style: AppText.label,
