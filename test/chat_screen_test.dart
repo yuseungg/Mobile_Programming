@@ -4,10 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yeobaek/agent/prompts/fallback_questions.dart';
 import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/app/theme.dart';
+import 'package:yeobaek/data/fakes/fake_data.dart';
+import 'package:yeobaek/data/models/chat_message.dart';
+import 'package:yeobaek/data/models/reading.dart';
+import 'package:yeobaek/data/repositories.dart';
 import 'package:yeobaek/features/chat/chat_screen.dart';
 
 Widget _app(String poemId) =>
     MaterialApp(theme: buildAppTheme(), home: ChatScreen(poemId: poemId));
+
+Future<Reading?> _savedReading(String poemId) =>
+    Repositories.reading.fetchReading(FakeData.myUserId, poemId);
 
 /// 가짜 에이전트는 0.7초 뒤에 답한다
 Future<void> _waitForReply(WidgetTester tester) async {
@@ -23,9 +30,11 @@ Future<void> _send(WidgetTester tester, String text) async {
 }
 
 void main() {
+  setUp(() => Repositories.useFakes(signedInUserId: FakeData.myUserId));
+
   testWidgets('대화가 비어 있으면 첫 질문을 받는다', (tester) async {
     await tester.pumpWidget(_app('bomgoyangi'));
-    await tester.pump(); // 첫 프레임 뒤에 요청을 보낸다
+    await tester.pump(); // 저장소에서 불러온 뒤에 요청을 보낸다
     expect(find.text(AppStrings.chatResponding), findsOneWidget);
 
     await _waitForReply(tester);
@@ -78,5 +87,47 @@ void main() {
 
     await _waitForReply(tester);
     expect(find.text(fallbackQuestions['seosi']!.first), findsOneWidget);
+  });
+
+  testWidgets('대화를 저장소에 저장하고, 다른 화면이 쓴 첫 낱말은 그대로 둔다', (tester) async {
+    // S04가 첫 낱말을 저장하고 넘어온 상태
+    await Repositories.reading.saveProgress(
+      FakeData.myUserId,
+      const Reading(poemId: 'bomgoyangi', firstWord: '봄', markedLines: [2]),
+    );
+    await tester.pumpWidget(_app('bomgoyangi'));
+    await tester.pump();
+    await _waitForReply(tester);
+
+    final saved = await _savedReading('bomgoyangi');
+    expect(saved!.firstWord, '봄');
+    expect(saved.markedLines, [2]);
+    expect(saved.conversation.single.text, openingFallbackQuestion('봄'));
+
+    await _send(tester, '고양이 얘기 같아요');
+    await _waitForReply(tester);
+    final afterReply = await _savedReading('bomgoyangi');
+    expect(afterReply!.conversation, hasLength(3));
+    expect(afterReply.conversation[1].text, '고양이 얘기 같아요');
+    expect(afterReply.firstWord, '봄');
+  });
+
+  testWidgets('저장된 대화를 불러와 이어 간다', (tester) async {
+    await Repositories.reading.saveProgress(
+      FakeData.myUserId,
+      const Reading(
+        poemId: 'bomgoyangi',
+        conversation: [
+          ChatMessage(role: ChatRole.assistant, text: '어느 행에서 멈췄나요?'),
+          ChatMessage(role: ChatRole.user, text: '고양이 털 부분이요'),
+        ],
+        evidenceLines: [1],
+      ),
+    );
+    await tester.pumpWidget(_app('bomgoyangi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('고양이 털 부분이요'), findsOneWidget);
+    expect(find.text(AppStrings.chatResponding), findsNothing); // 첫 질문을 다시 받지 않는다
   });
 }

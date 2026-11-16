@@ -59,6 +59,13 @@ class StubReadingSource implements ReadingSource {
   }
 
   @override
+  Future<List<Reading>> myReadings() async {
+    if (throwOnRead) throw StateError('읽을 수 없다');
+    calls.add('myReadings');
+    return readings.values.toList();
+  }
+
+  @override
   Future<UserProfile> profileById(String userId) async {
     if (throwOnRead) throw StateError('읽을 수 없다');
     calls.add('profileById:$userId');

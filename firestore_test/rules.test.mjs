@@ -185,6 +185,14 @@ describe('읽기 기록: 나만, 잠금은 되돌릴 수 없다', () => {
       reading({ isSaved: true, isPublic: false })));
   });
 
+  test('저장 · 대조 열람 · 공개 뒤에도 대화는 비울 수 있다 (S11 기록 지우기)', async () => {
+    const locked = { isSaved: true, hasOpenedComparison: true, isPublic: true, interpretation: '내 해석' };
+    await seed((db) =>
+      setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ ...locked, conversation: [{ role: 'user', text: '가' }] })));
+    await assertSucceeds(updateDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM), { conversation: [] }));
+  });
+
   test('대화 · 멈춘 줄 목록이 너무 길면 막힌다', async () => {
     await assertFails(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
       reading({ conversation: Array.from({ length: 201 }, () => ({ role: 'user', text: '가' })) })));
@@ -473,5 +481,66 @@ describe('멈춤 집계: 내 표시와 함께 한 줄씩', () => {
     batch.set(doc(db, 'lineStops', POEM),
       { counts: { 2: increment(1), 6: increment(1) } }, { merge: true });
     await assertFails(batch.commit());
+  });
+});
+
+// ── 가장 인상깊은 행 (S06 마지막 질문 → S13) ─────────
+// 담당: D — 규칙의 `r.impressiveLine in r.markedLines`를 시험한다.
+
+describe('인상깊은 행: 내가 멈춘 행 중 하나여야 한다', () => {
+  test('안 고르면 키가 없어도 된다', async () => {
+    await assertSucceeds(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
+      reading({ markedLines: [6] })));
+  });
+
+  test('멈춘 행 중 하나면 된다', async () => {
+    await assertSucceeds(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
+      reading({ markedLines: [3, 6], impressiveLine: 6 })));
+  });
+
+  test('멈추지 않은 행은 막힌다', async () => {
+    await assertFails(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
+      reading({ markedLines: [3, 6], impressiveLine: 9 })));
+  });
+
+  test('멈춘 행이 하나도 없는데 고를 수 없다', async () => {
+    await assertFails(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
+      reading({ markedLines: [], impressiveLine: 1 })));
+  });
+
+  test('숫자가 아니면 막힌다', async () => {
+    await assertFails(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
+      reading({ markedLines: [6], impressiveLine: '6' })));
+  });
+
+  // PR #27 리뷰(재혁) — 지금 앱이 실제로 내는 쓰기다.
+  // setMarkedLine이 문서를 통째로 다시 쓰므로, 인상깊은 행으로 고른 줄을
+  // S04에서 해제하면 이 모양이 되어 서버가 거부한다. 고치는 자리는 저장소다.
+  test('고른 줄을 해제하면서 그대로 남기면 막힌다', async () => {
+    await seed(async (db) => {
+      await setDoc(doc(db, 'lineStops', POEM), { counts: { 6: 4 } });
+      await setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ isSaved: true, markedLines: [6], impressiveLine: 6 }));
+    });
+    const db = dbOf(ME);
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'users', ME, 'readings', POEM),
+      reading({ isSaved: true, markedLines: [], impressiveLine: 6 }));
+    batch.set(doc(db, 'lineStops', POEM), { counts: { 6: increment(-1) } }, { merge: true });
+    await assertFails(batch.commit());
+  });
+
+  test('해제할 때 같이 지우면 통한다 (저장소가 해야 할 일)', async () => {
+    await seed(async (db) => {
+      await setDoc(doc(db, 'lineStops', POEM), { counts: { 6: 4 } });
+      await setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ isSaved: true, markedLines: [6], impressiveLine: 6 }));
+    });
+    const db = dbOf(ME);
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'users', ME, 'readings', POEM),
+      reading({ isSaved: true, markedLines: [] }));
+    batch.set(doc(db, 'lineStops', POEM), { counts: { 6: increment(-1) } }, { merge: true });
+    await assertSucceeds(batch.commit());
   });
 });

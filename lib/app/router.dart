@@ -10,6 +10,7 @@ import '../features/auth/sign_up_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/community/community_detail_screen.dart';
 import '../features/compare/comparison_screen.dart';
+import '../features/intro/intro_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/reading/reading_screen.dart';
 import '../features/save/save_screen.dart';
@@ -21,6 +22,7 @@ class AppRoutes {
 
   static const signIn = '/sign-in'; // S01
   static const signUp = '/sign-up'; // S02
+  static const intro = '/intro'; // S13 (로그인 다음, 홈 앞)
   static const home = '/'; // S03 (탭: 시)
   static String reading(String poemId) => '/poems/$poemId'; // S04
   static String chat(String poemId) => '/poems/$poemId/chat'; // S05
@@ -49,6 +51,7 @@ class AppRouter {
       [] => const TabShell(initialTab: AppTab.poems),
       ['sign-in'] => const SignInScreen(),
       ['sign-up'] => const SignUpScreen(),
+      ['intro'] => const IntroScreen(),
       ['poems', final poemId] => ReadingScreen(poemId: poemId),
       ['poems', final poemId, 'chat'] => ChatScreen(poemId: poemId),
       ['poems', final poemId, 'save'] => SaveScreen(poemId: poemId),

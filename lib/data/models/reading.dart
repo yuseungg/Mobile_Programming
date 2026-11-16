@@ -15,6 +15,7 @@ class Reading {
     this.isSaved = false,
     this.hasOpenedComparison = false,
     this.isPublic = false,
+    this.impressiveLine,
   });
 
   final String poemId;
@@ -27,6 +28,11 @@ class Reading {
   final bool hasOpenedComparison; // true면 해석 수정 불가
   final bool isPublic; // 기본 꺼짐
 
+  /// S06 마지막 질문에서 고른 「가장 인상깊은 행」 (1부터). 고르지 않았으면 null.
+  /// 반드시 [markedLines] 안의 행이다 — 선택지가 멈춘 행이기 때문이다.
+  /// 같은 시를 다시 읽으면 덮어쓴다 (Reading은 시마다 하나다).
+  final int? impressiveLine;
+
   Reading copyWith({
     String? firstWord,
     List<int>? markedLines,
@@ -36,6 +42,7 @@ class Reading {
     bool? isSaved,
     bool? hasOpenedComparison,
     bool? isPublic,
+    int? impressiveLine,
   }) =>
       Reading(
         poemId: poemId,
@@ -47,5 +54,6 @@ class Reading {
         isSaved: isSaved ?? this.isSaved,
         hasOpenedComparison: hasOpenedComparison ?? this.hasOpenedComparison,
         isPublic: isPublic ?? this.isPublic,
+        impressiveLine: impressiveLine ?? this.impressiveLine,
       );
 }
