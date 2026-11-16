@@ -1,0 +1,78 @@
+# PR마다 analyze · 테스트 · 보안 규칙 테스트를 돌린다.
+#
+# 지금까지는 각자 자기 PC에서 돌리고 "통과했다"는 말을 서로 믿었다.
+# 여기서 한 번 더 돌면 사람이 잊어도 막힌다.
+name: 검사
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+
+# 같은 PR에 새로 푸시하면 앞 실행을 취소한다 (쓸데없이 기다리지 않게)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    name: analyze · 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # 분석 결과가 하나라도 있으면 실패한다
+      - run: flutter analyze
+
+      - run: flutter test
+
+  rules:
+    name: 보안 규칙 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # firestore_test/는 Firestore 구현 PR과 함께 들어온다.
+      # 그 전에는 이 작업이 조용히 건너뛴다.
+      - id: check
+        run: |
+          if [ -d firestore_test ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "firestore_test/가 아직 없다 — 건너뛴다"
+          fi
+
+      - if: steps.check.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: firestore_test/package-lock.json
+
+      # 에뮬레이터가 Java로 돈다
+      - if: steps.check.outputs.exists == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - if: steps.check.outputs.exists == 'true'
+        working-directory: firestore_test
+        run: |
+          npm ci
+          npm install --no-save firebase-tools
+          npx firebase emulators:exec \
+            --only firestore \
+            --project demo-yeobaek \
+            --config ../firebase.json \
+            "node --test"
