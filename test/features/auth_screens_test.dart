@@ -12,10 +12,12 @@ import 'package:yeobaek/features/auth/sign_in_screen.dart';
 import 'package:yeobaek/features/auth/sign_up_screen.dart';
 import 'package:yeobaek/features/intro/intro_screen.dart';
 
-Widget _app(Widget home) => MaterialApp(
+// home:을 쓰면 '/'(S03 홈)로 가는 이동이 home 위젯으로 되돌아온다 (MaterialApp 규칙).
+// 그래서 첫 화면은 onGenerateInitialRoutes로 띄우고, '/'는 실제 라우터가 받게 한다.
+Widget _app(Widget first) => MaterialApp(
       theme: buildAppTheme(),
-      home: home,
       onGenerateRoute: AppRouter.onGenerateRoute,
+      onGenerateInitialRoutes: (_) => [MaterialPageRoute<void>(builder: (_) => first)],
     );
 
 Finder _field(int index) => find.byType(TextField).at(index);
