@@ -160,10 +160,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                     backgroundColor: AppColors.accentBg,
                     child: Text(
                       author.nickname.characters.first,
-                      style: const TextStyle(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      // S12 프로필의 동그라미와 같은 글자, 크기만 작다
+                      style: AppText.avatarInitial.copyWith(fontSize: 16),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -177,11 +175,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                           children: [
                             Text(
                               author.nickname,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.text,
-                              ),
+                              style: AppText.sectionTitle,
                             ),
                             const SizedBox(width: 4),
                             const Icon(
@@ -227,18 +221,15 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                     ),
                     child: Text(
                       conversation.firstWord,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.accent,
-                      ),
+                      style: AppText.cardTitle.copyWith(color: AppColors.accent),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       AppStrings.communityDetailFirstWordNote,
-                      style: TextStyle(fontSize: 13, color: AppColors.textSub),
+                      style: AppText.caption
+                          .copyWith(fontSize: 13, color: AppColors.textSub),
                     ),
                   ),
                 ],
@@ -286,11 +277,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                           Text(
                             AppStrings.communityDetailEvidence(
                                 conversation.evidenceLines),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.confirmed,
-                            ),
+                            style: AppText.evidenceTag,
                           ),
                         ],
                       ),
@@ -317,12 +304,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
               ),
               child: Text(
                 conversation.interpretation,
-                style: const TextStyle(
-                  fontSize: 15,
-                  height: 1.7,
-                  fontFamily: AppFonts.myeongjo,
-                  color: AppColors.text,
-                ),
+                style: AppText.interpretationSmall,
               ),
             ),
             const SizedBox(height: 32),
@@ -339,9 +321,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                 ),
                 label: Text(
                   AppStrings.communityDetailEmpathyCount(empathyCount),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  style: AppText.badgeCount.copyWith(
                     color:
                         _hasEmpathized ? AppColors.accent : AppColors.textSub,
                   ),
@@ -388,11 +368,7 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: AppColors.text,
-          ),
+          style: AppText.cardTitle,
         ),
         const SizedBox(width: 8),
         Flexible(

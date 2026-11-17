@@ -227,11 +227,7 @@ class _ConversationCard extends StatelessWidget {
                   children: [
                     Text(
                       authorNickname,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.text,
-                      ),
+                      style: AppText.cardTitle,
                     ),
                     const SizedBox(width: 8),
                     Container(
@@ -244,11 +240,7 @@ class _ConversationCard extends StatelessWidget {
                       child: Text(
                         AppStrings.communityFirstWordTag(
                             conversation.firstWord),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppText.firstWordTag,
                       ),
                     ),
                     const Spacer(),
@@ -272,11 +264,7 @@ class _ConversationCard extends StatelessWidget {
                   conversation.summary,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.5,
-                    color: AppColors.textSub,
-                  ),
+                  style: AppText.caption.copyWith(fontSize: 13, color: AppColors.textSub),
                 ),
                 const SizedBox(height: 12),
 
@@ -295,12 +283,7 @@ class _ConversationCard extends StatelessWidget {
                     conversation.interpretation,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      fontFamily: AppFonts.myeongjo,
-                      color: AppColors.text,
-                    ),
+                    style: AppText.interpretationPreview,
                   ),
                 ),
               ],

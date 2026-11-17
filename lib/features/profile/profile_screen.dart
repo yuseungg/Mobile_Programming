@@ -121,22 +121,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     alignment: Alignment.center,
                     child: Text(
                       profile.nickname.characters.first,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.accent,
-                        fontFamily: AppFonts.myeongjo,
-                      ),
+                      style: AppText.avatarInitial,
                     ),
                   ),
                   const SizedBox(height: 14),
                   Text(
                     profile.nickname,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.text,
-                    ),
+                    style: AppText.profileName,
                   ),
                   if (isMe)
                     const Padding(
@@ -179,19 +170,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           AppStrings.profileTotalDaysLabel,
                           style:
-                              TextStyle(fontSize: 12, color: AppColors.textSub),
+                              AppText.caption.copyWith(color: AppColors.textSub),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           AppStrings.homeTotalDays(profile.totalReadingDays),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.text,
-                          ),
+                          style: AppText.sectionTitle,
                         ),
                       ],
                     ),
@@ -204,22 +191,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // 3. 받은 뱃지 선반
             Row(
               children: [
-                const Text(
+                Text(
                   AppStrings.profileBadges,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.text,
-                  ),
+                  style: AppText.sectionTitle.copyWith(fontSize: 16),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   AppStrings.profileBadgeCount(profile.badgeIds.length),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppText.badgeCount,
                 ),
               ],
             ),
@@ -253,14 +232,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 alignment: Alignment.center,
-                child: const Text(
+                child: Text(
                   AppStrings.profileNoBadges,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.5,
-                    color: AppColors.textFaint,
-                  ),
+                  style: AppText.caption.copyWith(fontSize: 13),
                 ),
               ),
 
@@ -272,11 +247,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const Center(
                 child: Text(
                   AppStrings.profileShelfNote,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textFaint,
-                    fontStyle: FontStyle.italic,
-                  ),
+                  style: AppText.captionItalic,
                 ),
               ),
               const SizedBox(height: 24),
