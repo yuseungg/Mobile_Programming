@@ -261,6 +261,13 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      // C: S02가 진짜 가입을 하므로 칸을 채운다 (이메일 · 비밀번호 · 확인)
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), 'newreader@gmail.com');
+      await tester.enterText(fields.at(1), 'abc123');
+      await tester.enterText(fields.at(2), 'abc123');
+      await tester.pump();
+
       final signUp = find.byType(AppPrimaryButton);
       await tester.ensureVisible(signUp);
       await tester.tap(signUp);

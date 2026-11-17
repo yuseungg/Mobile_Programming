@@ -50,6 +50,24 @@ class AppStrings {
   static const signUpButton = '가입하기';
   static const signUpHaveAccount = '이미 계정이 있다면';
   static const signUpGoToSignIn = '로그인';
+  static const signUpEmailInvalid = 'gmail.com 주소를 입력해 주세요';
+  static String signUpPasswordTooShort(int min) => '$min자 이상 입력해 주세요';
+  static String signUpNicknameAdjusted(String nickname) =>
+      '같은 닉네임이 있어서 「$nickname」(으)로 정했어요';
+
+  // ── S02 닉네임만 정하기 (구글로 처음 들어온 사람) ──
+  static const nicknameOnlyTitle = '닉네임 정하기';
+  static const nicknameOnlyHeading = '처음 오셨네요';
+  static const nicknameOnlySubheading = '여백에서 쓸 닉네임을 정해 주세요.';
+  static const nicknameOnlyButton = '시작하기';
+  static const nicknameOnlyOtherAccount = '다른 계정으로 로그인';
+
+  // ── 로그인 · 가입 오류 ─────────────────────────
+  static const authErrorInvalidCredentials = '이메일이나 비밀번호가 맞지 않아요';
+  static const authErrorEmailInUse = '이미 가입된 이메일이에요. 로그인해 주세요';
+  static const authErrorNotGmail = 'gmail.com 계정만 쓸 수 있어요';
+  static const authErrorNetwork = '인터넷 연결을 확인해 주세요';
+  static const authErrorUnknown = '잠시 후 다시 시도해 주세요';
 
   // ── S03 홈 (B) ────────────────────────────────
   static String homeTotalDays(int days) => '지금까지 $days일 시를 읽었어요';

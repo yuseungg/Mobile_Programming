@@ -21,6 +21,8 @@ import 'package:yeobaek/features/save/pending_saves.dart';
 import 'package:yeobaek/features/save/save_screen.dart';
 import 'package:yeobaek/main.dart';
 
+import 'support/sign_in.dart';
+
 // 테스트용: 네트워크 끊긴 것처럼 저장만 실패하는 저장소
 class _NetworkDownReadingRepository extends FakeReadingRepository {
   _NetworkDownReadingRepository(super.store);
@@ -43,9 +45,7 @@ void main() {
     await tester.pumpWidget(const YeobaekApp());
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('로그인'));
-    await tester.tap(find.text('로그인'));
-    await tester.pumpAndSettle();
+    await signInAsDemo(tester); // C: S01이 진짜 로그인을 하므로 데모 계정으로
 
     // 로그인 다음은 S13 안내다. 30초 기다리면 저절로 홈으로 넘어간다.
     await tester.pump(IntroScreen.autoAdvanceDelay);
@@ -157,9 +157,7 @@ void main() {
   testWidgets('S04 들어갔다 나오면 홈 누적일수 하루 늘어남', (tester) async {
     await tester.pumpWidget(const YeobaekApp());
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('로그인'));
-    await tester.tap(find.text('로그인'));
-    await tester.pumpAndSettle();
+    await signInAsDemo(tester); // C: S01이 진짜 로그인을 하므로 데모 계정으로
 
     // 로그인 다음은 S13 안내다. 30초 기다리면 저절로 홈으로 넘어간다.
     await tester.pump(IntroScreen.autoAdvanceDelay);
