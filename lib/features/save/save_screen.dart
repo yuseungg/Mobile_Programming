@@ -10,17 +10,17 @@ import '../../data/fakes/fake_data.dart';
 import '../../data/models/chat_message.dart';
 import '../../data/models/reading.dart';
 import '../../data/repositories.dart';
-import '../../writers/fake_summary_writer.dart';
+import '../../writers/openrouter_summary_writer.dart';
 import '../../writers/summary_writer.dart';
 import 'pending_saves.dart';
 
 class SaveScreen extends StatefulWidget {
-  const SaveScreen({super.key, required this.poemId,
-      this.summaryWriter = const FakeSummaryWriter()});
+  const SaveScreen({super.key, required this.poemId, this.summaryWriter});
 
   final String poemId;
-  // 공개 저장할 때 요약 쓰는 거 (D 담당). 모델 붙으면 진짜 구현으로 바꿔 끼움
-  final SummaryWriter summaryWriter;
+  // 공개 저장할 때 요약 쓰는 거 (D 담당). 비워 두면 키가 있을 때 모델이 쓰고,
+  // 없거나 실패하면 사실 문장으로 채움 (createSummaryWriter)
+  final SummaryWriter? summaryWriter;
 
   @override
   State<SaveScreen> createState() => _SaveScreenState();
@@ -119,7 +119,9 @@ class _SaveScreenState extends State<SaveScreen> {
     if (_isPublic) {
       SummaryRequest request = SummaryRequest(poemId: widget.poemId, firstWord: toSave.firstWord,
           conversation: toSave.conversation, interpretation: toSave.interpretation);
-      SummaryText result = await widget.summaryWriter.write(request);
+      SummaryWriter writer =
+          widget.summaryWriter ?? await createSummaryWriter();
+      SummaryText result = await writer.write(request);
       summary = result.text;
     }
 
