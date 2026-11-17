@@ -98,10 +98,12 @@ Future<int> retryPendingSaves() async {
     Reading reading = readingFromDoc(poemId, Map<String, dynamic>.from(item['reading'] as Map));
     String? summary = item['summary'] as String?;
     try {
-      // 대화는 저장소에 있는 걸로 (보관한 뒤에 설정에서 대화 기록 지웠으면 되살리면 안 됨)
+      // 최신 기록 바탕으로 하고 해석 · 공개 · 근거 행만 보관분에서 가져옴
+      // (보관한 뒤에 S04에서 멈춘 행 바꿨거나 설정에서 대화 지웠으면 지금 값이 맞음)
       Reading? now = await Repositories.reading.fetchReading(userId, poemId);
       if (now != null) {
-        reading = reading.copyWith(conversation: now.conversation);
+        reading = now.copyWith(interpretation: reading.interpretation,
+            isPublic: reading.isPublic, evidenceLines: reading.evidenceLines);
       }
       await Repositories.reading.saveInterpretation(userId, reading, summary: summary);
       saved++;

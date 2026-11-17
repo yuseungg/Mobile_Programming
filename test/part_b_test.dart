@@ -319,4 +319,17 @@ void main() {
     expect(after!.isSaved, true);
     expect(after.conversation, isEmpty);
   });
+
+  test('보관한 뒤 S04에서 멈춘 행 바꿨으면 다시 저장해도 옛 값으로 안 덮음', () async {
+    Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    await keepPendingSave(FakeData.myUserId, reading!.copyWith(interpretation: '꽃을 밟고 가라는 말이 오히려 붙잡는 말 같음'), null);
+
+    // 보관한 다음에 S04에서 3행에 멈춤 표시
+    await Repositories.reading.setMarkedLine(FakeData.myUserId, 'jindallae', 3, isMarked: true);
+    expect(await retryPendingSaves(), 1);
+
+    Reading? after = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    expect(after!.markedLines, contains(3));
+    expect(after.interpretation, '꽃을 밟고 가라는 말이 오히려 붙잡는 말 같음');
+  });
 }
