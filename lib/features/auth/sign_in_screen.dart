@@ -59,7 +59,8 @@ class _SignInScreenState extends State<SignInScreen> {
       );
     } on AuthFailure catch (e) {
       _showMessage(authFailureMessage(e.reason));
-    } catch (_) {
+    } catch (error) {
+      debugPrint('[auth] 알 수 없는 오류: $error');
       _showMessage(AppStrings.authErrorUnknown);
     } finally {
       if (mounted) setState(() => _isBusy = false);

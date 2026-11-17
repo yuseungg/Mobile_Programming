@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+// C: S01을 지나가는 도우미 — 다른 PR이 import 묶음 끝에 붙여도 겹치지 않게 위쪽에 둔다
+import 'support/sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yeobaek/features/intro/intro_screen.dart';
 import 'package:yeobaek/app/router.dart';
@@ -20,8 +22,6 @@ import 'package:yeobaek/features/reading/reading_screen.dart';
 import 'package:yeobaek/features/save/pending_saves.dart';
 import 'package:yeobaek/features/save/save_screen.dart';
 import 'package:yeobaek/main.dart';
-
-import 'support/sign_in.dart';
 
 // 테스트용: 네트워크 끊긴 것처럼 저장만 실패하는 저장소
 class _NetworkDownReadingRepository extends FakeReadingRepository {

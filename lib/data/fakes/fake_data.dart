@@ -287,7 +287,6 @@ class FakeData {
     ),
   };
 
-
   // ── 설정 ──────────────────────────────────────
   /// S11 모델 선택지 · 기본 설정 — 진짜 값은 settings_options.dart 한 곳에 둔다.
   static const modelOptions = options.modelOptions;
