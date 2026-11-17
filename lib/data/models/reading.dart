@@ -16,7 +16,10 @@ class Reading {
     this.hasOpenedComparison = false,
     this.isPublic = false,
     int? impressiveLine,
-  }) : _impressiveLine = impressiveLine;
+  })
+      // 바깥에는 impressiveLine으로 받고, 안에는 _impressiveLine에 둔다 — getter가 markedLines로 거른다
+      // ignore: prefer_initializing_formals
+      : _impressiveLine = impressiveLine;
 
   final String poemId;
   final String firstWord; // 첫 낱말
