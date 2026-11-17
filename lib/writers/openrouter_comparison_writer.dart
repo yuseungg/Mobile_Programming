@@ -97,7 +97,8 @@ class OpenRouterComparisonWriter implements ComparisonWriter {
 
 /// 개발 중에 모델을 바꿔 끼울 때: .env(또는 --dart-define)에
 /// OPENROUTER_COMPARISON_MODEL=모델 id. 비어 있으면 설정(S10 · S11)의 비교 모델.
-const _comparisonModelOverride =
+/// 비교 문장과 대화 요약이 같은 모델을 쓴다 (기획서 265행).
+const comparisonModelOverride =
     String.fromEnvironment('OPENROUTER_COMPARISON_MODEL');
 
 /// 키가 있고 이 플랫폼에서 보낼 수 있으면 모델이 쓰고, 아니면 [fallback]이 쓴다.
@@ -112,9 +113,9 @@ Future<ComparisonWriter> createComparisonWriter({
     final settings = await Repositories.settings.load();
     return OpenRouterComparisonWriter(
       client: client,
-      model: _comparisonModelOverride.isEmpty
+      model: comparisonModelOverride.isEmpty
           ? settings.comparisonModel
-          : _comparisonModelOverride,
+          : comparisonModelOverride,
       tone: settings.tone,
       fallback: fallback,
       onModelCall: Repositories.settings.countComparisonCall,
