@@ -7,6 +7,7 @@ import 'package:yeobaek/data/fakes/fake_data.dart';
 import 'package:yeobaek/data/models/settings.dart';
 import 'package:yeobaek/data/repositories.dart';
 import 'package:yeobaek/data/settings_options.dart';
+import 'package:yeobaek/features/auth/sign_in_screen.dart';
 import 'package:yeobaek/features/settings/settings_screen.dart';
 import 'package:yeobaek/shared/widgets/app_button.dart';
 
@@ -173,5 +174,33 @@ void main() {
       find.textContaining('질문 ${FakeData.usageQuestionCount + 1}회'),
       findsOneWidget,
     );
+  });
+  testWidgets('로그아웃: 취소하면 그대로, 확인하면 로그아웃하고 S01로 간다', (tester) async {
+    Repositories.useFakes(signedInUserId: FakeData.myUserId);
+    await pumpSettings(tester);
+
+    final signOutButton = find.widgetWithText(TextButton, '로그아웃');
+    final dialog = find.byType(AlertDialog);
+
+    // 취소
+    await tester.ensureVisible(signOutButton);
+    await tester.pumpAndSettle();
+    await tester.tap(signOutButton);
+    await tester.pumpAndSettle();
+    expect(find.text('로그아웃할까요?'), findsOneWidget);
+    await tester.tap(find.descendant(of: dialog, matching: find.text('취소')));
+    await tester.pumpAndSettle();
+    expect(Repositories.auth.currentUserId, FakeData.myUserId);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+
+    // 로그아웃
+    await tester.tap(signOutButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: dialog, matching: find.text('로그아웃')));
+    await tester.pumpAndSettle();
+
+    expect(Repositories.auth.currentUserId, isNull);
+    expect(find.byType(SignInScreen), findsOneWidget);
+    expect(find.byType(SettingsScreen), findsNothing);
   });
 }

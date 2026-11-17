@@ -167,6 +167,11 @@ class AppStrings {
       '질문 $questionCount회 · 비교 $comparisonCount회';
   static const settingsEditButton = '설정 바꾸기';
   static const settingsLoadFailed = '설정을 불러오지 못했어요. 잠시 후 다시 열어 주세요.';
+  static const settingsSignOut = '로그아웃';
+  static const settingsSignOutDialogTitle = '로그아웃할까요?';
+  static const settingsSignOutDialogBody = '다시 로그인하면 읽은 기록은 그대로 있어요.';
+  static const settingsSignOutCancel = '취소';
+  static const settingsSignOutFailed = '로그아웃하지 못했어요. 잠시 후 다시 해 주세요.';
 
   // ── S11 설정 바꾸기 ───────────────────────────
   static const settingsEditTitle = '설정 바꾸기';
