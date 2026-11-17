@@ -1,18 +1,17 @@
 // 주인: C — 설정(S10 · S11) 선택지와 기본값을 모아두는 곳
 //
-// ⚠ 모델 이름은 교수님 키로 열린 모델을 확인하기 전 임시 값이다 (기획서 9장 1번).
-//   확인되면 이 파일만 고친다.
+// 모델은 2026-11-17 A가 교수님 키로 확인한 무료 모델이다.
+//   - nvidia/nemotron-3.5-lightning:free — 에이전트 루프에서 한국어 질문 · 툴 호출 확인. 한 턴 16~25초
+//   - dots-studio/dots-3-note-preview:free — PoC · 휴대폰 앱에서 응답 확인. preview라 내려갈 수 있음
+//   google/gemma 계열은 호출이 되지 않아(429) 뺐다. 바뀌면 이 파일만 고친다.
+//   저장된 모델이 목록에 없으면 기본값으로 읽힌다 (PrefsSettingsRepository).
 
 import 'models/settings.dart';
 
 /// S11 모델 선택지. 질문 모델 · 비교 모델 둘 다 이 목록에서 고른다.
 const modelOptions = <({String model, String description})>[
-  (model: 'google/gemma-3-27b-it:free', description: '가장 신중함 · 느림'),
-  (model: 'meta-llama/llama-4-maverick:free', description: '균형 · 보통'),
-  (
-    model: 'mistralai/mistral-small-3.2-24b-instruct:free',
-    description: '가장 빠름',
-  ),
+  (model: 'nvidia/nemotron-3.5-lightning:free', description: '신중함 · 느림'),
+  (model: 'dots-studio/dots-3-note-preview:free', description: '빠름'),
 ];
 
 /// 모델 이름 → S10 · S11에 함께 보여 줄 짧은 설명. 목록에 없으면 ''.
@@ -23,9 +22,9 @@ String modelDescriptionOf(String model) {
   return '';
 }
 
-/// 처음 설치했을 때의 설정. 질문은 신중한 모델, 비교는 빠른 모델 (기획서 6장).
+/// 처음 설치했을 때의 설정. 질문은 신중한 모델(툴 호출 확인됨), 비교는 빠른 모델 (기획서 6장).
 const defaultSettings = Settings(
-  questionModel: 'google/gemma-3-27b-it:free',
-  comparisonModel: 'mistralai/mistral-small-3.2-24b-instruct:free',
+  questionModel: 'nvidia/nemotron-3.5-lightning:free',
+  comparisonModel: 'dots-studio/dots-3-note-preview:free',
   tone: Tone.plain,
 );
