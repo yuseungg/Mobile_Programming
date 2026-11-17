@@ -41,8 +41,10 @@ class ComparisonGuard {
   static String clean(String text) => OutputGuard.clean(text);
 
   /// 모델에게 준 재료. 따옴표 안의 말은 이 안에 있어야 한다.
+  /// 시는 행을 이어 붙여 하나로 넘긴다 — 행이 바뀌는 자리를 걸친 인용도
+  /// 원문이기 때문이다 (공백은 quote_check가 지운다).
   static List<String> quotableSources(ComparisonRequest request) => [
-        ...request.poem.lines,
+        request.poem.lines.join('\n'),
         request.myInterpretation,
         request.expert.stance,
         for (final claim in request.expert.claims) claim.point,

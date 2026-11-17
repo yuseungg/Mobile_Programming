@@ -30,7 +30,11 @@ bool quotesAreGrounded(String text, Iterable<String> sources) {
     for (final source in sources)
       if (_squash(source).isNotEmpty) _squash(source),
   ];
-  return quotes.every((quote) => haystack.any(quote.contains));
+  // 재료가 인용을 품어야 한다. 방향을 뒤집으면 — quote.contains(source) —
+  // 짧은 재료("별")를 품은 긴 거짓 인용("별이 무너지는 소리")이 통과한다.
+  return quotes.every(
+    (quote) => haystack.any((source) => source.contains(quote)),
+  );
 }
 
 String _squash(String text) => text.replaceAll(_whitespace, '');

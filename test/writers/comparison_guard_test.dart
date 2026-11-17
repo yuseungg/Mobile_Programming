@@ -48,6 +48,14 @@ void main() {
     );
   });
 
+  test('원문 한 줄을 품은 더 긴 거짓 인용은 걸린다', () {
+    // 재료가 인용을 품어야 한다. 방향을 뒤집으면 5행을 품은 이 인용이 통과한다
+    expect(
+      check("'별을 노래하는 마음으로 걸어가는 밤'을 함께 봤어요."),
+      contains(ComparisonViolation.unknownQuote),
+    );
+  });
+
   test('한 글자 따옴표는 보지 않는다 — 이름표까지 막게 된다', () {
     expect(check('전문가 해석 "A"와 같은 줄에서 출발했어요.'), isEmpty);
   });
