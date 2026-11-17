@@ -9,6 +9,7 @@ import '../../data/models/poem.dart';
 import '../../data/models/reading.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/repositories.dart';
+import '../save/pending_saves.dart';
 
 
 //AI
@@ -43,7 +44,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _retryThenLoad();
+  }
+
+  // 홈 열릴 때 전에 저장 실패해서 기기에 보관해 둔 해석 있으면 먼저 다시 저장 (기획서 7장)
+  Future<void> _retryThenLoad() async {
+    int saved = 0;
+    try {
+      saved = await retryPendingSaves();
+    } catch (e) {
+      // 기기 저장소 못 쓰는 환경이면 그냥 넘어감
+    }
+    await _load();
+
+    if (saved > 0 && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.homePendingSaved)));
+    }
   }
 
   Future<void> _load() async {

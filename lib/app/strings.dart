@@ -91,6 +91,8 @@ class AppStrings {
   static const saveButton = '저장하기';
   static const saveLockedNotice ='대조를 연 뒤라 해석은 더 고칠 수 없어요.';
   static const saveFailed = '저장하지 못했어요. 다시 눌러 주세요.';
+  static const saveKeptForLater = '지금은 저장하지 못해서 기기에 보관해 뒀어요. 다음에 앱을 열면 다시 저장할게요.';
+  static const homePendingSaved = '보관해 둔 해석을 저장했어요.';
 
   // ── S07 대조 (D) ──────────────────────────────
   static String comparisonTitle(String poemTitle) => '$poemTitle — 대조';
