@@ -79,6 +79,9 @@ class _ChatScreenState extends State<ChatScreen> {
         myInterpretation: reading?.interpretation ?? '',
         loadExperts: () =>
             const RepositoryReadingSource().expertsFor(widget.poemId),
+        // S05에서 전문가 해석을 봐도 S07을 연 것과 같다 — 그 뒤로 해석을 고칠 수 없다
+        onComparisonOpened: () =>
+            const RepositoryReadingSource().markComparisonOpened(widget.poemId),
       );
       _conversation.addAll(reading?.conversation ?? const []);
       _evidenceLines.addAll(reading?.evidenceLines ?? const []);

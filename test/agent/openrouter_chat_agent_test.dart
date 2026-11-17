@@ -11,6 +11,8 @@ import 'package:yeobaek/agent/transport/http_types.dart';
 import 'package:yeobaek/data/fakes/fake_data.dart';
 import 'package:yeobaek/data/models/chat_message.dart';
 import 'package:yeobaek/data/models/settings.dart';
+import 'package:yeobaek/data/repositories.dart';
+import 'package:yeobaek/ports/repository_reading_source.dart';
 
 /// 정해진 응답을 차례로 돌려주고, 보낸 요청 본문을 모아 둔다
 class _ScriptedTransport {
@@ -292,9 +294,11 @@ void main() {
     expect(relations, ['differentLines', 'sameLines']);
   });
 
-  test('저장 뒤라도 compare_with_experts를 부르지 않으면 전문가 해석을 읽지 않는다', () async {
+  test('저장 뒤라도 compare_with_experts를 부르지 않으면 전문가 해석을 읽지 않고 잠그지도 않는다',
+      () async {
     final transport = _ScriptedTransport([_text(goodQuestion)]);
     var loadCount = 0;
+    var openedCount = 0;
     final agent = OpenRouterChatAgent(
       client: OpenRouterClient(apiKey: 'test-key', postJson: transport.post),
       model: 'test/model',
@@ -304,10 +308,72 @@ void main() {
         loadCount++;
         return const [];
       },
+      onComparisonOpened: () async => openedCount++,
     );
     await agent.reply(poem: seosi, conversation: const [quoteMessage]);
 
     expect(loadCount, 0);
+    expect(openedCount, 0);
+  });
+
+  // 기획서 4장 — 잠금의 기준은 「전문가 해석을 봤는가」. S05에서 봐도 S07을 연 것과 같다
+  group('S05에서 전문가 해석을 보면 해석이 잠긴다', () {
+    setUp(() => Repositories.useFakes());
+
+    test('두 번 불러도 잠금은 한 번만 건다', () async {
+      final transport = _ScriptedTransport([
+        _toolCall('compare_with_experts', const {}),
+        _toolCall('compare_with_experts', const {}),
+        _text(goodQuestion),
+      ]);
+      var openedCount = 0;
+      final agent = OpenRouterChatAgent(
+        client: OpenRouterClient(apiKey: 'test-key', postJson: transport.post),
+        model: 'test/model',
+        tone: Tone.plain,
+        isSaved: true,
+        loadExperts: () async => FakeData.expertInterpretations['seosi']!,
+        onComparisonOpened: () async => openedCount++,
+      );
+      await agent.reply(poem: seosi, conversation: const [quoteMessage]);
+
+      expect(openedCount, 1);
+    });
+
+    test('잠금이 저장소까지 가서, 그 뒤로 해석을 고치면 막힌다', () async {
+      final userId = FakeData.myUserId;
+      final before = await Repositories.reading.fetchReading(userId, 'seosi');
+      expect(before!.isSaved, isTrue);
+      expect(before.hasOpenedComparison, isFalse);
+
+      final transport = _ScriptedTransport([
+        _toolCall('compare_with_experts', const {}),
+        _text(goodQuestion),
+      ]);
+      final agent = OpenRouterChatAgent(
+        client: OpenRouterClient(apiKey: 'test-key', postJson: transport.post),
+        model: 'test/model',
+        tone: Tone.plain,
+        isSaved: true,
+        myEvidenceLines: before.evidenceLines,
+        myInterpretation: before.interpretation,
+        loadExperts: () async => FakeData.expertInterpretations['seosi']!,
+        onComparisonOpened: () =>
+            const RepositoryReadingSource().markComparisonOpened('seosi'),
+      );
+      await agent.reply(poem: seosi, conversation: const [quoteMessage]);
+
+      final after = await Repositories.reading.fetchReading(userId, 'seosi');
+      expect(after!.hasOpenedComparison, isTrue);
+      await expectLater(
+        Repositories.reading.saveInterpretation(
+          userId,
+          after.copyWith(interpretation: '${after.interpretation} 고쳐 씀'),
+          summary: null,
+        ),
+        throwsA(isA<InterpretationLockedException>()),
+      );
+    });
   });
 
   test('사용량을 못 세도 답은 온다', () async {
