@@ -79,12 +79,12 @@ void main() {
   });
 
   testWidgets('S11에서 바꾸고 저장하면 기억되고 S10에 바로 보인다', (tester) async {
-    // 기본 질문 모델 · 비교 모델 둘 다와 다른 모델 — S10에 한 번만 보여야 한다
+    // 기본 질문 모델과 다른 모델. 그게 기본 비교 모델과 같으면 S10에 두 번 보인다.
     final newQuestionModel = modelOptions
         .map((option) => option.model)
-        .firstWhere((model) =>
-            model != defaultSettings.questionModel &&
-            model != defaultSettings.comparisonModel);
+        .firstWhere((model) => model != defaultSettings.questionModel);
+    final shownTimes =
+        newQuestionModel == defaultSettings.comparisonModel ? 2 : 1;
 
     await pumpSettings(tester);
     await openEdit(tester);
@@ -103,7 +103,7 @@ void main() {
     // S10으로 돌아와 새 값을 다시 읽었다
     expect(find.byType(SettingsScreen), findsOneWidget);
     expect(find.text('부드럽게'), findsOneWidget);
-    expect(find.text(newQuestionModel), findsOneWidget);
+    expect(find.text(newQuestionModel), findsNWidgets(shownTimes));
     expect(find.text('설정을 저장했어요.'), findsOneWidget);
   });
 
