@@ -55,6 +55,7 @@ void main() {
   });
 
   testWidgets('B 흐름: S03 → S04 행 표시 → S05 → S06 → S07', (tester) async {
+    Repositories.useFakes(signedOut: true); // C: 앱을 켜면 로그인 상태부터 본다 — S01부터 시작
     await tester.pumpWidget(const YeobaekApp());
     await tester.pumpAndSettle();
 
@@ -168,6 +169,7 @@ void main() {
 
 
   testWidgets('S04 들어갔다 나오면 홈 누적일수 하루 늘어남', (tester) async {
+    Repositories.useFakes(signedOut: true); // C: 앱을 켜면 로그인 상태부터 본다 — S01부터 시작
     await tester.pumpWidget(const YeobaekApp());
     await tester.pumpAndSettle();
     await signInAsDemo(tester); // C: S01이 진짜 로그인을 하므로 데모 계정으로

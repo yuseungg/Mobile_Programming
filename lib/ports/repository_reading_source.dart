@@ -9,8 +9,7 @@
 //   비교 문장 → 미리 쓴 문장만 여기서 읽는다 (폴백의 재료).
 //                모델이 쓰는 쪽은 lib/writers/openrouter_comparison_writer.dart.
 //
-// 로그인 전에는 FakeData.myUserId를 쓴다 (A · B 화면과 같은 임시 방식).
-// 로그인 분기가 들어오면 그 폴백을 지운다.
+// 화면은 로그인 뒤에만 열리므로 내 id는 Repositories.userId에서 꺼낸다 (로그인 분기 ④).
 
 import '../compare/expert_parser.dart';
 import '../data/fakes/fake_data.dart';
@@ -25,12 +24,8 @@ import 'reading_source.dart';
 class RepositoryReadingSource implements ReadingSource {
   const RepositoryReadingSource();
 
-  /// 로그인 전에는 가짜 사용자 id로 둔다 — 다른 화면들(A · B)도 같은 방식이고,
-  /// 그래야 1단계 시연(`useFakes()`, 로그인 없음)에서 읽기 → 저장 → 대조가 이어진다.
-  /// **로그인 분기가 들어오면 이 폴백을 지운다** (PR #8 리뷰에서 B와 확인).
   @override
-  String get myUserId =>
-      Repositories.auth.currentUserId ?? FakeData.myUserId;
+  String get myUserId => Repositories.userId;
 
   @override
   String get todayPoemId => FakeData.todayPoemId;

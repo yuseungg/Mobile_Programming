@@ -34,7 +34,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   // S01이 아직 진짜 로그인을 안 시켜서 없으면 가짜 계정으로
-  final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
+  final String _userId = Repositories.userId;
 
   UserProfile? _me;
   Set<String> _readPoemIds = {};

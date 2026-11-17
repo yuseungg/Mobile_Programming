@@ -15,6 +15,7 @@ import '../features/profile/profile_screen.dart';
 import '../features/reading/reading_screen.dart';
 import '../features/save/save_screen.dart';
 import '../features/settings/settings_edit_screen.dart';
+import 'auth_gate.dart';
 import 'tab_shell.dart';
 
 class AppRoutes {
@@ -40,9 +41,9 @@ class AppRoutes {
 class AppRouter {
   AppRouter._();
 
-  /// 앱을 켜면 S01부터 (로그인 상태 확인은 2단계)
+  /// 앱을 켜면 관문(AuthGate)부터 — 로그인 상태를 보고 S01 · 홈 · 닉네임 정하기로 보낸다.
   static List<Route<dynamic>> onGenerateInitialRoutes(String initialRoute) => [
-        onGenerateRoute(const RouteSettings(name: AppRoutes.signIn)),
+        MaterialPageRoute<void>(builder: (_) => const AuthGate()),
       ];
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
