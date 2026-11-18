@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 
 import '../../app/strings.dart';
 import '../../app/theme.dart';
-import '../../data/fakes/fake_data.dart';
 import '../../data/models/settings.dart';
 import '../../data/repositories.dart';
 import '../../data/settings_options.dart';
@@ -110,9 +109,7 @@ class _SettingsEditScreenState extends State<SettingsEditScreen> {
 
     setState(() => _isDeleting = true);
     try {
-      // ⚠ 로그인 분기(④)가 들어오면 '?? FakeData.myUserId'를 뺀다
-      final userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
-      await Repositories.reading.clearConversations(userId);
+      await Repositories.reading.clearConversations(Repositories.userId);
       if (!mounted) return;
       _showMessage(AppStrings.settingsDeleteDone);
     } catch (_) {

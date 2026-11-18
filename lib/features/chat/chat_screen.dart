@@ -36,7 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   late final Poem _poem = FakeData.poemById(widget.poemId);
-  final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
+  final String _userId = Repositories.userId;
   late ChatAgent _agent;
   bool _isLoading = true; // 설정 · 읽기 기록을 불러오는 동안
   bool _canSave = true; // 읽기 기록을 못 불러왔으면 저장된 대화를 덮어쓰지 않게 막는다

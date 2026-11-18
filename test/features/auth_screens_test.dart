@@ -33,7 +33,7 @@ Future<void> _tapPrimary(WidgetTester tester, String label) async {
 }
 
 void main() {
-  setUp(Repositories.useFakes);
+  setUp(() => Repositories.useFakes(signedOut: true));
 
   group('입력 규칙', () {
     test('gmail.com 주소만', () {

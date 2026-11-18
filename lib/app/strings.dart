@@ -22,6 +22,10 @@ class AppStrings {
   static const tabCommunity = '모두의 대화';
   static const tabSettings = '설정';
 
+  // ── 앱 시작 관문 (로그인 분기) ─────────────────
+  static const authGateFailed = '시작하지 못했어요. 인터넷 연결을 확인해 주세요.';
+  static const authGateRetry = '다시 시도';
+
   // ── S01 로그인 ────────────────────────────────
   static const signInEmailLabel = '이메일';
   static const signInEmailHint = 'example@gmail.com';

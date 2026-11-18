@@ -9,13 +9,10 @@ import 'app/theme.dart';
 import 'data/repositories.dart';
 import 'firebase_options.dart';
 
-/// 진짜 Firebase로 돌릴지. 지금은 직접 켤 때만:
-///   flutter run --dart-define=USE_FIREBASE=true
-///
-/// 로그인 분기(S01 → S03)가 들어오기 전까지는 기본이 가짜 저장소다.
-/// 지금 화면들은 로그인 안 했을 때 가짜 사용자 id를 쓰는데,
-/// 진짜 Firestore에서는 보안 규칙이 그걸 막기 때문이다.
-const _useFirebaseFlag = bool.fromEnvironment('USE_FIREBASE');
+/// 진짜 Firebase로 돌릴지. 기본은 켜짐. 가짜 데이터로 돌릴 때만:
+///   flutter run --dart-define=USE_FIREBASE=false
+/// (가짜 모드 데모 계정: demo@gmail.com / yeobaek1)
+const _useFirebaseFlag = bool.fromEnvironment('USE_FIREBASE', defaultValue: true);
 
 /// Firebase 설정은 Android용만 있다 (firebase_options.dart).
 /// 웹(Chrome) · Windows에서는 켜도 가짜 저장소로 돈다.
@@ -30,7 +27,7 @@ Future<void> main() async {
     );
     await Repositories.useFirebase();
   } else {
-    Repositories.useFakes();
+    Repositories.useFakes(signedOut: true); // S01부터 — 실제 앱처럼 로그인해서 들어간다
   }
   runApp(const YeobaekApp());
 }

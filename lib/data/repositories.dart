@@ -8,6 +8,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fakes/fake_auth_repository.dart';
+import 'fakes/fake_data.dart';
 import 'fakes/fake_public_conversation_repository.dart';
 import 'fakes/fake_reading_repository.dart';
 import 'fakes/fake_settings_repository.dart';
@@ -39,11 +40,22 @@ class Repositories {
   static late PublicConversationRepository publicConversation;
   static late SettingsRepository settings;
 
+  /// 로그인한 사람의 uid. 화면은 로그인 뒤에만 열리므로 여기서 꺼내 쓴다.
+  /// 로그아웃 상태에서 부르면 [StateError] — 로그인 안 한 사람이 남의 id로 쓰는 일을 막는다.
+  static String get userId {
+    final id = auth.currentUserId;
+    if (id == null) throw StateError('로그인하지 않은 상태다');
+    return id;
+  }
+
   /// 메모리 안의 가짜 데이터로 돈다. Firebase 없이 화면을 끝까지 눌러볼 때.
-  /// [signedInUserId]를 주면 로그인된 상태로 시작한다 (테스트 · 화면 개발용).
-  static void useFakes({String? signedInUserId}) {
+  /// 기본은 데모 사용자(FakeData.myUserId)로 로그인된 채 시작한다 — 화면 하나만 띄우는 테스트용.
+  /// [signedInUserId]로 다른 사용자, [signedOut]이면 로그아웃 상태(S01부터)로 시작한다.
+  static void useFakes({String? signedInUserId, bool signedOut = false}) {
     final store = FakeStore();
-    auth = FakeAuthRepository(signedInUserId: signedInUserId);
+    auth = FakeAuthRepository(
+      signedInUserId: signedOut ? null : (signedInUserId ?? FakeData.myUserId),
+    );
     user = FakeUserRepository(store);
     reading = FakeReadingRepository(store);
     publicConversation = FakePublicConversationRepository(store, auth);

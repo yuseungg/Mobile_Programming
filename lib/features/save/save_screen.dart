@@ -28,7 +28,7 @@ class SaveScreen extends StatefulWidget {
 
 class _SaveScreenState extends State<SaveScreen> {
   // S01이 아직 진짜 로그인을 안 시켜서 없으면 가짜 계정으로
-  final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
+  final String _userId = Repositories.userId;
 
   Reading? _reading;
   bool _isLocked = false; // 대조 연 뒤엔 해석 못 고침 (기획서 F4)

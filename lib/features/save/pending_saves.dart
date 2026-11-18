@@ -92,8 +92,14 @@ Future<int> retryPendingSaves() async {
 
   List<Map<String, dynamic>> left = [];
   int saved = 0;
+  // 지금 로그인한 사람 것만 다시 저장 (C — 로그인 분기). 다른 계정 것은 그 사람이 로그인할 때까지 둠
+  String? me = Repositories.auth.currentUserId;
   for (Map<String, dynamic> item in items) {
     String userId = item['userId'] as String;
+    if (userId != me) {
+      left.add(item);
+      continue;
+    }
     String poemId = item['poemId'] as String;
     Reading reading = readingFromDoc(poemId, Map<String, dynamic>.from(item['reading'] as Map));
     String? summary = item['summary'] as String?;

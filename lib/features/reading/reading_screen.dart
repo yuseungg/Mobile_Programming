@@ -21,7 +21,7 @@ class ReadingScreen extends StatefulWidget {
 
 class _ReadingScreenState extends State<ReadingScreen> {
   // S01이 아직 진짜 로그인을 안 시켜서 없으면 가짜 계정으로
-  final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
+  final String _userId = Repositories.userId;
 
   final Set<int> _markedLines = {};
   final Set<int> _savingLines = {}; // 저장 중인 행 (그동안 또 누르면 무시)
