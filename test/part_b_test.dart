@@ -235,6 +235,40 @@ void main() {
     expect(mine!.summary.trim().isNotEmpty, true);
   });
 
+  testWidgets('대조 연 뒤에도 비공개였으면 공개로 바꿔 저장됨', (tester) async {
+    Reading reading = (await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae'))!;
+    await Repositories.reading.saveInterpretation(FakeData.myUserId, reading.copyWith(interpretation: '이별'), summary: null);
+    await Repositories.reading.openComparison(FakeData.myUserId, 'jindallae');
+
+    await tester.pumpWidget(const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: SaveScreen(poemId: 'jindallae')));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.saveLockedNotice), findsOneWidget);
+
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pump();
+    await tester.tap(find.text('저장하기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    List<PublicConversation> list = await Repositories.publicConversation.fetchForPoem('jindallae');
+    expect(list.where((c) => c.userId == FakeData.myUserId && c.interpretation == '이별'), isNotEmpty);
+  });
+
+  testWidgets('이미 공개한 시는 공개 못 되돌리고 이유 보여줌', (tester) async {
+    Reading reading = (await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae'))!;
+    await Repositories.reading.saveInterpretation(FakeData.myUserId,
+        reading.copyWith(interpretation: '이별', isPublic: true), summary: '요약');
+
+    await tester.pumpWidget(const MaterialApp(home: SaveScreen(poemId: 'jindallae')));
+    await tester.pumpAndSettle();
+
+    SwitchListTile toggle = tester.widget(find.byType(SwitchListTile));
+    expect(toggle.onChanged, isNull);
+    expect(find.text(AppStrings.savePublicFixed), findsOneWidget);
+  });
+
   // 홈은 탭 화면이라 라우터 붙여서 띄움
   Widget homeApp() {
     return const MaterialApp(onGenerateRoute: AppRouter.onGenerateRoute, home: HomeScreen());
