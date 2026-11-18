@@ -4,6 +4,7 @@ import 'package:yeobaek/data/models/poem.dart';
 import 'package:yeobaek/data/models/public_conversation.dart';
 import 'package:yeobaek/data/models/reading.dart';
 import 'package:yeobaek/data/models/user_profile.dart';
+import 'package:yeobaek/data/repositories/public_conversation_repository.dart';
 import 'package:yeobaek/ports/fake_reading_source.dart';
 import 'package:yeobaek/ports/reading_source.dart';
 
@@ -16,6 +17,8 @@ class StubReadingSource implements ReadingSource {
     this.profiles = const {},
     this.todayPoemIdOverride,
     this.throwOnRead = false,
+    this.empathized = const {},
+    this.throwOnSetEmpathy = false,
   });
 
   final Map<String, Reading> readings;
@@ -96,4 +99,33 @@ class StubReadingSource implements ReadingSource {
   @override
   Future<List<String>> comparisonTextsFor(String poemId) async =>
       comparisonTexts[poemId] ?? const [];
+
+  /// 처음부터 공감해 둔 대화 id
+  final Set<String> empathized;
+
+  /// 공감 쓰기가 실패하는 경우 — 잠긴 시의 대화나 네트워크 문제.
+  /// C의 저장소는 ConversationsLockedException을 던진다.
+  final bool throwOnSetEmpathy;
+
+  late final _empathized = {...empathized};
+
+  @override
+  Future<bool> hasEmpathized(String conversationId) async {
+    calls.add('hasEmpathized:$conversationId');
+    return _empathized.contains(conversationId);
+  }
+
+  @override
+  Future<void> setEmpathy(
+    String conversationId, {
+    required bool hasEmpathized,
+  }) async {
+    calls.add('setEmpathy:$conversationId:$hasEmpathized');
+    if (throwOnSetEmpathy) throw const ConversationsLockedException('seosi');
+    if (hasEmpathized) {
+      _empathized.add(conversationId);
+    } else {
+      _empathized.remove(conversationId);
+    }
+  }
 }

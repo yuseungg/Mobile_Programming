@@ -56,4 +56,18 @@ abstract interface class ReadingSource {
   ///
   /// 저장이 실패해도 대조는 보여야 하므로 **예외를 던지지 않는다.**
   Future<void> markComparisonOpened(String poemId);
+
+  /// 이 대화에 내가 이미 공감했나 (S09). 잠긴 시의 대화면 false.
+  Future<bool> hasEmpathized(String conversationId);
+
+  /// 공감 켜기/끄기 (S09).
+  ///
+  /// [markComparisonOpened]와 달리 **예외를 먹지 않는다.** 대조 열람 기록은
+  /// 못 남겨도 화면만 보이면 되지만, 공감은 눌린 모양이 남아 있는데 저장이
+  /// 안 되면 사용자가 공감한 줄로 안다. 화면이 눌린 상태를 되돌릴 수 있게
+  /// 실패를 그대로 올려 보낸다.
+  Future<void> setEmpathy(
+    String conversationId, {
+    required bool hasEmpathized,
+  });
 }

@@ -79,4 +79,21 @@ class RepositoryReadingSource implements ReadingSource {
       // 저장 전이거나 권한이 없으면 저장소가 막는다 — 대조는 그대로 보여 준다
     }
   }
+
+  @override
+  Future<bool> hasEmpathized(String conversationId) =>
+      Repositories.publicConversation.hasEmpathized(conversationId, myUserId);
+
+  /// 예외를 먹지 않는다 — 포트 설명대로 화면이 눌린 상태를 되돌려야 한다.
+  /// 잠긴 시의 대화면 저장소가 ConversationsLockedException을 던진다.
+  @override
+  Future<void> setEmpathy(
+    String conversationId, {
+    required bool hasEmpathized,
+  }) =>
+      Repositories.publicConversation.setEmpathy(
+        conversationId,
+        myUserId,
+        hasEmpathized: hasEmpathized,
+      );
 }

@@ -63,4 +63,27 @@ class FakeReadingSource implements ReadingSource {
   /// FakeData는 const라 바꿀 수 없다 — 1단계에서는 잠금이 걸리지 않는다.
   @override
   Future<void> markComparisonOpened(String poemId) async {}
+
+  /// 공감은 켠 것만 기억한다. FakeData가 const라 거기엔 쓸 수 없고,
+  /// 이 클래스도 const 생성자라 인스턴스 필드를 둘 수 없어서 정적으로 둔다.
+  /// 테스트 사이에 남으므로 쓰는 테스트는 [resetEmpathies]로 비운다.
+  static final _empathized = <String>{};
+
+  static void resetEmpathies() => _empathized.clear();
+
+  @override
+  Future<bool> hasEmpathized(String conversationId) async =>
+      _empathized.contains(conversationId);
+
+  @override
+  Future<void> setEmpathy(
+    String conversationId, {
+    required bool hasEmpathized,
+  }) async {
+    if (hasEmpathized) {
+      _empathized.add(conversationId);
+    } else {
+      _empathized.remove(conversationId);
+    }
+  }
 }
