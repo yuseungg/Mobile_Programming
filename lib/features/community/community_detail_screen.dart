@@ -2,7 +2,7 @@
 // D의 part-d `S09DialogueDetailScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
 // - 한 사람의 첫 낱말 → 대화 요약 → 최종 해석
 // - 닉네임 탭 → S12 남의 프로필
-// - 공감 버튼 (정렬·순위에 쓰지 않음). 1단계는 화면 안에서만 바뀐다
+// - 공감 버튼 (정렬·순위에 쓰지 않음). C의 저장소에 쓰고, 다시 열면 그대로 남는다
 // - 그 시의 해석을 저장하지 않았으면 내용 대신 잠금 안내 (기획서 5장)
 import 'package:flutter/material.dart';
 
@@ -63,11 +63,19 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
   late final Future<_DetailData> _data = _load();
   bool _hasEmpathized = false;
   int? _empathyCount; // 읽어 온 뒤에 정해진다
+  bool _isSavingEmpathy = false;
 
   Future<_DetailData> _load() async {
     final source = widget.source;
     final conversation = await source.conversationById(widget.conversationId);
     final reading = await source.readingFor(conversation.poemId);
+
+    // 저장소에 남은 내 공감을 읽어 온다. 이걸 안 읽으면 이미 공감한 대화를
+    // 다시 열 때마다 빈 하트로 보인다.
+    _hasEmpathized = await source.hasEmpathized(widget.conversationId);
+    // 저장소의 수에는 내 공감이 이미 들어 있다 — 여기서 더하지 않는다.
+    _empathyCount = conversation.empathyCount;
+
     return _DetailData(
       conversation: conversation,
       poem: await source.poemById(conversation.poemId),
@@ -92,11 +100,39 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     return written.text;
   }
 
-  void _toggleEmpathy(int baseCount) {
+  /// 먼저 화면을 바꾸고 저장한다 (누르면 바로 반응해야 한다). 저장이 실패하면
+  /// 되돌리고 알린다 — 눌린 모양만 남으면 공감한 줄로 알게 된다.
+  Future<void> _toggleEmpathy() async {
+    if (_isSavingEmpathy) return; // 연타로 두 번 보내지 않는다
+
+    final next = !_hasEmpathized;
+    final previousCount = _empathyCount ?? 0;
     setState(() {
-      _hasEmpathized = !_hasEmpathized;
-      _empathyCount = baseCount + (_hasEmpathized ? 1 : 0);
+      _isSavingEmpathy = true;
+      _hasEmpathized = next;
+      _empathyCount = previousCount + (next ? 1 : -1);
     });
+
+    try {
+      await widget.source
+          .setEmpathy(widget.conversationId, hasEmpathized: next);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _hasEmpathized = !next;
+        _empathyCount = previousCount;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(AppStrings.communityDetailEmpathyFailed)),
+      );
+      return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingEmpathy = false;
+        });
+      }
+    }
   }
 
   void _openAuthorProfile(String userId) {
@@ -312,8 +348,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             // 공감 버튼 (정렬에 쓰이지 않는 순수한 공감)
             Center(
               child: OutlinedButton.icon(
-                onPressed: () =>
-                    _toggleEmpathy(conversation.empathyCount),
+                onPressed: _isSavingEmpathy ? null : _toggleEmpathy,
                 icon: Icon(
                   _hasEmpathized ? Icons.favorite : Icons.favorite_border,
                   size: 20,

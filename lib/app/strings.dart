@@ -177,6 +177,7 @@ class AppStrings {
   static const communityDetailInterpretationCaption = '대화를 거쳐 도달한 고유한 생각';
   static String communityDetailEmpathyCount(int count) => '공감 $count';
   static const communityDetailEmpathyNote = '공감은 우열이나 순위에 반영되지 않습니다.';
+  static const communityDetailEmpathyFailed = '공감을 저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.';
 
   // ── S10 설정 보기 ─────────────────────────────
   static const settingsTitle = '설정';
