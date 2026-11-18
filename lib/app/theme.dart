@@ -420,6 +420,14 @@ ThemeData buildAppTheme() {
       surfaceTintColor: AppColors.card,
       showDragHandle: true,
     ),
+    // 확인 창 (S10 로그아웃 · S11 기록 지우기). 없으면 제목이 Material 기본 크기로 커진다
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.card,
+      surfaceTintColor: AppColors.card,
+      titleTextStyle: AppText.screenTitle,
+      contentTextStyle: AppText.body,
+      shape: RoundedRectangleBorder(borderRadius: radius12),
+    ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.text,
       contentTextStyle: AppText.body.copyWith(color: AppColors.card),
