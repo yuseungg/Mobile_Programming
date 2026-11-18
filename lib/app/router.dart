@@ -22,6 +22,7 @@ class AppRoutes {
 
   static const signIn = '/sign-in'; // S01
   static const signUp = '/sign-up'; // S02
+  static const signUpNickname = '/sign-up/nickname'; // S02 — 닉네임만 (구글 첫 로그인)
   static const intro = '/intro'; // S13 (로그인 다음, 홈 앞)
   static const home = '/'; // S03 (탭: 시)
   static String reading(String poemId) => '/poems/$poemId'; // S04
@@ -51,6 +52,7 @@ class AppRouter {
       [] => const TabShell(initialTab: AppTab.poems),
       ['sign-in'] => const SignInScreen(),
       ['sign-up'] => const SignUpScreen(),
+      ['sign-up', 'nickname'] => const SignUpScreen(isNicknameOnly: true),
       ['intro'] => const IntroScreen(),
       ['poems', final poemId] => ReadingScreen(poemId: poemId),
       ['poems', final poemId, 'chat'] => ChatScreen(poemId: poemId),

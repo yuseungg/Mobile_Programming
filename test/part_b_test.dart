@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+// C: S01을 지나가는 도우미 — 다른 PR이 import 묶음 끝에 붙여도 겹치지 않게 위쪽에 둔다
+import 'support/sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yeobaek/features/intro/intro_screen.dart';
 import 'package:yeobaek/app/router.dart';
@@ -56,9 +58,7 @@ void main() {
     await tester.pumpWidget(const YeobaekApp());
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('로그인'));
-    await tester.tap(find.text('로그인'));
-    await tester.pumpAndSettle();
+    await signInAsDemo(tester); // C: S01이 진짜 로그인을 하므로 데모 계정으로
 
     // 로그인 다음은 S13 안내다. 30초 기다리면 저절로 홈으로 넘어간다.
     await tester.pump(IntroScreen.autoAdvanceDelay);
@@ -170,9 +170,7 @@ void main() {
   testWidgets('S04 들어갔다 나오면 홈 누적일수 하루 늘어남', (tester) async {
     await tester.pumpWidget(const YeobaekApp());
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('로그인'));
-    await tester.tap(find.text('로그인'));
-    await tester.pumpAndSettle();
+    await signInAsDemo(tester); // C: S01이 진짜 로그인을 하므로 데모 계정으로
 
     // 로그인 다음은 S13 안내다. 30초 기다리면 저절로 홈으로 넘어간다.
     await tester.pump(IntroScreen.autoAdvanceDelay);
