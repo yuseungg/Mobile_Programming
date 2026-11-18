@@ -20,6 +20,19 @@ import 'package:yeobaek/features/reading/reading_screen.dart';
 import 'package:yeobaek/features/save/pending_saves.dart';
 import 'package:yeobaek/features/save/save_screen.dart';
 import 'package:yeobaek/main.dart';
+import 'package:yeobaek/shared/widgets/poem_view.dart';
+
+// 테스트용: S04 멈춤 표시 저장만 실패하는 저장소
+class _MarkFailsReadingRepository extends FakeReadingRepository {
+  _MarkFailsReadingRepository(super.store);
+
+  @override
+  Future<void> setMarkedLine(String userId, String poemId, int lineNo, {required bool isMarked}) async {
+    // 조금 있다 실패 (그 사이 화면에 먼저 표시되는지 보려고)
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    throw Exception('network');
+  }
+}
 
 // 테스트용: 네트워크 끊긴 것처럼 저장만 실패하는 저장소
 class _NetworkDownReadingRepository extends FakeReadingRepository {
@@ -331,5 +344,22 @@ void main() {
     Reading? after = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
     expect(after!.markedLines, contains(3));
     expect(after.interpretation, '꽃을 밟고 가라는 말이 오히려 붙잡는 말 같음');
+  });
+
+  //AI
+  testWidgets('S04 멈춤 저장 실패하면 화면 되돌리고 안내', (tester) async {
+    Repositories.reading = _MarkFailsReadingRepository(FakeStore());
+    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'bomgoyangi')));
+    await tester.pumpAndSettle();
+
+    // 봄은 고양이로다 1행은 멈춘 사람 3명. 멈춘 행이 되면 그 줄에 '3명'이 보임
+    Finder firstLine = find.descendant(of: find.byType(PoemView), matching: find.byType(InkWell)).first;
+    await tester.tap(firstLine);
+    await tester.pump();
+    expect(find.text('3명'), findsOneWidget); // 저장 기다리기 전에 먼저 표시
+
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('3명'), findsNothing); // 저장 못 해서 되돌림
+    expect(find.text(AppStrings.readingMarkFailed), findsOneWidget);
   });
 }

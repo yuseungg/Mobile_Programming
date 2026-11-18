@@ -24,6 +24,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
   final String _userId = Repositories.auth.currentUserId ?? FakeData.myUserId;
 
   final Set<int> _markedLines = {};
+  final Set<int> _savingLines = {}; // 저장 중인 행 (그동안 또 누르면 무시)
   Map<int, int> _stopCounts = {};
   bool _hasConversation = false; // 하던 대화 있으면 버튼을 '대화 이어 하기'로
   final TextEditingController _firstWordController = TextEditingController();
@@ -68,24 +69,54 @@ class _ReadingScreenState extends State<ReadingScreen> {
 
   //AI
   // 누르면 내 멈춘 행이랑 집계가 같이 바뀜. 집계엔 나도 들어가 있어서 다시 받아옴
+  // 화면 먼저 바꾸고, 저장 실패하면 되돌림 (화면이랑 서버가 어긋나면 안 됨)
   Future<void> _toggleLine(int lineNo) async {
+    if (_savingLines.contains(lineNo)) {
+      return;
+    }
     bool isMarked = !_markedLines.contains(lineNo);
+    _savingLines.add(lineNo);
     setState(() {
-      if (isMarked) {
-        _markedLines.add(lineNo);
-      } else {
-        _markedLines.remove(lineNo);
-      }
+      _setMarked(lineNo, isMarked);
     });
 
-    await Repositories.reading.setMarkedLine(_userId, widget.poemId, lineNo, isMarked: isMarked);
-    Map<int, int> counts = await Repositories.reading.fetchStopCounts(widget.poemId);
+    try {
+      await Repositories.reading.setMarkedLine(_userId, widget.poemId, lineNo, isMarked: isMarked);
+    } catch (e) {
+      _savingLines.remove(lineNo);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _setMarked(lineNo, !isMarked);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.readingMarkFailed)));
+      return;
+    }
+    _savingLines.remove(lineNo);
+
+
+    // 집계 못 받아오면 원래 숫자 그대로 둠 (멈춘 건 이미 저장됨)
+    Map<int, int> counts = _stopCounts;
+    try {
+      counts = await Repositories.reading.fetchStopCounts(widget.poemId);
+    } catch (e) {
+      // print(e);
+    }
     if (!mounted) {
       return;
     }
     setState(() {
       _stopCounts = counts;
     });
+  }
+
+  void _setMarked(int lineNo, bool isMarked) {
+    if (isMarked) {
+      _markedLines.add(lineNo);
+    } else {
+      _markedLines.remove(lineNo);
+    }
   }
 
   // 첫 낱말 저장. S05가 저장소에서 이걸 꺼내 씀
