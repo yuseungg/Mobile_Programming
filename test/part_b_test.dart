@@ -28,6 +28,8 @@ class _MarkFailsReadingRepository extends FakeReadingRepository {
 
   @override
   Future<void> setMarkedLine(String userId, String poemId, int lineNo, {required bool isMarked}) async {
+    // 조금 있다 실패 (그 사이 화면에 먼저 표시되는지 보려고)
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     throw Exception('network');
   }
 }
@@ -354,8 +356,9 @@ void main() {
     Finder firstLine = find.descendant(of: find.byType(PoemView), matching: find.byType(InkWell)).first;
     await tester.tap(firstLine);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('3명'), findsOneWidget); // 저장 기다리기 전에 먼저 표시
 
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('3명'), findsNothing); // 저장 못 해서 되돌림
     expect(find.text(AppStrings.readingMarkFailed), findsOneWidget);
   });
