@@ -17,6 +17,7 @@ import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
 import '../../writers/comparison_writer.dart';
 import '../../writers/fake_comparison_writer.dart';
+import '../../writers/openrouter_comparison_writer.dart';
 
 /// 화면 한 번에 필요한 것
 class _ComparisonData {
@@ -48,8 +49,9 @@ class ComparisonScreen extends StatefulWidget {
   final String poemId;
   final ReadingSource source;
 
-  /// 비교 문장을 쓰는 쪽. 비워 두면 미리 쓴 문장과 관계 한 줄로 채운다.
-  /// A의 PR이 병합되면 OpenRouter를 쓰는 구현체를 여기에 넣는다.
+  /// 비교 문장을 쓰는 쪽. 비워 두면 키가 있을 때 모델이 쓰고(OpenRouter),
+  /// 키가 없거나 호출이 실패하면 미리 쓴 문장과 관계 한 줄로 채운다.
+  /// 테스트는 여기에 정해진 문장을 쓰는 구현을 끼운다.
   final ComparisonWriter? writer;
 
   @override
@@ -68,19 +70,22 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     final myInterpretation = reading?.interpretation ?? '';
     final myEvidenceLines = reading?.evidenceLines ?? const <int>[];
     final experts = await source.expertsFor(poemId);
+    // 시 원문은 비교 문장을 쓰는 쪽도 쓴다 (인용이 원문에 있는지 확인한다)
+    final poem = await source.poemById(poemId);
 
     // 미리 쓴 문장은 폴백의 재료다. 모델이 쓰면 그것이 이긴다.
-    final writer = widget.writer ??
-        FakeComparisonWriter(
-          prewritten: {poemId: await source.comparisonTextsFor(poemId)},
-        );
+    final prewritten = FakeComparisonWriter(
+      prewritten: {poemId: await source.comparisonTextsFor(poemId)},
+    );
+    final writer =
+        widget.writer ?? await createComparisonWriter(fallback: prewritten);
 
     final comparisons = <ComparisonText>[];
     for (var i = 0; i < experts.length; i++) {
       comparisons.add(
         await writer.write(
           ComparisonRequest(
-            poemId: poemId,
+            poem: poem,
             myInterpretation: myInterpretation,
             myEvidenceLines: myEvidenceLines,
             expert: experts[i],
@@ -92,7 +97,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     }
 
     return _ComparisonData(
-      poem: await source.poemById(poemId),
+      poem: poem,
       myInterpretation: myInterpretation,
       myEvidenceLines: myEvidenceLines,
       experts: experts,
