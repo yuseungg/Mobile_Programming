@@ -24,6 +24,7 @@ class BadgeImage extends StatelessWidget {
         'seosi' => Icons.star_rounded,
         'jindallae' => Icons.local_florist_rounded,
         'bomgoyangi' => Icons.pets_rounded,
+        'theroadnottaken' => Icons.call_split_rounded,
         _ => Icons.auto_awesome_rounded,
       };
 

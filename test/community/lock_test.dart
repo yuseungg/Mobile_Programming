@@ -67,8 +67,11 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: CommunityListScreen()));
       await tester.pumpAndSettle();
 
-      // 서시는 저장됨 → 자물쇠 없음, 나머지 둘은 잠김
-      expect(find.byIcon(Icons.lock_outline), findsNWidgets(2));
+      // 서시는 저장됨 → 자물쇠 없음, 나머지는 모두 잠김
+      expect(
+        find.byIcon(Icons.lock_outline),
+        findsNWidgets(FakeData.poems.length - 1),
+      );
     });
 
     testWidgets('다시 저장한 시로 돌아오면 목록이 돌아온다', (tester) async {

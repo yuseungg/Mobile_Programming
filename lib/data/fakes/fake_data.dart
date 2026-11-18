@@ -95,6 +95,46 @@ class FakeData {
           '1924년 동인지 『금성』에 발표했다. 이장희는 생전에 시집을 내지 못했고, '
           '1929년 세상을 떠났다. 그의 시는 사후에 엮인 유고집으로 전한다.',
     ),
+    Poem(
+      poemId: 'theroadnottaken',
+      title: 'The Road Not Taken',
+      author: 'Robert Frost',
+      year: 1916,
+      lines: [
+        'Two roads diverged in a yellow wood,',
+        'And sorry I could not travel both',
+        'And be one traveler, long I stood',
+        'And looked down one as far as I could',
+        'To where it bent in the undergrowth;',
+        '',
+        'Then took the other, as just as fair,',
+        'And having perhaps the better claim,',
+        'Because it was grassy and wanted wear;',
+        'Though as for that the passing there',
+        'Had worn them really about the same,',
+        '',
+        'And both that morning equally lay',
+        'In leaves no step had trodden black.',
+        'Oh, I kept the first for another day!',
+        'Yet knowing how way leads on to way,',
+        'I doubted if I should ever come back.',
+        '',
+        'I shall be telling this with a sigh',
+        'Somewhere ages and ages hence:',
+        'Two roads diverged in a wood, and I—',
+        'I took the one less travelled by,',
+        'And that has made all the difference.',
+      ],
+      creationBackground:
+          '1915년 8월 잡지 『The Atlantic Monthly』에 처음 실렸고, 이듬해 시집 '
+          '『Mountain Interval』(1916)의 맨 앞에 놓였다. 프로스트는 1912년부터 '
+          '1915년까지 영국에 머물며 시인 에드워드 토머스와 함께 숲길을 걸었다. '
+          '갈림길에 서면 토머스는 어느 쪽으로 갈지 정하지 못하고, 걸은 뒤에는 '
+          '가지 않은 쪽을 아쉬워했다고 한다. 프로스트는 미국으로 돌아간 뒤 이 시를 '
+          '토머스에게 먼저 보냈다. 전기 작가 로런스 톰프슨은 프로스트가 이 시를 '
+          '두고 "a tricky poem"이라고 말했다고 적었다. 본문은 『Mountain Interval』 '
+          '판을 따랐다.',
+    ),
   ];
 
   /// 오늘의 시 (기획서 9장 3번 — 선정 방식 미정)
@@ -105,6 +145,7 @@ class FakeData {
     'seosi': {2: 12, 4: 5, 6: 8, 10: 15}, // B
     'jindallae': {3: 2, 9: 4, 11: 6, 15: 5},
     'bomgoyangi': {1: 3, 5: 4, 8: 2},
+    'theroadnottaken': {5: 7, 9: 4, 16: 11, 22: 9},
   };
 
   // ── 전문가 해석 (기획서 7장 형식) ─────────────────
