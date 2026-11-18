@@ -37,6 +37,11 @@ class FakeReadingSource implements ReadingSource {
         for (final poem in FakeData.poems) ?FakeData.readingFor(poem.poemId),
       ];
 
+  /// 가짜 데이터는 const라 바뀌지 않는다 — 지금 값을 한 번 내보내고 끝낸다.
+  @override
+  Stream<UserProfile> watchProfile(String userId) =>
+      Stream.fromFuture(profileById(userId));
+
   @override
   Future<UserProfile> profileById(String userId) async =>
       FakeData.profileById(userId);

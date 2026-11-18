@@ -49,6 +49,10 @@ class RepositoryReadingSource implements ReadingSource {
       Repositories.user.fetchProfile(userId);
 
   @override
+  Stream<UserProfile> watchProfile(String userId) =>
+      Repositories.user.watchProfile(userId);
+
+  @override
   Future<List<PublicConversation>> conversationsFor(String poemId) =>
       Repositories.publicConversation.fetchForPoem(poemId);
 

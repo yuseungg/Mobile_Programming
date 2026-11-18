@@ -4,6 +4,7 @@
 // - 팔로워 수, 총 공감 수, 순위, 공개한 대화 목록은 없다 (기획서 F8)
 // - 내 것 · 남의 것 겸용. 내 것인지는 userId로 판단
 // - 뱃지는 문구 없이 이미지만 (기획서 F8) — part-d의 뱃지 이름(별 · 꽃 · 고양이) 글자는 뺐다
+// - 프로필을 구독한다 (C의 watchProfile) — 뱃지·누적일수가 바로 반영된다
 import 'package:flutter/material.dart';
 
 import '../../app/strings.dart';
@@ -42,26 +43,43 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late final Future<_ProfileData> _data = _load();
+  late final Stream<_ProfileData> _data = _watch();
 
-  Future<_ProfileData> _load() async {
+  /// 프로필을 구독한다 — 뱃지를 받거나 누적일수가 오르면 화면을 다시 열지
+  /// 않아도 바뀐다. 전에는 한 번만 읽어서, S06에서 저장해 뱃지를 받아도
+  /// 이 화면을 닫고 다시 열어야 보였다.
+  Stream<_ProfileData> _watch() async* {
     final source = widget.source;
-    final profile = await source.profileById(widget.userId);
-    final badgeTitles = <String, String>{};
-    for (final badgeId in profile.badgeIds) {
-      badgeTitles[badgeId] = (await source.poemById(badgeId)).title;
+
+    // 뱃지 id는 시 id다. 시 목록은 바뀌지 않으므로 제목을 한 번만 모아 두고
+    // 갱신마다 다시 읽지 않는다 (전에는 뱃지 하나마다 poemById를 불렀다).
+    final titles = {
+      for (final poem in await source.poems()) poem.poemId: poem.title,
+    };
+    final myUserId = source.myUserId;
+
+    _ProfileData wrap(UserProfile profile) => _ProfileData(
+          profile: profile,
+          isMe: profile.userId == myUserId,
+          badgeTitles: {
+            for (final badgeId in profile.badgeIds)
+              badgeId: titles[badgeId] ?? badgeId,
+          },
+        );
+
+    // 먼저 한 번 읽는다. watchProfile은 프로필이 없으면 아무것도 내보내지
+    // 않아서, 이것 없이는 없는 사람의 화면이 영원히 로딩에 머문다.
+    yield wrap(await source.profileById(widget.userId));
+
+    await for (final profile in source.watchProfile(widget.userId)) {
+      yield wrap(profile);
     }
-    return _ProfileData(
-      profile: profile,
-      isMe: profile.userId == source.myUserId,
-      badgeTitles: badgeTitles,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_ProfileData>(
-      future: _data,
+    return StreamBuilder<_ProfileData>(
+      stream: _data,
       builder: (context, snapshot) {
         final data = snapshot.data;
         if (snapshot.hasError) {

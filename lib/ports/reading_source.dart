@@ -37,6 +37,14 @@ abstract interface class ReadingSource {
 
   Future<UserProfile> profileById(String userId);
 
+  /// 그 사람의 프로필이 바뀔 때마다 (S12). 뱃지를 받거나 누적일수가 오르면
+  /// 화면을 다시 열지 않아도 바뀐다.
+  ///
+  /// **프로필이 없으면 아무것도 내보내지 않는다** — C의 구현이 가짜·Firestore
+  /// 양쪽 모두 없는 문서를 걸러낸다. 그래서 화면은 이 스트림만 기다리지 않고
+  /// [profileById]로 한 번 읽어 없음을 먼저 확인한다.
+  Stream<UserProfile> watchProfile(String userId);
+
   /// 그 시의 공개 대화. 최신순이고 공감 수로 정렬하지 않는다 (기획서 9장)
   Future<List<PublicConversation>> conversationsFor(String poemId);
 

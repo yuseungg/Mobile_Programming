@@ -1,4 +1,6 @@
 // 테스트용 ReadingSource — 필요한 것만 넣고 나머지는 가짜 데이터를 쓴다.
+import 'dart:async';
+
 import 'package:yeobaek/data/models/expert_interpretation.dart';
 import 'package:yeobaek/data/models/poem.dart';
 import 'package:yeobaek/data/models/public_conversation.dart';
@@ -73,6 +75,17 @@ class StubReadingSource implements ReadingSource {
     if (throwOnRead) throw StateError('읽을 수 없다');
     calls.add('profileById:$userId');
     return profiles[userId] ?? await _fallback.profileById(userId);
+  }
+
+  /// 테스트가 프로필 갱신을 흘려보낼 통로. [pushProfile]로 밀어 넣는다.
+  final _profileChanges = StreamController<UserProfile>.broadcast();
+
+  void pushProfile(UserProfile profile) => _profileChanges.add(profile);
+
+  @override
+  Stream<UserProfile> watchProfile(String userId) {
+    calls.add('watchProfile:$userId');
+    return _profileChanges.stream.where((p) => p.userId == userId);
   }
 
   @override
