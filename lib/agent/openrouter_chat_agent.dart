@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../data/models/chat_message.dart';
+import '../data/models/expert_interpretation.dart';
 import '../data/models/poem.dart';
 import '../data/models/settings.dart';
 import 'cancel_token.dart';
@@ -29,6 +30,10 @@ class OpenRouterChatAgent implements ChatAgent {
     required this.model,
     required this.tone,
     required this.isSaved,
+    this.myEvidenceLines = const [],
+    this.myInterpretation = '',
+    this.loadExperts,
+    this.onComparisonOpened,
     this.onModelCall,
   });
 
@@ -40,8 +45,45 @@ class OpenRouterChatAgent implements ChatAgent {
   final Tone tone;
   final bool isSaved; // 그 시의 해석을 저장했는가 — 툴 권한이 달라진다
 
+  // 저장 뒤에만 쓰는 것 — compare_with_experts의 재료
+  final List<int> myEvidenceLines; // 저장한 해석의 근거 행 (1부터)
+  final String myInterpretation; // 저장한 해석
+
+  /// 그 시의 전문가 해석을 읽는다. 모델이 compare_with_experts를 처음 부를 때 한 번만 부른다 —
+  /// 에셋 읽기를 대화 시작에 묶지 않기 위해서다.
+  final Future<List<ExpertInterpretation>> Function()? loadExperts;
+  Future<List<ExpertInterpretation>>? _experts;
+
+  /// 전문가 해석을 사용자에게 처음 보였을 때 한 번 (기획서 4장 잠금).
+  /// 잠금의 기준은 「S07을 열었는가」가 아니라 「전문가 해석을 봤는가」다 —
+  /// S05에서 compare_with_experts로 봐도 그 뒤로는 해석을 고칠 수 없다.
+  final Future<void> Function()? onComparisonOpened;
+  bool _isComparisonOpened = false;
+
   /// 모델을 한 번 부를 때마다 (툴 라운드 · 다시 쓰기 포함). 설정 화면의 이번 달 사용량.
   final Future<void> Function()? onModelCall;
+
+  /// 못 읽으면 빈 목록 — 모델에게는 experts가 빈 채로 간다. 대화는 이어 간다
+  Future<List<ExpertInterpretation>> _loadExperts() {
+    final load = loadExperts;
+    if (load == null) return Future.value(const []);
+    return _experts ??= load().catchError((Object error) {
+      debugPrint('[agent] 전문가 해석을 불러오지 못함: $error');
+      return const <ExpertInterpretation>[];
+    });
+  }
+
+  /// 잠금을 못 걸어도 대화는 이어 간다 (S07과 같은 규칙 — markComparisonOpened도 예외를 먹는다)
+  Future<void> _markComparisonOpened() async {
+    final mark = onComparisonOpened;
+    if (mark == null || _isComparisonOpened) return;
+    _isComparisonOpened = true;
+    try {
+      await mark();
+    } catch (error) {
+      debugPrint('[agent] 대조 열람을 기록하지 못함: $error');
+    }
+  }
 
   Future<ChatCompletion> _complete({
     required List<Map<String, Object?>> messages,
@@ -119,7 +161,12 @@ class OpenRouterChatAgent implements ChatAgent {
     required String fallbackText,
     CancelToken? cancelToken,
   }) async {
-    final tools = AgentTools(poem: poem, isSaved: isSaved);
+    var tools = AgentTools(
+      poem: poem,
+      isSaved: isSaved,
+      myEvidenceLines: myEvidenceLines,
+      myInterpretation: myInterpretation,
+    );
     final userText =
         instruction == null && conversation.isNotEmpty && conversation.last.isUser
             ? conversation.last.text
@@ -151,7 +198,7 @@ class OpenRouterChatAgent implements ChatAgent {
     }
 
     final messages = <Map<String, Object?>>[
-      {'role': 'system', 'content': buildSystemPrompt(poem, tone)},
+      {'role': 'system', 'content': buildSystemPrompt(poem, tone, isSaved: isSaved)},
       for (final message in conversation)
         {'role': message.isUser ? 'user' : 'assistant', 'content': message.text},
       if (instruction != null) {'role': 'user', 'content': instruction},
@@ -177,8 +224,27 @@ class OpenRouterChatAgent implements ChatAgent {
           break;
         }
         messages.add(assistantMessage);
+        // compare_with_experts를 처음 부를 때 전문가 해석을 읽어 툴에 채운다
+        final needsExperts = isSaved &&
+            completion.toolCalls
+                .any((call) => call.name == AgentTools.compareWithExpertsName);
+        if (needsExperts && tools.experts.isEmpty) {
+          tools = AgentTools(
+            poem: poem,
+            isSaved: isSaved,
+            myEvidenceLines: myEvidenceLines,
+            myInterpretation: myInterpretation,
+            experts: await _loadExperts(),
+          );
+        }
         for (final call in completion.toolCalls) {
           final result = tools.run(call.name, call.arguments);
+          // 전문가 해석이 모델에게 넘어갔으면 사용자도 본 것으로 친다 — 해석 잠금
+          if (isSaved &&
+              call.name == AgentTools.compareWithExpertsName &&
+              tools.experts.isNotEmpty) {
+            await _markComparisonOpened();
+          }
           final quoteCheck = result.quoteCheck;
           final matches = result.matches;
           if (quoteCheck != null) quoteChecks.add(quoteCheck);

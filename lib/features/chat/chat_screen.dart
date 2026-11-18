@@ -18,6 +18,7 @@ import '../../data/models/reading.dart';
 import '../../data/models/settings.dart';
 import '../../data/repositories.dart';
 import '../../data/settings_options.dart';
+import '../../ports/repository_reading_source.dart';
 import '../../shared/widgets/chat_bubble.dart';
 import '../../shared/widgets/message_input.dart';
 import '../../shared/widgets/poem_view.dart';
@@ -73,6 +74,14 @@ class _ChatScreenState extends State<ChatScreen> {
       _agent = createChatAgent(
         settings: settings,
         isSaved: reading?.isSaved ?? false,
+        // 저장 뒤 compare_with_experts의 재료. 전문가 해석은 모델이 처음 부를 때 읽는다
+        myEvidenceLines: reading?.evidenceLines ?? const [],
+        myInterpretation: reading?.interpretation ?? '',
+        loadExperts: () =>
+            const RepositoryReadingSource().expertsFor(widget.poemId),
+        // S05에서 전문가 해석을 봐도 S07을 연 것과 같다 — 그 뒤로 해석을 고칠 수 없다
+        onComparisonOpened: () =>
+            const RepositoryReadingSource().markComparisonOpened(widget.poemId),
       );
       _conversation.addAll(reading?.conversation ?? const []);
       _evidenceLines.addAll(reading?.evidenceLines ?? const []);

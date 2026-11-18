@@ -2,6 +2,7 @@
 // 화면은 이 인터페이스만 안다. 키가 있으면 OpenRouter로 묻고, 없으면 가짜 에이전트가 답한다.
 // 근거 행 형식: 1부터 세는 행 번호 목록 (A → B · D 계약, 코딩분업 3장)
 import '../data/models/chat_message.dart';
+import '../data/models/expert_interpretation.dart';
 import '../data/repositories.dart';
 import '../data/models/poem.dart';
 import '../data/models/settings.dart';
@@ -54,7 +55,16 @@ const _questionModelOverride = String.fromEnvironment('OPENROUTER_QUESTION_MODEL
 
 /// 키가 있고 이 플랫폼에서 보낼 수 있으면 진짜 에이전트, 아니면 가짜 에이전트
 /// 진짜 에이전트는 모델을 부를 때마다 설정의 이번 달 사용량(질문 모델)을 하나씩 올린다.
-ChatAgent createChatAgent({required Settings settings, required bool isSaved}) {
+/// [myEvidenceLines] · [myInterpretation] · [loadExperts]는 저장 뒤 compare_with_experts의 재료다.
+/// [onComparisonOpened]는 그 툴로 전문가 해석을 처음 보였을 때 한 번 — 해석 잠금 (기획서 4장)
+ChatAgent createChatAgent({
+  required Settings settings,
+  required bool isSaved,
+  List<int> myEvidenceLines = const [],
+  String myInterpretation = '',
+  Future<List<ExpertInterpretation>> Function()? loadExperts,
+  Future<void> Function()? onComparisonOpened,
+}) {
   final client = OpenRouterClient();
   if (!client.isAvailable) return FakeChatAgent();
   return OpenRouterChatAgent(
@@ -64,6 +74,10 @@ ChatAgent createChatAgent({required Settings settings, required bool isSaved}) {
         : _questionModelOverride,
     tone: settings.tone,
     isSaved: isSaved,
+    myEvidenceLines: myEvidenceLines,
+    myInterpretation: myInterpretation,
+    loadExperts: loadExperts,
+    onComparisonOpened: onComparisonOpened,
     onModelCall: Repositories.settings.countQuestionCall,
   );
 }
