@@ -227,11 +227,13 @@ class _SaveScreenState extends State<SaveScreen> {
               ),
             ),
           const SizedBox(height: 16),
+          // 대조 연 뒤라도 비공개였으면 공개로 바꿀 수 있음 (해석은 못 고치니까 그대로 다시 저장됨)
+          // 공개는 못 되돌림. 스위치 색이 그대로라 안 눌리는 걸로 보여서 이유 적어 둠
           SwitchListTile(
             title: const Text(AppStrings.savePublicLabel),
-            subtitle: const Text(AppStrings.savePublicCaption),
+            subtitle: Text(_wasPublic ? AppStrings.savePublicFixed : AppStrings.savePublicCaption),
             value: _isPublic,
-            onChanged: (_isLocked || _wasPublic) ? null : (value) => setState(() => _isPublic = value),
+            onChanged: _wasPublic ? null : (value) => setState(() => _isPublic = value),
           ),
         ],
       ),

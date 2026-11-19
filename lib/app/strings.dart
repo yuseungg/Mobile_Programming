@@ -110,6 +110,7 @@ class AppStrings {
   static const saveEvidenceLabel = '내가 근거로 삼은 구절';
   static const savePublicLabel = '대화를 모두의 대화에 공개';
   static const savePublicCaption = 'AI가 대화에서 의미 있는 내용만 뽑아 닉네임과 함께 올립니다';
+  static const savePublicFixed = '이미 공개한 대화는 되돌릴 수 없어요.';
   static const saveLockNotice = '저장한 뒤에야 전문가 해석과 다른 사람의 대화가 열립니다.';
   static const saveButton = '저장하기';
   static const saveLockedNotice ='대조를 연 뒤라 해석은 더 고칠 수 없어요.';
