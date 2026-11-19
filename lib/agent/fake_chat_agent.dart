@@ -93,7 +93,7 @@ class FakeChatAgent implements ChatAgent {
     CancelToken? cancelToken,
   }) async {
     await Future<void>.delayed(delay);
-    return _reply(poem, nextFallbackQuestion(poem.poemId, conversation));
+    return _reply(poem, fallbackHint(poem.poemId, conversation));
   }
 
   AgentReply _reply(
