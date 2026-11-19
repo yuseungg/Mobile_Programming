@@ -157,6 +157,25 @@ void main() {
     expect(transport.requests, hasLength(1));
   });
 
+  test('힌트를 청할 때 직전 질문을 함께 알려 주고, 실패하면 그 질문의 짝 힌트로 대신한다', () async {
+    final lastQuestion = fallbackQuestions['seosi']![1]; // 별이 나오는 두 행
+    final conversation = [ChatMessage(role: ChatRole.assistant, text: lastQuestion)];
+
+    final okTransport = _ScriptedTransport([_text("5행에서 '별' 바로 뒤에는 어떤 말이 오나요?")]);
+    await agentWith(okTransport).hint(poem: seosi, conversation: conversation);
+    final instruction =
+        ((okTransport.requests.single['messages'] as List).last as Map)['content'];
+    expect(instruction, contains('힌트를 눌렀다'));
+    expect(instruction, contains(lastQuestion));
+
+    final failTransport =
+        _ScriptedTransport([_error(429, 'temporarily rate-limited upstream')]);
+    final reply =
+        await agentWith(failTransport).hint(poem: seosi, conversation: conversation);
+    expect(reply.isFallback, isTrue);
+    expect(reply.text, preparedQuestions['seosi']![1].hint);
+  });
+
   test('HTTP 200이어도 본문에 error가 있으면 실패로 본다', () async {
     final transport = _ScriptedTransport([
       HttpResponseData(
