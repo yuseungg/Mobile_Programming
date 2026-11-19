@@ -60,7 +60,7 @@ const preparedQuestions = <String, List<PreparedQuestion>>{
     ),
     (
       question: "'~와 같이'처럼 무엇에 견주는 말이 나오는 행은 어디인가요?",
-      hint: "'같이'라는 말이 들어간 행을 찾으면 몇 행인가요?",
+      hint: "'같이'라는 말이 들어간 행을 모두 찾으면 어느 행들인가요?",
     ),
   ],
 };
@@ -69,7 +69,7 @@ const preparedQuestions = <String, List<PreparedQuestion>>{
 const generalPreparedQuestions = <PreparedQuestion>[
   (
     question: '처음 읽을 때 가장 오래 눈이 머문 행은 어디였나요?',
-    hint: '처음부터 다시 천천히 읽을 때, 읽는 속도가 느려지는 행은 몇 행인가요?',
+    hint: '다시 읽으며 낯설거나 처음 보는 낱말을 찾으면, 그 낱말은 몇 행에 있나요?',
   ),
   (
     question: '이 시에서 두 번 이상 나오는 낱말은 무엇인가요?',
@@ -85,8 +85,10 @@ const generalPreparedQuestions = <PreparedQuestion>[
   ),
 ];
 
-/// 직전 질문이 준비된 질문이 아닐 때(모델이 쓴 질문 · 첫 질문)의 힌트
-const followUpHint = '방금 질문에 나온 낱말 하나를 골라 보면, 시에서 그 낱말은 몇 행에 있나요?';
+/// 직전 질문이 준비된 질문이 아닐 때(모델이 쓴 질문 · 첫 질문)의 힌트.
+/// 직전 질문이 낱말을 물었든 행을 물었든 통하도록, 시를 한 행씩 짚어 보게 한다.
+const followUpHint =
+    '한 행씩 짚어 내려가며 방금 질문과 닿아 있는 낱말이 보이는 곳에서 멈추면, 그 행은 몇 행인가요?';
 
 /// 시별 준비된 질문 — 질문 글만
 final fallbackQuestions = <String, List<String>>{

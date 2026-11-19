@@ -55,7 +55,7 @@ void main() {
     expect(reply.text, generalPreparedQuestions[3].hint);
   });
 
-  test('직전 질문이 준비된 질문이 아니면 그 질문의 낱말에서 출발하는 힌트', () async {
+  test('직전 질문이 준비된 질문이 아니면 공통 힌트', () async {
     final reply = await agent.hint(
       poem: seosi,
       conversation: [assistant("'부끄러움'이라는 낱말이 남았군요. 어느 행을 읽을 때 그 낱말이 떠올랐나요?")],
