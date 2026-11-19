@@ -20,7 +20,6 @@ class ReadingScreen extends StatefulWidget {
 }
 
 class _ReadingScreenState extends State<ReadingScreen> {
-  // S01이 아직 진짜 로그인을 안 시켜서 없으면 가짜 계정으로
   final String _userId = Repositories.userId;
 
   final Set<int> _markedLines = {};
