@@ -22,6 +22,10 @@ class AppStrings {
   static const tabCommunity = '모두의 대화';
   static const tabSettings = '설정';
 
+  // ── 앱 시작 관문 (로그인 분기) ─────────────────
+  static const authGateFailed = '시작하지 못했어요. 인터넷 연결을 확인해 주세요.';
+  static const authGateRetry = '다시 시도';
+
   // ── S01 로그인 ────────────────────────────────
   static const signInEmailLabel = '이메일';
   static const signInEmailHint = 'example@gmail.com';
@@ -50,6 +54,24 @@ class AppStrings {
   static const signUpButton = '가입하기';
   static const signUpHaveAccount = '이미 계정이 있다면';
   static const signUpGoToSignIn = '로그인';
+  static const signUpEmailInvalid = 'gmail.com 주소를 입력해 주세요';
+  static String signUpPasswordTooShort(int min) => '$min자 이상 입력해 주세요';
+  static String signUpNicknameAdjusted(String nickname) =>
+      '같은 닉네임이 있어서 「$nickname」(으)로 정했어요';
+
+  // ── S02 닉네임만 정하기 (구글로 처음 들어온 사람) ──
+  static const nicknameOnlyTitle = '닉네임 정하기';
+  static const nicknameOnlyHeading = '처음 오셨네요';
+  static const nicknameOnlySubheading = '여백에서 쓸 닉네임을 정해 주세요.';
+  static const nicknameOnlyButton = '시작하기';
+  static const nicknameOnlyOtherAccount = '다른 계정으로 로그인';
+
+  // ── 로그인 · 가입 오류 ─────────────────────────
+  static const authErrorInvalidCredentials = '이메일이나 비밀번호가 맞지 않아요';
+  static const authErrorEmailInUse = '이미 가입된 이메일이에요. 로그인해 주세요';
+  static const authErrorNotGmail = 'gmail.com 계정만 쓸 수 있어요';
+  static const authErrorNetwork = '인터넷 연결을 확인해 주세요';
+  static const authErrorUnknown = '잠시 후 다시 시도해 주세요';
 
   // ── S03 홈 (B) ────────────────────────────────
   static String homeTotalDays(int days) => '지금까지 $days일 시를 읽었어요';
@@ -58,14 +80,18 @@ class AppStrings {
   static const homeStartReading = '혼자 읽기 시작';
   static const homePoemList = '시 목록';
   static const homeReadMark =  '읽음';
+  static const homeContinueTitle = '이어 읽기';
+  static String homeContinueSubtitle(String firstWord) => '‘$firstWord’에서 시작한 대화를 이어 가요';
 
   // ── S04 읽기 ──────────────────────────────────
   static String readingAppBarTitle(String author, String title) =>
       '$author 「$title」';
   static String readingAuthorYear(String author, int year) => '$author · $year';
   static const readingStopGuide = '마음이 멈춘 줄을 눌러 보세요. 아무것도 안 눌러도 됩니다.';
+  static const readingMarkFailed = '표시하지 못했어요. 잠시 뒤에 다시 눌러 주세요.';
   static const readingFirstWordLabel = '읽고 떠오른 낱말 하나';
   static const readingStartChat = '이 낱말로 대화 시작';
+  static const readingContinueChat = '대화 이어 하기';
   static const readingEndWithWord = '낱말만 남기고 끝내기';
 
   // ── S05 대화 ──────────────────────────────────
@@ -86,6 +112,10 @@ class AppStrings {
   static const savePublicCaption = 'AI가 대화에서 의미 있는 내용만 뽑아 닉네임과 함께 올립니다';
   static const saveLockNotice = '저장한 뒤에야 전문가 해석과 다른 사람의 대화가 열립니다.';
   static const saveButton = '저장하기';
+  static const saveLockedNotice ='대조를 연 뒤라 해석은 더 고칠 수 없어요.';
+  static const saveFailed = '저장하지 못했어요. 다시 눌러 주세요.';
+  static const saveKeptForLater = '지금은 저장하지 못해서 기기에 보관해 뒀어요. 다음에 앱을 열면 다시 저장할게요.';
+  static const homePendingSaved = '보관해 둔 해석을 저장했어요.';
 
   // ── S07 대조 (D) ──────────────────────────────
   static String comparisonTitle(String poemTitle) => '$poemTitle — 대조';
@@ -147,6 +177,7 @@ class AppStrings {
   static const communityDetailInterpretationCaption = '대화를 거쳐 도달한 고유한 생각';
   static String communityDetailEmpathyCount(int count) => '공감 $count';
   static const communityDetailEmpathyNote = '공감은 우열이나 순위에 반영되지 않습니다.';
+  static const communityDetailEmpathyFailed = '공감을 저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.';
 
   // ── S10 설정 보기 ─────────────────────────────
   static const settingsTitle = '설정';
@@ -159,6 +190,12 @@ class AppStrings {
   static String settingsUsage(int questionCount, int comparisonCount) =>
       '질문 $questionCount회 · 비교 $comparisonCount회';
   static const settingsEditButton = '설정 바꾸기';
+  static const settingsLoadFailed = '설정을 불러오지 못했어요. 잠시 후 다시 열어 주세요.';
+  static const settingsSignOut = '로그아웃';
+  static const settingsSignOutDialogTitle = '로그아웃할까요?';
+  static const settingsSignOutDialogBody = '다시 로그인하면 읽은 기록은 그대로 있어요.';
+  static const settingsSignOutCancel = '취소';
+  static const settingsSignOutFailed = '로그아웃하지 못했어요. 잠시 후 다시 해 주세요.';
 
   // ── S11 설정 바꾸기 ───────────────────────────
   static const settingsEditTitle = '설정 바꾸기';
@@ -168,6 +205,16 @@ class AppStrings {
   static const settingsEditDeleteHistory = '대화 기록 지우기';
   static const settingsEditDeleteAction = '지우기';
   static const settingsEditSave = '저장';
+  static const settingsEditDeleteHistoryCaption = '저장한 해석과 뱃지는 남아요.';
+  static const settingsEditSaved = '설정을 저장했어요.';
+  static const settingsEditSaveFailed = '저장하지 못했어요. 잠시 후 다시 해 주세요.';
+  static const settingsDeleteDialogTitle = '대화 기록을 지울까요?';
+  static const settingsDeleteDialogBody =
+      '모든 시에서 AI와 나눈 대화가 지워지고, 되돌릴 수 없어요.\n'
+      '저장한 해석, 뱃지, 시를 읽은 날, 공개한 대화는 그대로 남아요.';
+  static const settingsDeleteCancel = '취소';
+  static const settingsDeleteDone = '대화 기록을 지웠어요.';
+  static const settingsDeleteFailed = '지우지 못했어요. 잠시 후 다시 해 주세요.';
 
   // 말투 (S10 · S11 공용)
   static const tonePlain = '담백하게';
@@ -183,4 +230,14 @@ class AppStrings {
   static const profileBadgesCaption = '끝까지 읽고 생각을 저장한 시마다 그 시를 닮은 뱃지가 남습니다.';
   static const profileNoBadges = '아직 모은 뱃지가 없습니다.\n시를 읽고 해석을 저장해 보세요.';
   static const profileShelfNote = '프로필은 당신의 생각을 모아두는 조용한 선반입니다.';
+
+  // ── S13 안내 ──────────────────────────────────
+  static const introStart = '시 읽으러 가기';
+  static const introSkip = '건너뛰기';
+  static const introLinesTitle = '마음에 남은 줄';
+  static const introLinesEmpty = '시를 한 편 읽고 나면, 가장 마음에 남은 줄이 여기에 남습니다.';
+  static const introStatusTitle = '지금까지';
+  static String introDays(int count) => '시를 읽은 날 $count일';
+  static String introShared(int count) => '모두에게 나눈 글 $count편';
+  static String introBadges(int count) => '받은 뱃지 $count개';
 }

@@ -7,15 +7,16 @@
 // 모델 호출이 실패해도 화면은 빈 칸이 되면 안 된다. 그래서 돌려주는 값에
 // isFallback을 달아, 미리 쓴 문장이나 관계 한 줄로 대신했음을 화면이 안다.
 //
-// A의 OpenRouterClient를 쓰는 구현체는 PR #5가 병합된 뒤에 붙인다.
-// 그때 추가되는 것은 이 인터페이스를 구현하는 클래스 하나뿐이다.
+// 구현은 둘이다. A의 OpenRouterClient를 쓰는 OpenRouterComparisonWriter와,
+// 키가 없거나 호출이 실패할 때 대신 채우는 FakeComparisonWriter.
 
 import '../data/models/expert_interpretation.dart';
+import '../data/models/poem.dart';
 
 /// 비교 문장 한 개를 쓰기 위해 필요한 것
 class ComparisonRequest {
   const ComparisonRequest({
-    required this.poemId,
+    required this.poem,
     required this.myInterpretation,
     required this.myEvidenceLines,
     required this.expert,
@@ -23,7 +24,13 @@ class ComparisonRequest {
     required this.expertIndex,
   });
 
-  final String poemId;
+  /// 시 원문. 비교 문장을 쓰는 쪽은 인용이 원문에 있는지 확인해야 하고,
+  /// 행 번호를 부르려면 몇 행까지 있는지 알아야 한다.
+  final Poem poem;
+
+  /// 미리 쓴 문장을 꺼내는 열쇠. 시 하나에 하나뿐이라 시에서 꺼낸다.
+  String get poemId => poem.poemId;
+
   final String myInterpretation;
   final List<int> myEvidenceLines;
   final ExpertInterpretation expert;

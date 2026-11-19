@@ -31,7 +31,19 @@ abstract interface class ReadingSource {
   /// 그 시에 대한 내 읽기. 없으면 null (= 아직 읽지 않았다)
   Future<Reading?> readingFor(String poemId);
 
+  /// 내 읽기 전체 — S13이 「지금까지」와 인상깊은 문구를 모을 때 쓴다.
+  /// 아직 아무 시도 안 읽었으면 빈 목록이다.
+  Future<List<Reading>> myReadings();
+
   Future<UserProfile> profileById(String userId);
+
+  /// 그 사람의 프로필이 바뀔 때마다 (S12). 뱃지를 받거나 누적일수가 오르면
+  /// 화면을 다시 열지 않아도 바뀐다.
+  ///
+  /// **프로필이 없으면 아무것도 내보내지 않는다** — C의 구현이 가짜·Firestore
+  /// 양쪽 모두 없는 문서를 걸러낸다. 그래서 화면은 이 스트림만 기다리지 않고
+  /// [profileById]로 한 번 읽어 없음을 먼저 확인한다.
+  Stream<UserProfile> watchProfile(String userId);
 
   /// 그 시의 공개 대화. 최신순이고 공감 수로 정렬하지 않는다 (기획서 9장)
   Future<List<PublicConversation>> conversationsFor(String poemId);
@@ -52,4 +64,18 @@ abstract interface class ReadingSource {
   ///
   /// 저장이 실패해도 대조는 보여야 하므로 **예외를 던지지 않는다.**
   Future<void> markComparisonOpened(String poemId);
+
+  /// 이 대화에 내가 이미 공감했나 (S09). 잠긴 시의 대화면 false.
+  Future<bool> hasEmpathized(String conversationId);
+
+  /// 공감 켜기/끄기 (S09).
+  ///
+  /// [markComparisonOpened]와 달리 **예외를 먹지 않는다.** 대조 열람 기록은
+  /// 못 남겨도 화면만 보이면 되지만, 공감은 눌린 모양이 남아 있는데 저장이
+  /// 안 되면 사용자가 공감한 줄로 안다. 화면이 눌린 상태를 되돌릴 수 있게
+  /// 실패를 그대로 올려 보낸다.
+  Future<void> setEmpathy(
+    String conversationId, {
+    required bool hasEmpathized,
+  });
 }

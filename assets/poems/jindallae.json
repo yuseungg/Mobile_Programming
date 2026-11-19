@@ -1,0 +1,21 @@
+{
+  "poem": "jindallae",
+  "badge": "badges/jindallae.png",
+  "readings": [
+    {
+      "label": "전문가 해석 A",
+      "stance": "체념과 헌신으로 읽는 입장",
+      "claims": [
+        { "lines": [3], "point": "붙잡지 않고 조용히 물러서며 이별을 받아들인다" },
+        { "lines": [9, 10, 11], "point": "떠나는 걸음 앞에 놓인 꽃을 밟고 가라 하며 끝까지 축복을 건넨다" }
+      ]
+    },
+    {
+      "label": "전문가 해석 B",
+      "stance": "억눌린 슬픔의 역설로 읽는 입장",
+      "claims": [
+        { "lines": [15], "point": "죽어도 울지 않겠다는 과장된 다짐이 도리어 깊은 슬픔을 드러낸다" }
+      ]
+    }
+  ]
+}

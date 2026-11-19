@@ -127,10 +127,11 @@ void main() {
       expect(file.readings[0].stance, isNot(file.readings[1].stance));
     });
 
+    // 세 편 모두 해석이 들어온 뒤로는, 에셋에 없는 id로 이 길을 시험한다.
+    // 시를 더 넣을 때 해석 파일이 늦어지면 S07이 「준비 중」을 보여야 한다.
     test('아직 해석을 쓰지 않은 시는 null — 오류가 아니다', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
-      expect(await loadExpertFile('jindallae'), isNull);
-      expect(await loadExpertFile('bomgoyangi'), isNull);
+      expect(await loadExpertFile('no_such_poem'), isNull);
     });
 
     test('경로 규칙', () {

@@ -1,9 +1,12 @@
 // 테스트용 ReadingSource — 필요한 것만 넣고 나머지는 가짜 데이터를 쓴다.
+import 'dart:async';
+
 import 'package:yeobaek/data/models/expert_interpretation.dart';
 import 'package:yeobaek/data/models/poem.dart';
 import 'package:yeobaek/data/models/public_conversation.dart';
 import 'package:yeobaek/data/models/reading.dart';
 import 'package:yeobaek/data/models/user_profile.dart';
+import 'package:yeobaek/data/repositories/public_conversation_repository.dart';
 import 'package:yeobaek/ports/fake_reading_source.dart';
 import 'package:yeobaek/ports/reading_source.dart';
 
@@ -16,6 +19,8 @@ class StubReadingSource implements ReadingSource {
     this.profiles = const {},
     this.todayPoemIdOverride,
     this.throwOnRead = false,
+    this.empathized = const {},
+    this.throwOnSetEmpathy = false,
   });
 
   final Map<String, Reading> readings;
@@ -59,10 +64,28 @@ class StubReadingSource implements ReadingSource {
   }
 
   @override
+  Future<List<Reading>> myReadings() async {
+    if (throwOnRead) throw StateError('읽을 수 없다');
+    calls.add('myReadings');
+    return readings.values.toList();
+  }
+
+  @override
   Future<UserProfile> profileById(String userId) async {
     if (throwOnRead) throw StateError('읽을 수 없다');
     calls.add('profileById:$userId');
     return profiles[userId] ?? await _fallback.profileById(userId);
+  }
+
+  /// 테스트가 프로필 갱신을 흘려보낼 통로. [pushProfile]로 밀어 넣는다.
+  final _profileChanges = StreamController<UserProfile>.broadcast();
+
+  void pushProfile(UserProfile profile) => _profileChanges.add(profile);
+
+  @override
+  Stream<UserProfile> watchProfile(String userId) {
+    calls.add('watchProfile:$userId');
+    return _profileChanges.stream.where((p) => p.userId == userId);
   }
 
   @override
@@ -89,4 +112,33 @@ class StubReadingSource implements ReadingSource {
   @override
   Future<List<String>> comparisonTextsFor(String poemId) async =>
       comparisonTexts[poemId] ?? const [];
+
+  /// 처음부터 공감해 둔 대화 id
+  final Set<String> empathized;
+
+  /// 공감 쓰기가 실패하는 경우 — 잠긴 시의 대화나 네트워크 문제.
+  /// C의 저장소는 ConversationsLockedException을 던진다.
+  final bool throwOnSetEmpathy;
+
+  late final _empathized = {...empathized};
+
+  @override
+  Future<bool> hasEmpathized(String conversationId) async {
+    calls.add('hasEmpathized:$conversationId');
+    return _empathized.contains(conversationId);
+  }
+
+  @override
+  Future<void> setEmpathy(
+    String conversationId, {
+    required bool hasEmpathized,
+  }) async {
+    calls.add('setEmpathy:$conversationId:$hasEmpathized');
+    if (throwOnSetEmpathy) throw const ConversationsLockedException('seosi');
+    if (hasEmpathized) {
+      _empathized.add(conversationId);
+    } else {
+      _empathized.remove(conversationId);
+    }
+  }
 }

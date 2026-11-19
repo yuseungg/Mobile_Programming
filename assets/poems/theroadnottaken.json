@@ -1,0 +1,21 @@
+{
+  "poem": "theroadnottaken",
+  "badge": "badges/theroadnottaken.png",
+  "readings": [
+    {
+      "label": "전문가 해석 A",
+      "stance": "아이러니로 읽는 입장",
+      "claims": [
+        { "lines": [9, 10, 11], "point": "덜 다닌 길이라고 말해 놓고 곧 두 길이 실은 거의 같았다고 적어 둔다" },
+        { "lines": [19, 20, 21], "point": "먼 훗날 한숨과 함께 이야기하게 될 것이라고 미리 말한다" }
+      ]
+    },
+    {
+      "label": "전문가 해석 B",
+      "stance": "돌이킬 수 없음으로 읽는 입장",
+      "claims": [
+        { "lines": [16], "point": "길이 또 길로 이어지는 것을 알기에 돌아올 수 없다고 본다" }
+      ]
+    }
+  ]
+}

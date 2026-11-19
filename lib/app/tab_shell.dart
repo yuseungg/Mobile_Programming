@@ -1,6 +1,7 @@
 // 주인: C — 하단 탭바
 // 탭바는 S03 · S08 · S10에서만 보인다. 순서: 시 / 모두의 대화 / 설정
 // 나머지 화면은 탭바 없이 왼쪽 위 뒤로 가기로 돌아온다.
+// 설정 탭은 누를 때마다 새로 만든다 — 그사이 늘어난 이번 달 사용량을 다시 읽도록.
 import 'package:flutter/material.dart';
 
 import '../features/community/community_list_screen.dart';
@@ -21,21 +22,29 @@ class TabShell extends StatefulWidget {
 
 class _TabShellState extends State<TabShell> {
   late int _index = widget.initialTab.index;
+  int _settingsOpenCount = 0; // 설정 탭을 누른 횟수 — S10의 key
+
+  void _select(int index) {
+    setState(() {
+      if (index == AppTab.settings.index) _settingsOpenCount++;
+      _index = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
         index: _index,
-        children: const [
-          HomeScreen(),
-          CommunityListScreen(),
-          SettingsScreen(),
+        children: [
+          const HomeScreen(),
+          const CommunityListScreen(),
+          SettingsScreen(key: ValueKey(_settingsOpenCount)),
         ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (index) => setState(() => _index = index),
+        onDestinationSelected: _select,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),

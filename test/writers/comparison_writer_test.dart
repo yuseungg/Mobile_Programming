@@ -1,5 +1,6 @@
 // 주인: D — 비교 문장 폴백 (기획서 4장 · 9장 「오프라인·실패 처리」)
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/data/fakes/fake_data.dart';
 import 'package:yeobaek/data/models/expert_interpretation.dart';
 import 'package:yeobaek/writers/comparison_writer.dart';
 import 'package:yeobaek/writers/fake_comparison_writer.dart';
@@ -21,7 +22,7 @@ ComparisonRequest request({
   String poemId = 'seosi',
 }) =>
     ComparisonRequest(
-      poemId: poemId,
+      poem: FakeData.poemById(poemId),
       myInterpretation: '내 해석',
       myEvidenceLines: myLines,
       expert: expertWith(expertLines),

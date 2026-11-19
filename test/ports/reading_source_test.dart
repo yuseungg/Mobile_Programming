@@ -8,7 +8,7 @@ void main() {
 
   test('수록된 시를 모두 돌려준다', () async {
     final poems = await source.poems();
-    expect(poems, hasLength(3));
+    expect(poems, hasLength(4));
     expect(poems.map((p) => p.poemId), containsAll(['seosi', 'jindallae']));
   });
 

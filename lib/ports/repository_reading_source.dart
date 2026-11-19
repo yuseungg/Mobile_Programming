@@ -6,10 +6,10 @@
 // 어디서 읽는지:
 //   내 읽기 · 프로필 · 공개 대화 → C의 저장소 (사람이 만든 데이터)
 //   시 본문 · 오늘의 시 · 전문가 해석 → 앱 번들 (콘텐츠. Firestore에 없다)
-//   비교 문장 → 아직 가짜. 모델 호출 구현체가 들어오면 lib/writers/로 옮긴다.
+//   비교 문장 → 미리 쓴 문장만 여기서 읽는다 (폴백의 재료).
+//                모델이 쓰는 쪽은 lib/writers/openrouter_comparison_writer.dart.
 //
-// 로그인 전에는 FakeData.myUserId를 쓴다 (A · B 화면과 같은 임시 방식).
-// 로그인 분기가 들어오면 그 폴백을 지운다.
+// 화면은 로그인 뒤에만 열리므로 내 id는 Repositories.userId에서 꺼낸다 (로그인 분기 ④).
 
 import '../compare/expert_parser.dart';
 import '../data/fakes/fake_data.dart';
@@ -24,12 +24,8 @@ import 'reading_source.dart';
 class RepositoryReadingSource implements ReadingSource {
   const RepositoryReadingSource();
 
-  /// 로그인 전에는 가짜 사용자 id로 둔다 — 다른 화면들(A · B)도 같은 방식이고,
-  /// 그래야 1단계 시연(`useFakes()`, 로그인 없음)에서 읽기 → 저장 → 대조가 이어진다.
-  /// **로그인 분기가 들어오면 이 폴백을 지운다** (PR #8 리뷰에서 B와 확인).
   @override
-  String get myUserId =>
-      Repositories.auth.currentUserId ?? FakeData.myUserId;
+  String get myUserId => Repositories.userId;
 
   @override
   String get todayPoemId => FakeData.todayPoemId;
@@ -45,8 +41,16 @@ class RepositoryReadingSource implements ReadingSource {
       Repositories.reading.fetchReading(myUserId, poemId);
 
   @override
+  Future<List<Reading>> myReadings() =>
+      Repositories.reading.fetchMyReadings(myUserId);
+
+  @override
   Future<UserProfile> profileById(String userId) =>
       Repositories.user.fetchProfile(userId);
+
+  @override
+  Stream<UserProfile> watchProfile(String userId) =>
+      Repositories.user.watchProfile(userId);
 
   @override
   Future<List<PublicConversation>> conversationsFor(String poemId) =>
@@ -79,4 +83,21 @@ class RepositoryReadingSource implements ReadingSource {
       // 저장 전이거나 권한이 없으면 저장소가 막는다 — 대조는 그대로 보여 준다
     }
   }
+
+  @override
+  Future<bool> hasEmpathized(String conversationId) =>
+      Repositories.publicConversation.hasEmpathized(conversationId, myUserId);
+
+  /// 예외를 먹지 않는다 — 포트 설명대로 화면이 눌린 상태를 되돌려야 한다.
+  /// 잠긴 시의 대화면 저장소가 ConversationsLockedException을 던진다.
+  @override
+  Future<void> setEmpathy(
+    String conversationId, {
+    required bool hasEmpathized,
+  }) =>
+      Repositories.publicConversation.setEmpathy(
+        conversationId,
+        myUserId,
+        hasEmpathized: hasEmpathized,
+      );
 }

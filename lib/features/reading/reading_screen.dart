@@ -1,7 +1,4 @@
 // S04 읽기 — 주인: B
-// B의 part-b `S04ReadingScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
-// - AI 없이 혼자 읽기. 마음이 멈춘 행을 눌러 표시
-// - 떠오른 낱말 하나 (최대 20자) → 대화의 출발점
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -9,6 +6,8 @@ import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
+import '../../data/models/reading.dart';
+import '../../data/repositories.dart';
 import '../../shared/widgets/poem_view.dart';
 
 class ReadingScreen extends StatefulWidget {
@@ -21,8 +20,126 @@ class ReadingScreen extends StatefulWidget {
 }
 
 class _ReadingScreenState extends State<ReadingScreen> {
-  final _markedLines = <int>{};
-  final _firstWordController = TextEditingController();
+  final String _userId = Repositories.userId;
+
+  final Set<int> _markedLines = {};
+  final Set<int> _savingLines = {}; // 저장 중인 행 (그동안 또 누르면 무시)
+  Map<int, int> _stopCounts = {};
+  bool _hasConversation = false; // 하던 대화 있으면 버튼을 '대화 이어 하기'로
+  final TextEditingController _firstWordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _countReadingDay();
+    _load();
+  }
+
+  // 들어올 때 누적일수 셈 (한국 시간 기준 하루 한 번, 저장소에서 처리)
+  // 네트워크 문제로 못 세도 읽기는 그냥 되게 함
+  Future<void> _countReadingDay() async {
+    try {
+      await Repositories.user.countReadingDay(_userId);
+    } catch (e) {
+      // print(e);
+    }
+  }
+
+  Future<void> _load() async {
+    // 전에 읽던 시면 멈춘 행이랑 첫 낱말 그대로 불러옴
+    Reading? saved = await Repositories.reading.fetchReading(_userId, widget.poemId);
+    Map<int, int> counts = await Repositories.reading.fetchStopCounts(widget.poemId);
+    // print(counts);
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      if (saved != null) {
+        _markedLines.addAll(saved.markedLines);
+        _firstWordController.text = saved.firstWord;
+        _hasConversation = saved.conversation.isNotEmpty;
+      }
+      _stopCounts = counts;
+    });
+  }
+
+
+
+  //AI
+  // 누르면 내 멈춘 행이랑 집계가 같이 바뀜. 집계엔 나도 들어가 있어서 다시 받아옴
+  // 화면 먼저 바꾸고, 저장 실패하면 되돌림 (화면이랑 서버가 어긋나면 안 됨)
+  Future<void> _toggleLine(int lineNo) async {
+    if (_savingLines.contains(lineNo)) {
+      return;
+    }
+    bool isMarked = !_markedLines.contains(lineNo);
+    _savingLines.add(lineNo);
+    setState(() {
+      _setMarked(lineNo, isMarked);
+    });
+
+    try {
+      await Repositories.reading.setMarkedLine(_userId, widget.poemId, lineNo, isMarked: isMarked);
+    } catch (e) {
+      _savingLines.remove(lineNo);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _setMarked(lineNo, !isMarked);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.readingMarkFailed)));
+      return;
+    }
+    _savingLines.remove(lineNo);
+
+
+    // 집계 못 받아오면 원래 숫자 그대로 둠 (멈춘 건 이미 저장됨)
+    Map<int, int> counts = _stopCounts;
+    try {
+      counts = await Repositories.reading.fetchStopCounts(widget.poemId);
+    } catch (e) {
+      // print(e);
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _stopCounts = counts;
+    });
+  }
+
+  void _setMarked(int lineNo, bool isMarked) {
+    if (isMarked) {
+      _markedLines.add(lineNo);
+    } else {
+      _markedLines.remove(lineNo);
+    }
+  }
+
+  // 첫 낱말 저장. S05가 저장소에서 이걸 꺼내 씀
+  Future<void> _saveFirstWord() async {
+    Reading? latest = await Repositories.reading.fetchReading(_userId, widget.poemId);
+    latest ??= Reading(poemId: widget.poemId);
+    await Repositories.reading.saveProgress(_userId, latest.copyWith(firstWord: _firstWordController.text.trim()));
+  }
+
+  Future<void> _startChat() async {
+    await _saveFirstWord();
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pushNamed(AppRoutes.chat(widget.poemId));
+  }
+
+  Future<void> _endWithWord() async {
+    await _saveFirstWord();
+    if (!mounted) {
+      return;
+    }
+    AppRouter.goToTab(context, AppRoutes.home);
+  }
 
   @override
   void dispose() {
@@ -40,7 +157,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
       appBar: AppBar(
         title: Text(
           AppStrings.readingAppBarTitle(poem.author, poem.title),
-          style: const TextStyle(fontSize: 15, color: AppColors.textSub),
+          style: AppText.bodySub,
         ),
         backgroundColor: AppColors.background,
       ),
@@ -49,37 +166,28 @@ class _ReadingScreenState extends State<ReadingScreen> {
         children: [
           Text(
             poem.title,
-            style: const TextStyle(
-              fontFamily: AppFonts.myeongjo,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: AppColors.text,
-            ),
+            style: AppText.poemTitle,
           ),
           Text(
             AppStrings.readingAuthorYear(poem.author, poem.year),
-            style: const TextStyle(color: AppColors.textSub),
+            style:AppText.bodySub,
           ),
           const SizedBox(height: 24),
           PoemView(
             poem: poem,
             markedLines: _markedLines,
-            stopCounts: FakeData.stopCounts[poem.poemId] ?? const {},
-            onLineTap: (lineNo) => setState(
-              () => _markedLines.contains(lineNo)
-                  ? _markedLines.remove(lineNo)
-                  : _markedLines.add(lineNo),
-            ),
+            stopCounts: _stopCounts,
+            onLineTap: _toggleLine,
           ),
           const SizedBox(height: 8),
           const Text(
             AppStrings.readingStopGuide,
-            style: TextStyle(fontSize: 12, color: AppColors.textFaint),
+            style: AppText.caption,
           ),
           const SizedBox(height: 32),
           const Text(
             AppStrings.readingFirstWordLabel,
-            style: TextStyle(fontSize: 13, color: AppColors.textSub),
+            style: AppText.label,
           ),
           const SizedBox(height: 8),
           TextField(
@@ -96,17 +204,12 @@ class _ReadingScreenState extends State<ReadingScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: !hasFirstWord
-                ? null
-                : () => Navigator.of(context)
-                    .pushNamed(AppRoutes.chat(poem.poemId)),
-            child: const Text(AppStrings.readingStartChat),
+            onPressed: !hasFirstWord ? null : _startChat,
+            child: Text(_hasConversation ? AppStrings.readingContinueChat : AppStrings.readingStartChat),
           ),
           const SizedBox(height: 8),
           OutlinedButton(
-            onPressed: !hasFirstWord
-                ? null
-                : () => AppRouter.goToTab(context, AppRoutes.home),
+            onPressed: !hasFirstWord ? null : _endWithWord,
             child: const Text(AppStrings.readingEndWithWord),
           ),
         ],

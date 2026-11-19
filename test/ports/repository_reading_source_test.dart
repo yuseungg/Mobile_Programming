@@ -55,13 +55,16 @@ void main() {
     });
   });
 
-  group('로그인 전에는 (로그인 분기가 들어오기 전까지의 임시 동작)', () {
+  group('내 id는 로그인한 사람 것 (로그인 분기 ④ — C)', () {
     setUp(() => Repositories.useFakes());
 
-    test('가짜 사용자 id로 둔다 — A · B 화면과 같은 방식', () {
-      // 이래야 1단계 시연에서 읽기 → 저장 → 대조가 이어진다.
-      // 로그인 분기가 들어오면 이 폴백과 이 테스트를 함께 지운다.
+    test('로그인한 사람의 id를 쓴다', () {
       expect(source.myUserId, FakeData.myUserId);
+    });
+
+    test('로그인 안 했으면 가짜 id로 대신하지 않고 막힌다', () {
+      Repositories.useFakes(signedOut: true);
+      expect(() => source.myUserId, throwsStateError);
     });
 
     test('그 id로 내 읽기를 찾는다', () async {

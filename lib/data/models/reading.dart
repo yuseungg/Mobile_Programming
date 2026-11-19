@@ -15,7 +15,11 @@ class Reading {
     this.isSaved = false,
     this.hasOpenedComparison = false,
     this.isPublic = false,
-  });
+    int? impressiveLine,
+  })
+      // 바깥에는 impressiveLine으로 받고, 안에는 _impressiveLine에 둔다 — getter가 markedLines로 거른다
+      // ignore: prefer_initializing_formals
+      : _impressiveLine = impressiveLine;
 
   final String poemId;
   final String firstWord; // 첫 낱말
@@ -27,6 +31,19 @@ class Reading {
   final bool hasOpenedComparison; // true면 해석 수정 불가
   final bool isPublic; // 기본 꺼짐
 
+  final int? _impressiveLine;
+
+  /// S06 마지막 질문에서 고른 「가장 인상깊은 행」 (1부터). 고르지 않았으면 null.
+  /// 반드시 [markedLines] 안의 행이다 — 선택지가 멈춘 행이기 때문이다.
+  /// 같은 시를 다시 읽으면 덮어쓴다 (Reading은 시마다 하나다).
+  ///
+  /// 고른 뒤에 S04에서 그 행의 멈춤을 해제하면 null이 된다.
+  /// 저장소는 문서를 통째로 다시 쓰므로(readingToDoc) 이때 Firestore의 값도 지워진다 —
+  /// 보안 규칙의 `impressiveLine in markedLines`에 막히지 않게, 쓰는 길 전부를 여기서 막는다.
+  /// 해제한 행을 다시 멈춰도 되살아나지 않는다 (가짜 · 진짜 저장소가 같게).
+  int? get impressiveLine =>
+      markedLines.contains(_impressiveLine) ? _impressiveLine : null;
+
   Reading copyWith({
     String? firstWord,
     List<int>? markedLines,
@@ -36,6 +53,8 @@ class Reading {
     bool? isSaved,
     bool? hasOpenedComparison,
     bool? isPublic,
+    int? impressiveLine,
+    bool clearImpressiveLine = false, // true면 고른 행을 지운다 (S06에서 고르지 않음)
   }) =>
       Reading(
         poemId: poemId,
@@ -47,5 +66,8 @@ class Reading {
         isSaved: isSaved ?? this.isSaved,
         hasOpenedComparison: hasOpenedComparison ?? this.hasOpenedComparison,
         isPublic: isPublic ?? this.isPublic,
+        impressiveLine: clearImpressiveLine
+            ? null
+            : impressiveLine ?? this.impressiveLine,
       );
 }
