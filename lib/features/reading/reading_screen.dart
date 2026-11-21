@@ -161,7 +161,9 @@ class _ReadingScreenState extends State<ReadingScreen> {
         ),
         backgroundColor: AppColors.background,
       ),
-      body: ListView(
+      // 폰 내비게이션 바에 맨 아래 버튼 가려져서
+      body: SafeArea(
+        child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Text(
@@ -182,7 +184,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
           const SizedBox(height: 8),
           const Text(
             AppStrings.readingStopGuide,
-            style: AppText.caption,
+            style: AppText.bodySub, // caption은 작고 흐려서 잘 안 보임
           ),
           const SizedBox(height: 32),
           const Text(
@@ -213,6 +215,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
             child: const Text(AppStrings.readingEndWithWord),
           ),
         ],
+      ),
       ),
     );
   }
