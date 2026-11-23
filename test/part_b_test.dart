@@ -478,4 +478,11 @@ void main() {
     expect(find.text(AppStrings.noticeUnavailable), findsNothing);
     expect(find.text(AppStrings.homeContinueTitle), findsOneWidget); // 진달래꽃 하던 대화
   });
+
+  testWidgets('S06 근거 행 없으면 근거 제목 안 보임', (tester) async {
+    // 봄은 고양이로다는 기록 없음 → 근거 행 없음
+    await tester.pumpWidget(const MaterialApp(home: SaveScreen(poemId: 'bomgoyangi')));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.saveEvidenceLabel), findsNothing);
+  });
 }

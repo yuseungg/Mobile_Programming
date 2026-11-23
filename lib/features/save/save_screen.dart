@@ -206,6 +206,8 @@ class _SaveScreenState extends State<SaveScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          // 근거 행 없으면 제목만 덩그러니 남아서 숨김
+          if (evidenceLines.isNotEmpty)
           const Text(
             AppStrings.saveEvidenceLabel,
             style: AppText.label,
