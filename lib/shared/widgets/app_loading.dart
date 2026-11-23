@@ -10,12 +10,14 @@
 // 바꿔 끼우면 된다 (바꾸는 쪽은 아래 「테스트에서」를 함께 읽는다).
 //
 // ── 마스코트 ──
-// assets/mascot/mascot.png. 책을 읽는 병아리다.
-// 다른 그림으로 바꾸려면 `AppLoading(mascot: ...)`에 위젯을 넘긴다.
+// assets/mascot/mascot_01.png ~ mascot_16.png. 앉아서 책을 읽는 병아리다.
+// 그림 16장을 차례로 넘겨 움직인다 — 코드로 흔들거나 기울이지 않는다.
+// 움직임은 그림 쪽에 들어 있으므로 여기서는 번호만 센다.
 //
-// 걸음은 세 가지를 겹쳐 만든다 — 위아래로 통통 뛰고(bob), 디딜 때마다 몸이
-// 기울고(tilt), 좌우로 조금 오갔다 온다(travel). 좌우반전은 **쓰지 않는다**:
-// 그림이 좌우대칭이 아니라(책·목도리) 돌아설 때 책이 반대 손으로 건너뛴다.
+// 16장이 하나의 고리다. 자르기는 **모든 장을 덮는 하나의 bbox**로 했다 —
+// 장마다 따로 자르면 넘길 때 그림이 들썩인다.
+//
+// 다른 그림으로 바꾸려면 `AppLoading(mascot: ...)`에 위젯을 넘긴다.
 //
 // ── 테스트에서 ──
 // 끝나지 않는 애니메이션이므로 pumpAndSettle은 시간 초과된다 (스피너도 같다).
@@ -30,29 +32,33 @@ import 'package:flutter/material.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
 
-/// 기다리는 동안 보여 주는 위젯. 마스코트가 뚜방뚜방 걷고, 아래 글자가
+/// 기다리는 동안 보여 주는 위젯. 마스코트가 앉아서 책을 읽고, 아래 글자가
 /// 한 글자씩 파도치듯 튄다.
 class AppLoading extends StatefulWidget {
   const AppLoading({
     super.key,
     this.label = AppStrings.loadingLabel,
     this.mascot,
-    this.size = 72,
+    this.size = 96,
   });
 
-  /// 마스코트 그림. 쓰는 쪽에서 바꿀 일이 없으면 둘 필요 없다.
-  static const assetPath = 'assets/mascot/mascot.png';
+  /// 마스코트 그림 장수.
+  static const frameCount = 16;
 
-  /// 글자. 한 글자씩 튄다. 비우면 마스코트만 걷는다.
+  /// [i]번째 장 (0부터). 쓰는 쪽에서 바꿀 일이 없으면 둘 필요 없다.
+  static String frameAsset(int i) =>
+      'assets/mascot/mascot_${(i + 1).toString().padLeft(2, '0')}.png';
+
+  /// 글자. 한 글자씩 튄다. 비우면 마스코트만 남는다.
   final String label;
 
-  /// 걷는 그림. 비우면 [assetPath]의 마스코트.
+  /// 마스코트. 비우면 [frameAsset]의 그림 16장.
   final Widget? mascot;
 
   /// 마스코트 한 변의 길이.
   final double size;
 
-  /// 기본 마스코트에 붙는 키. 테스트에서 걸음을 짚을 때 쓴다.
+  /// 기본 마스코트에 붙는 키. 테스트에서 어느 장인지 짚을 때 쓴다.
   static const defaultMascotKey = Key('appLoadingMascot');
 
   @override
@@ -61,7 +67,8 @@ class AppLoading extends StatefulWidget {
 
 class _AppLoadingState extends State<AppLoading>
     with SingleTickerProviderStateMixin {
-  /// 한 바퀴. 이 안에 두 걸음과 글자 파도 한 번이 들어간다.
+  /// 한 바퀴. 이 안에 그림 16장과 글자 파도 한 번이 들어간다
+  /// (장당 87.5밀리초, 초당 약 11장).
   static const _period = Duration(milliseconds: 1400);
 
   late final AnimationController _controller =
@@ -72,6 +79,8 @@ class _AppLoadingState extends State<AppLoading>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _precacheFrames();
+
     // 애니메이션을 끈 기기에서는 돌리지 않는다. 멈춘 그림으로도 뜻은 전해지고,
     // 돌려 두면 그 설정을 쓰는 사람과 pumpAndSettle이 둘 다 막힌다.
     final shouldRun = !MediaQuery.disableAnimationsOf(context);
@@ -83,6 +92,20 @@ class _AppLoadingState extends State<AppLoading>
       _controller
         ..stop()
         ..value = 0;
+    }
+  }
+
+  bool _didPrecache = false;
+
+  /// 16장을 미리 읽어 둔다. 안 하면 첫 바퀴에서 아직 안 읽힌 장이 비어 보인다.
+  /// (`gaplessPlayback`이 앞 장을 붙들어 주지만, 첫 바퀴는 넘김이 끊긴다.)
+  /// 실패는 삼킨다 — 그림이 없어도 글자는 계속 파도쳐야 한다.
+  void _precacheFrames() {
+    if (_didPrecache || widget.mascot != null) return;
+    _didPrecache = true;
+    for (var i = 0; i < AppLoading.frameCount; i++) {
+      precacheImage(AssetImage(AppLoading.frameAsset(i)), context)
+          .catchError((_) {});
     }
   }
 
@@ -104,7 +127,7 @@ class _AppLoadingState extends State<AppLoading>
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _WalkingMascot(
+              _Mascot(
                 t: t,
                 size: widget.size,
                 child: widget.mascot,
@@ -123,10 +146,9 @@ class _AppLoadingState extends State<AppLoading>
 
 // ── 마스코트 ──────────────────────────────────────────
 
-/// 걸음. 한 바퀴에 두 걸음을 딛고, 오른쪽으로 갔다가 왼쪽으로 돌아온다.
-/// 되돌아오게 둔 이유는 한쪽으로만 가면 한 바퀴 끝에서 제자리로 튀기 때문이다.
-class _WalkingMascot extends StatelessWidget {
-  const _WalkingMascot({required this.t, required this.size, this.child});
+/// 그림 16장을 차례로 넘긴다. 흔들거나 기울이지 않는다 — 움직임은 그림에 있다.
+class _Mascot extends StatelessWidget {
+  const _Mascot({required this.t, required this.size, this.child});
 
   final double t;
   final double size;
@@ -134,63 +156,26 @@ class _WalkingMascot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 한 걸음 안에서의 위치 (0 → 1이 한 걸음)
-    final step = (t * 2) % 1;
-    // 발을 디딜 때마다 살짝 솟았다 내려온다
-    final bob = -math.sin(step * math.pi) * size * 0.06;
-    // 몸이 걸음에 따라 좌우로 기운다 — 「뚜방뚜방」은 여기서 나온다
-    final tilt = math.sin(t * 4 * math.pi) * 0.06;
-    // 삼각파: 0 → 1 → 0. 가다가 돌아온다
-    final travel = t < 0.5 ? t * 2 : (1 - t) * 2;
-    final dx = (travel - 0.5) * size * 0.5;
-    // 떠 있을수록 그림자가 작아진다. 이게 없으면 바닥에 붙은 알약처럼 보인다
-    final shadow = 1 - math.sin(step * math.pi) * 0.3;
+    final mascot = child;
+    if (mascot != null) return SizedBox.square(dimension: size, child: mascot);
 
-    return SizedBox(
-      width: size * 1.6,
-      height: size * 1.25,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          // 그림자는 몸과 함께 옆으로만 움직인다 (위아래로는 따라가지 않는다)
-          Positioned(
-            bottom: 0,
-            child: Transform.translate(
-              offset: Offset(dx, 0),
-              child: Container(
-                width: size * 0.5 * shadow,
-                height: size * 0.08,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(size),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: size * 0.06,
-            child: Transform.translate(
-              offset: Offset(dx, bob),
-              child: Transform.rotate(
-                angle: tilt,
-                child: child ??
-                    Image.asset(
-                      AppLoading.assetPath,
-                      key: AppLoading.defaultMascotKey,
-                      width: size,
-                      height: size,
-                      fit: BoxFit.contain,
-                      // 그림이 아직 없거나 깨져도 기다리는 중인 것은 보여야 한다
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.hourglass_empty_rounded,
-                        size: size * 0.6,
-                        color: AppColors.textFaint,
-                      ),
-                    ),
-              ),
-            ),
-          ),
-        ],
+    // t는 [0,1)이지만 1에 닿는 프레임이 있을 수 있어 마지막 장으로 눌러 둔다
+    final frame =
+        (t * AppLoading.frameCount).floor().clamp(0, AppLoading.frameCount - 1);
+
+    return Image.asset(
+      AppLoading.frameAsset(frame),
+      key: AppLoading.defaultMascotKey,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      // 다음 장이 아직 안 읽혔으면 앞 장을 그대로 둔다 (넘길 때 비지 않게)
+      gaplessPlayback: true,
+      // 그림이 없거나 깨져도 기다리는 중인 것은 보여야 한다
+      errorBuilder: (context, error, stackTrace) => Icon(
+        Icons.hourglass_empty_rounded,
+        size: size * 0.6,
+        color: AppColors.textFaint,
       ),
     );
   }

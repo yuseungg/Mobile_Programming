@@ -15,10 +15,19 @@ import '../support/pump.dart';
 
 void main() {
   // 그림이 빠지면 화면에는 모래시계 아이콘이 대신 뜬다 — 눈에 잘 띄지 않으므로
-  // 에셋이 실제로 묶였는지 여기서 본다 (pubspec.yaml의 assets/mascot/).
-  testWidgets('마스코트 그림이 앱에 묶여 있다', (tester) async {
-    final bytes = await rootBundle.load(AppLoading.assetPath);
-    expect(bytes.lengthInBytes, greaterThan(0));
+  // 16장이 다 묶였는지 여기서 본다 (pubspec.yaml의 assets/mascot/).
+  // 한 장만 빠져도 그 장에서 넘김이 끊긴다.
+  testWidgets('마스코트 그림 16장이 다 앱에 묶여 있다', (tester) async {
+    for (var i = 0; i < AppLoading.frameCount; i++) {
+      final path = AppLoading.frameAsset(i);
+      final bytes = await rootBundle.load(path);
+      expect(bytes.lengthInBytes, greaterThan(0), reason: '$path 가 비었다');
+    }
+  });
+
+  test('장 이름은 01부터 16까지 두 자리로 센다', () {
+    expect(AppLoading.frameAsset(0), 'assets/mascot/mascot_01.png');
+    expect(AppLoading.frameAsset(15), 'assets/mascot/mascot_16.png');
   });
 
   Future<void> pumpLoading(
@@ -59,22 +68,46 @@ void main() {
     expect(after.dx, before.dx, reason: '위아래로만 튄다 — 옆으로는 가지 않는다');
   });
 
-  testWidgets('마스코트가 걸어간다', (tester) async {
+  /// 지금 그리고 있는 마스코트 그림의 경로
+  String shownFrame(WidgetTester tester) {
+    final image = tester.widget<Image>(find.byKey(AppLoading.defaultMascotKey));
+    return (image.image as AssetImage).assetName;
+  }
+
+  testWidgets('시간이 지나면 다음 장으로 넘어간다', (tester) async {
     await pumpLoading(tester);
 
-    // 기본 마스코트는 코드로 그린다 (CustomPaint는 프레임워크도 쓰므로 키로 찾는다)
-    final mascot = find.byKey(AppLoading.defaultMascotKey);
-    expect(mascot, findsOneWidget);
+    expect(shownFrame(tester), AppLoading.frameAsset(0));
 
-    final before = tester.getCenter(mascot);
-    await tester.pump(const Duration(milliseconds: 300));
-    final after = tester.getCenter(mascot);
+    // 한 바퀴가 1400밀리초 / 16장 → 장당 87.5밀리초
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(shownFrame(tester), AppLoading.frameAsset(1));
 
-    expect(
-      before == after,
-      isFalse,
-      reason: '마스코트가 제자리에 멈춰 있다',
-    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(shownFrame(tester), AppLoading.frameAsset(2));
+  });
+
+  testWidgets('한 바퀴 동안 16장을 모두 지난다', (tester) async {
+    await pumpLoading(tester);
+
+    final seen = <String>{};
+    for (var i = 0; i < 40; i++) {
+      seen.add(shownFrame(tester));
+      await tester.pump(const Duration(milliseconds: 40));
+    }
+
+    expect(seen, hasLength(AppLoading.frameCount), reason: '지나간 장: $seen');
+  });
+
+  testWidgets('마지막 장을 넘어가지 않는다', (tester) async {
+    await pumpLoading(tester);
+
+    // 한 바퀴의 끝자락 — 반올림이 어긋나면 17번째 장을 찾다가 깨진다
+    await tester.pump(const Duration(milliseconds: 1399));
+    expect(shownFrame(tester), AppLoading.frameAsset(15));
+
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(shownFrame(tester), AppLoading.frameAsset(0));
   });
 
   testWidgets('애니메이션을 끈 기기에서는 돌지 않는다', (tester) async {
@@ -83,9 +116,11 @@ void main() {
     // 돌고 있으면 여기서 시간 초과된다
     await tester.pumpAndSettle();
 
-    final before = tester.getTopLeft(find.text('L'));
+    final beforeLetter = tester.getTopLeft(find.text('L'));
+    final beforeFrame = shownFrame(tester);
     await tester.pump(const Duration(milliseconds: 500));
-    expect(tester.getTopLeft(find.text('L')), before);
+    expect(tester.getTopLeft(find.text('L')), beforeLetter);
+    expect(shownFrame(tester), beforeFrame, reason: '장이 넘어갔다');
     // 글자는 그대로 보인다 — 멈춰 있을 뿐이다
     expect(find.text('L'), findsOneWidget);
   });
@@ -103,7 +138,7 @@ void main() {
     expect(find.byKey(AppLoading.defaultMascotKey), findsNothing);
   });
 
-  testWidgets('글자를 비우면 마스코트만 걷는다', (tester) async {
+  testWidgets('글자를 비우면 마스코트만 남는다', (tester) async {
     await pumpLoading(tester, loading: const AppLoading(label: ''));
 
     expect(find.byType(Text), findsNothing);
