@@ -121,8 +121,9 @@ void main() {
     await removePendingSave(me, 'seosi');
 
     gate.complete();
-    await retry;
+    final saved = await retry;
 
+    expect(saved, 0); // 건너뜀
     expect(
       (await Repositories.reading.fetchReading(me, 'seosi'))?.interpretation,
       '새 해석',
