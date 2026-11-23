@@ -103,6 +103,33 @@ void main() {
     expect(survived!.interpretation, '고친 보관분');
   });
 
+  test('재시도가 도는 사이에 S06에서 새 해석이 저장되면 옛 보관분으로 덮지 않는다', () async {
+    final gate = Completer<void>();
+    Repositories.reading = _SlowReadingRepository(FakeStore(), gate);
+
+    await keep('seosi', '옛 해석');
+
+    final retry = retryPendingSaves();
+    await Future<void>.delayed(Duration.zero);
+
+    // 그 사이 S06에서 새 해석 저장에 성공 → 보관분은 지움
+    await Repositories.reading.saveInterpretation(
+      me,
+      const Reading(poemId: 'seosi', interpretation: '새 해석'),
+      summary: null,
+    );
+    await removePendingSave(me, 'seosi');
+
+    gate.complete();
+    final saved = await retry;
+
+    expect(saved, 0); // 건너뜀
+    expect(
+      (await Repositories.reading.fetchReading(me, 'seosi'))?.interpretation,
+      '새 해석',
+    );
+  });
+
   test('다시 저장에 성공한 보관분은 지운다', () async {
     await keep('seosi', '서시 보관분');
 

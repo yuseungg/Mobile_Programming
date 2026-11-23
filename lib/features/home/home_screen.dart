@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Set<String> _readPoemIds = {};
   // 대화하다 저장 안 하고 나간 시 (이어 읽기, 기획서 F2)
   List<Reading> _inProgress = [];
+  bool _loadFailed = false;
 
   @override
   void initState() {
@@ -62,8 +63,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load() async {
-    UserProfile me = await Repositories.user.fetchProfile(_userId);
-    List<Reading> readings = await Repositories.reading.fetchMyReadings(_userId);
+    UserProfile me;
+    List<Reading> readings;
+    try {
+      me = await Repositories.user.fetchProfile(_userId);
+      readings = await Repositories.reading.fetchMyReadings(_userId);
+    } catch (e) {
+      // 시 목록은 기기에 있어서 그대로 보이고, 누적일수 자리에 안내 + 다시 시도
+      if (mounted) {
+        setState(() {
+          _loadFailed = true;
+        });
+      }
+      return;
+    }
 
     Set<String> ids = {};
     List<Reading> inProgress = [];
@@ -77,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     setState(() {
+      _loadFailed = false;
       _me = me;
       _readPoemIds = ids;
       _inProgress = inProgress;
@@ -114,6 +128,14 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          if (_loadFailed)
+            Row(
+              children: [
+                const Expanded(child: Text(AppStrings.noticeUnavailable, style: AppText.bodySub)),
+                TextButton(onPressed: _load, child: const Text(AppStrings.noticeUnavailableAction)),
+              ],
+            )
+          else
           Text(
             _me == null ? '' : AppStrings.homeTotalDays(_me!.totalReadingDays),
             style: AppText.bodySub,
