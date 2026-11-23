@@ -18,6 +18,7 @@ import '../../ports/reading_source.dart';
 import '../../writers/comparison_writer.dart';
 import '../../writers/fake_comparison_writer.dart';
 import '../../writers/openrouter_comparison_writer.dart';
+import '../../shared/widgets/language_toggle.dart';
 
 /// 화면 한 번에 필요한 것
 class _ComparisonData {
@@ -139,7 +140,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                   ),
                 ),
               ),
-              const Text(
+              Text(
                 AppStrings.comparisonCreationBackgroundTitle,
                 style: AppText.poemTitleSmall,
               ),
@@ -161,7 +162,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(AppStrings.close),
+                  child: Text(AppStrings.close),
                 ),
               ),
             ],
@@ -180,12 +181,14 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         if (snapshot.hasError) {
           return const Scaffold(
             backgroundColor: AppColors.background,
+            appBar: LanguageToggleAppBar(),
             body: Center(child: UnavailableNotice()),
           );
         }
         if (data == null) {
           return const Scaffold(
             backgroundColor: AppColors.background,
+            appBar: LanguageToggleAppBar(),
             body: Center(child: CircularProgressIndicator()),
           );
         }
@@ -203,7 +206,10 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(AppStrings.comparisonTitle(poem.title))),
+      appBar: AppBar(
+        title: Text(AppStrings.comparisonTitle(poem.title)),
+        actions: const [LanguageToggle()],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
@@ -259,13 +265,13 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                           color: AppColors.accent,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
+                        child: Text(
                           AppStrings.comparisonMine,
                           style: AppText.tagOnAccent,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         AppStrings.comparisonMineCaption,
                         style:
                             AppText.caption,
@@ -284,7 +290,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
             // 2. 전문가 해석 — 항상 전부 (관계는 코드가 계산)
             if (experts.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(bottom: 20),
                 child: Text(
                   AppStrings.comparisonNoExperts,
@@ -308,7 +314,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
             OutlinedButton.icon(
               onPressed: () => _showCreationBackground(context, poem),
               icon: const Icon(Icons.history_edu_outlined, size: 18),
-              label: const Text(AppStrings.comparisonCreationBackground),
+              label: Text(AppStrings.comparisonCreationBackground),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.text,
                 side: const BorderSide(color: AppColors.border),
@@ -324,7 +330,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
             ElevatedButton.icon(
               onPressed: () => AppRouter.goToTab(context, AppRoutes.community),
               icon: const Icon(Icons.people_outline, size: 18),
-              label: const Text(AppStrings.comparisonGoCommunity),
+              label: Text(AppStrings.comparisonGoCommunity),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.card,

@@ -11,6 +11,7 @@ import '../../data/models/settings.dart';
 import '../../data/repositories.dart';
 import '../../data/settings_options.dart';
 import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/section_label.dart';
 
 class SettingsEditScreen extends StatefulWidget {
@@ -88,19 +89,19 @@ class _SettingsEditScreenState extends State<SettingsEditScreen> {
     final isConfirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(AppStrings.settingsDeleteDialogTitle),
-        content: const Text(
+        title: Text(AppStrings.settingsDeleteDialogTitle),
+        content: Text(
           AppStrings.settingsDeleteDialogBody,
           style: AppText.body,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(AppStrings.settingsDeleteCancel),
+            child: Text(AppStrings.settingsDeleteCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(AppStrings.settingsEditDeleteAction),
+            child: Text(AppStrings.settingsEditDeleteAction),
           ),
         ],
       ),
@@ -126,18 +127,19 @@ class _SettingsEditScreenState extends State<SettingsEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppStrings.settingsEditTitle),
+        title: Text(AppStrings.settingsEditTitle),
         actions: [
           TextButton(
             onPressed: _isChanged && !_isSaving ? _save : null,
-            child: const Text(AppStrings.settingsEditSave),
+            child: Text(AppStrings.settingsEditSave),
           ),
           const SizedBox(width: 8),
+          const LanguageToggle(),
         ],
       ),
       body: SafeArea(
         child: _hasLoadFailed
-            ? const Center(
+            ? Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
@@ -158,26 +160,26 @@ class _SettingsEditScreenState extends State<SettingsEditScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
       children: [
-        const SectionLabel(AppStrings.settingsEditQuestionModel),
+        SectionLabel(AppStrings.settingsEditQuestionModel),
         _ModelPicker(
           selected: draft.questionModel,
           onSelected: (model) =>
               _update((d) => d.copyWith(questionModel: model)),
         ),
         const SizedBox(height: 24),
-        const SectionLabel(AppStrings.settingsEditComparisonModel),
+        SectionLabel(AppStrings.settingsEditComparisonModel),
         _ModelPicker(
           selected: draft.comparisonModel,
           onSelected: (model) =>
               _update((d) => d.copyWith(comparisonModel: model)),
         ),
         const SizedBox(height: 24),
-        const SectionLabel(AppStrings.settingsEditTone),
+        SectionLabel(AppStrings.settingsEditTone),
         SizedBox(
           width: double.infinity,
           child: SegmentedButton<Tone>(
             showSelectedIcon: false,
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: Tone.plain,
                 label: Text(AppStrings.tonePlain),
@@ -197,7 +199,7 @@ class _SettingsEditScreenState extends State<SettingsEditScreen> {
           padding: const EdgeInsets.fromLTRB(18, 8, 8, 8),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -215,7 +217,7 @@ class _SettingsEditScreenState extends State<SettingsEditScreen> {
               ),
               TextButton(
                 onPressed: _isDeleting ? null : _deleteHistory,
-                child: const Text(AppStrings.settingsEditDeleteAction),
+                child: Text(AppStrings.settingsEditDeleteAction),
               ),
             ],
           ),
