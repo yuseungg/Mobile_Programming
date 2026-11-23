@@ -63,6 +63,15 @@ bool _isSameContent(Object? a, Object? b) {
   return a == b;
 }
 
+bool _isStillKept(SharedPreferences prefs, Map<String, dynamic> item) {
+  for (Map<String, dynamic> now in _readAll(prefs)) {
+    if (_isSameContent(now, item)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 
 //AI
 // 실패한 저장 보관. 같은 시는 하나만 (또 실패하면 최신 걸로 덮음)
@@ -143,6 +152,11 @@ Future<int> retryPendingSaves() async {
       if (now != null) {
         reading = now.copyWith(interpretation: reading.interpretation,
             isPublic: reading.isPublic, evidenceLines: reading.evidenceLines);
+      }
+      // 기다리는 사이 S06에서 새로 저장됐거나(보관분 지워짐) 또 보관했으면(내용 바뀜)
+      // 이건 옛 해석이라 건너뜀. 안 그러면 새 해석을 옛 해석으로 덮어씀
+      if (!_isStillKept(prefs, item)) {
+        continue;
       }
       await Repositories.reading.saveInterpretation(userId, reading, summary: summary);
       saved++;
