@@ -26,6 +26,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
   final Set<int> _savingLines = {}; // 저장 중인 행 (그동안 또 누르면 무시)
   Map<int, int> _stopCounts = {};
   bool _hasConversation = false; // 하던 대화 있으면 버튼을 '대화 이어 하기'로
+  bool _isSavingWord = false; // 첫 낱말 저장 중엔 버튼 막음 (두 번 눌러서 S05 두 번 열리는 거 방지)
   final TextEditingController _firstWordController = TextEditingController();
 
   @override
@@ -119,23 +120,41 @@ class _ReadingScreenState extends State<ReadingScreen> {
   }
 
   // 첫 낱말 저장. S05가 저장소에서 이걸 꺼내 씀
-  Future<void> _saveFirstWord() async {
-    Reading? latest = await Repositories.reading.fetchReading(_userId, widget.poemId);
-    latest ??= Reading(poemId: widget.poemId);
-    await Repositories.reading.saveProgress(_userId, latest.copyWith(firstWord: _firstWordController.text.trim()));
+  // 못 하면 안내만 띄우고 안 넘어감 (넘어가면 S05가 낱말 없이 시작함)
+  Future<bool> _saveFirstWord() async {
+    setState(() {
+      _isSavingWord = true;
+    });
+    try {
+      Reading? latest = await Repositories.reading.fetchReading(_userId, widget.poemId);
+      latest ??= Reading(poemId: widget.poemId);
+      await Repositories.reading.saveProgress(_userId, latest.copyWith(firstWord: _firstWordController.text.trim()));
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.saveFailed)));
+      }
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingWord = false;
+        });
+      }
+    }
   }
 
   Future<void> _startChat() async {
-    await _saveFirstWord();
-    if (!mounted) {
+    bool saved = await _saveFirstWord();
+    if (!saved || !mounted) {
       return;
     }
     Navigator.of(context).pushNamed(AppRoutes.chat(widget.poemId));
   }
 
   Future<void> _endWithWord() async {
-    await _saveFirstWord();
-    if (!mounted) {
+    bool saved = await _saveFirstWord();
+    if (!saved || !mounted) {
       return;
     }
     AppRouter.goToTab(context, AppRoutes.home);
@@ -206,12 +225,12 @@ class _ReadingScreenState extends State<ReadingScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: !hasFirstWord ? null : _startChat,
+            onPressed: (!hasFirstWord || _isSavingWord) ? null : _startChat,
             child: Text(_hasConversation ? AppStrings.readingContinueChat : AppStrings.readingStartChat),
           ),
           const SizedBox(height: 8),
           OutlinedButton(
-            onPressed: !hasFirstWord ? null : _endWithWord,
+            onPressed: (!hasFirstWord || _isSavingWord) ? null : _endWithWord,
             child: const Text(AppStrings.readingEndWithWord),
           ),
         ],
