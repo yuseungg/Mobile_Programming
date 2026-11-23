@@ -32,7 +32,8 @@ class StubReadingSource implements ReadingSource {
 
   /// 읽을 때 예외를 던진다. C의 저장소는 저장하지 않은 시의 대화를 읽으면
   /// ConversationsLockedException을 던지므로, 그 경로를 흉내 낸다.
-  final bool throwOnRead;
+  /// final이 아니다 — 화면이 떠 있는 동안 읽기가 끊기는 상황을 만든다.
+  bool throwOnRead;
 
   final _fallback = const FakeReadingSource();
 
@@ -88,20 +89,33 @@ class StubReadingSource implements ReadingSource {
     return _profileChanges.stream.where((p) => p.userId == userId);
   }
 
+  /// 저장소 쪽에서 대화가 바뀌는 것을 흉내 내려면 고칠 수 있어야 한다.
+  /// [conversations]는 const로 넘어오므로 복사해 둔다.
+  late final List<PublicConversation> _conversations = [...conversations];
+
+  /// 저장된 대화 하나를 갈아 끼운다 (공감 수가 바뀐 상황).
+  void replaceConversation(PublicConversation updated) {
+    final at = _conversations.indexWhere(
+      (c) => c.conversationId == updated.conversationId,
+    );
+    if (at < 0) return;
+    _conversations[at] = updated;
+  }
+
   @override
   Future<List<PublicConversation>> conversationsFor(String poemId) async {
     if (throwOnRead) throw StateError('읽을 수 없다');
     calls.add('conversationsFor:$poemId');
-    return conversations.where((c) => c.poemId == poemId).toList();
+    return _conversations.where((c) => c.poemId == poemId).toList();
   }
 
   @override
   Future<PublicConversation> conversationById(String conversationId) async {
     if (throwOnRead) throw StateError('읽을 수 없다');
     calls.add('conversationById:$conversationId');
-    return conversations.firstWhere(
+    return _conversations.firstWhere(
       (c) => c.conversationId == conversationId,
-      orElse: () => conversations.first,
+      orElse: () => _conversations.first,
     );
   }
 

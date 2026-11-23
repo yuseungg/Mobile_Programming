@@ -4,6 +4,8 @@
 // - 카드 탭 → S09
 // - 하단 탭 화면이라 시는 위의 칩으로 고른다 (해석을 저장하지 않은 시는 자물쇠)
 // - 저장하지 않은 시를 고르면 목록 대신 잠금 안내를 보여 준다 (기획서 5장)
+// - S09에서 공감하고 돌아오면 그 카드의 공감 수를 다시 읽는다
+import 'package:flutter/foundation.dart' show SynchronousFuture;
 import 'package:flutter/material.dart';
 
 import '../../app/router.dart';
@@ -99,6 +101,40 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
     });
   }
 
+  /// S09에서 돌아왔을 때 그 카드 하나만 다시 읽는다.
+  ///
+  /// 목록은 시를 고를 때 한 번만 불러온다. 그래서 상세에서 공감을 눌러도
+  /// 돌아온 목록의 공감 수는 그대로였다 (C의 지적, S08).
+  ///
+  /// 목록 전체를 다시 불러오지 않는 이유는 둘이다. 카드가 사라지고 스피너가
+  /// 떴다가 돌아오는 깜빡임이 생기고, 닉네임을 사람 수만큼 다시 읽는다.
+  /// 바뀔 수 있는 것은 방금 들어갔던 그 대화뿐이다.
+  ///
+  /// 다시 읽기가 실패하면 **아무것도 하지 않는다.** 공감 수가 잠시 낡은 것은
+  /// 목록이 사라지는 것보다 낫다.
+  Future<void> _refreshCard(_ListData current, String conversationId) async {
+    final PublicConversation updated;
+    try {
+      updated = await _source.conversationById(conversationId);
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      // SynchronousFuture라 FutureBuilder가 한 프레임도 비우지 않는다.
+      _list = SynchronousFuture(
+        _ListData(
+          isUnlocked: current.isUnlocked,
+          conversations: [
+            for (final c in current.conversations)
+              c.conversationId == conversationId ? updated : c,
+          ],
+          nicknames: current.nicknames,
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -171,9 +207,14 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
                       conversation: conversation,
                       authorNickname:
                           list.nicknames[conversation.userId] ?? '',
-                      onTap: () => Navigator.of(context).pushNamed(
-                        AppRoutes.communityDetail(conversation.conversationId),
-                      ),
+                      onTap: () async {
+                        await Navigator.of(context).pushNamed(
+                          AppRoutes.communityDetail(
+                              conversation.conversationId),
+                        );
+                        await _refreshCard(
+                            list, conversation.conversationId);
+                      },
                     ),
                 ],
               );
