@@ -12,6 +12,7 @@
 // 알려 주는 것이다.
 
 import '../agent/output_guard.dart';
+import '../app/language.dart';
 import 'comparison_writer.dart';
 import 'quote_check.dart';
 
@@ -35,7 +36,12 @@ class ComparisonGuard {
   static final _assertive =
       RegExp(r'(뜻|의미|상징|암시|은유)(한다|합니다|하는 것)|나타낸다|나타냅니다');
   static final _sentenceBreak = RegExp(r'(?<=[.!?。！？])\s+|\n+');
-  static final _lineNumber = RegExp(r'(\d+)\s*행');
+  // "6행" · 영어(화면 EN) "line 6" · "lines 2 and 6"
+  static final _lineNumber = RegExp(
+    r'(\d+)\s*행|\blines?\s+(\d+(?:\s*(?:,|and|or|&)\s*\d+)*)',
+    caseSensitive: false,
+  );
+  static final _digits = RegExp(r'\d+');
 
   /// 앞뒤 공백과 마크다운 강조 기호를 정리한다 (A의 clean과 같은 규칙).
   static String clean(String text) => OutputGuard.clean(text);
@@ -61,9 +67,12 @@ class ComparisonGuard {
     final lineCount = request.poem.lines.length;
 
     return [
-      if (OutputGuard.forbiddenWords.any(trimmed.contains))
+      if (OutputGuard.hasForbiddenWord(trimmed))
         ComparisonViolation.forbiddenWord,
-      if (_assertive.hasMatch(unquoted)) ComparisonViolation.assertive,
+      // 비교 문장은 질문이 아니라 서술이라, 영어 단정형은 문장마다 가리지 않고 본다
+      if (_assertive.hasMatch(unquoted) ||
+          OutputGuard.englishAssertive.hasMatch(unquoted))
+        ComparisonViolation.assertive,
       if (_sentenceCount(unquoted) > maxSentences) ComparisonViolation.tooLong,
       if (!quotesAreGrounded(trimmed, quotableSources(request)))
         ComparisonViolation.unknownQuote,
@@ -75,7 +84,11 @@ class ComparisonGuard {
 
   static List<int> _lineNumbersOf(String text) => [
         for (final match in _lineNumber.allMatches(text))
-          int.parse(match.group(1)!),
+          if (match.group(1) case final korean?)
+            int.parse(korean)
+          else
+            for (final number in _digits.allMatches(match.group(2)!))
+              int.parse(number.group(0)!),
       ];
 
   static int _sentenceCount(String text) => text
@@ -84,8 +97,17 @@ class ComparisonGuard {
       .length;
 }
 
-String comparisonViolationReason(ComparisonViolation violation) =>
-    switch (violation) {
+String comparisonViolationReason(ComparisonViolation violation) => isEnglish
+    ? switch (violation) {
+        ComparisonViolation.empty => 'the sentences were empty',
+        ComparisonViolation.forbiddenWord => 'it used a word the app never uses',
+        ComparisonViolation.assertive => 'it stated a meaning',
+        ComparisonViolation.tooLong => 'it was longer than three sentences',
+        ComparisonViolation.unknownQuote =>
+          'it put words that are not in the materials inside quotation marks',
+        ComparisonViolation.unknownLine => 'it named a line number the poem does not have',
+      }
+    : switch (violation) {
       ComparisonViolation.empty => '문장이 비어 있음',
       ComparisonViolation.forbiddenWord => '쓰지 않는 말이 있음',
       ComparisonViolation.assertive => '단정하는 말이 있음',

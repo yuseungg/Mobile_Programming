@@ -4,7 +4,12 @@ import '../../data/models/poem.dart';
 const _quoteMarks = '\'"‘’“”「」『』';
 const _edgePunctuation = '.,!?…·';
 final _spaces = RegExp(r'\s+');
-final _lineReference = RegExp(r'(\d+)\s*행');
+// "6행" · 영어 "line 6" · "lines 2 and 6" · "Lines 2, 6"
+final _lineReference = RegExp(
+  r'(\d+)\s*행|\blines?\s+(\d+(?:\s*(?:,|and|or|&)\s*\d+)*)',
+  caseSensitive: false,
+);
+final _digits = RegExp(r'\d+');
 
 /// 공백을 한 칸으로 줄이고, 앞뒤의 따옴표 · 문장부호를 뗀다.
 String normalizeQuote(String text) {
@@ -23,11 +28,18 @@ String normalizeQuote(String text) {
 /// 공백만 한 칸으로 줄인다. 사용자 말 안에 구절이 들어 있는지 볼 때 쓴다.
 String collapseSpaces(String text) => text.replaceAll(_spaces, ' ').trim();
 
-/// 글에서 "N행"으로 짚은 행 번호. 나온 순서대로, 시에 실제로 있는 행만 (1부터, 빈 줄 제외)
+/// 글에서 "N행"(영어는 "line N")으로 짚은 행 번호. 나온 순서대로, 시에 실제로 있는 행만 (1부터, 빈 줄 제외)
 List<int> lineNosMentioned(String text, Poem poem) {
   final lineNos = <int>[];
-  for (final match in _lineReference.allMatches(text)) {
-    final lineNo = int.tryParse(match.group(1)!);
+  final mentioned = [
+    for (final match in _lineReference.allMatches(text))
+      if (match.group(1) case final korean?)
+        korean
+      else
+        for (final number in _digits.allMatches(match.group(2)!)) number.group(0)!,
+  ];
+  for (final number in mentioned) {
+    final lineNo = int.tryParse(number);
     if (lineNo == null) continue;
     final isRealLine = lineNo >= 1 &&
         lineNo <= poem.lines.length &&

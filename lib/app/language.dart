@@ -38,3 +38,6 @@ Future<void> changeAppLanguage(AppLanguage language) async {
     // 다음 실행에서 한국어로 시작할 뿐, 지금 화면에는 영향이 없다.
   }
 }
+
+/// 지금 영어인가. 화면 문구(AppStrings)와 AI 지시문 · 검사가 같이 본다.
+bool get isEnglish => appLanguage.value == AppLanguage.en;

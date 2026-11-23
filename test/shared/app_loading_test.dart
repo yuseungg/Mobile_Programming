@@ -10,6 +10,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/shared/widgets/app_loading.dart';
+import 'package:yeobaek/shared/widgets/language_toggle.dart';
 
 import '../support/pump.dart';
 
@@ -155,10 +156,16 @@ void main() {
       expect(find.byType(AppLoading), findsOneWidget);
     });
 
-    testWidgets('제목이 없으면 앱바를 두지 않는다', (tester) async {
+    testWidgets('제목이 없으면 제목 없이 KR / EN 토글만 있는 앱바', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: LoadingPage()));
 
-      expect(find.byType(AppBar), findsNothing);
+      // 오른쪽 위 KR / EN은 모든 화면에 있다 (#55)
+      expect(find.byType(LanguageToggleAppBar), findsOneWidget);
+      expect(find.byType(LanguageToggle), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.byType(Text)),
+        findsNWidgets(2), // KR · EN 두 글자뿐 — 제목은 없다
+      );
       expect(find.byType(AppLoading), findsOneWidget);
     });
 

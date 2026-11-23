@@ -13,7 +13,7 @@ import 'language.dart';
 class AppStrings {
   AppStrings._();
 
-  static bool get _isEnglish => appLanguage.value == AppLanguage.en;
+  static bool get _isEnglish => isEnglish;
   static String _t(String korean, String english) =>
       _isEnglish ? english : korean;
 
