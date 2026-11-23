@@ -217,10 +217,14 @@ class _ReadingScreenState extends State<ReadingScreen> {
             //웹 기본값은 한글 조합 중엔 제한을 풀어서 20자 넘어감
               maxLengthEnforcement:  MaxLengthEnforcement.enforced,//AI
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
+            // 대화 시작한 낱말은 못 바꿈. 바꾸면 S05는 예전 낱말로 한 대화를 이어 가고
+            // 저장된 첫 낱말만 바뀌어서 S09에서 둘이 안 맞음
+            readOnly: _hasConversation,
+            decoration: InputDecoration(
               filled: true,
               fillColor: AppColors.input,
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              helperText: _hasConversation ? AppStrings.readingFirstWordFixed : null,
             ),
           ),
           const SizedBox(height: 16),

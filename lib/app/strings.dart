@@ -90,6 +90,7 @@ class AppStrings {
   static const readingStopGuide = '마음이 멈춘 줄을 눌러 보세요. 아무것도 안 눌러도 됩니다.';
   static const readingMarkFailed = '표시하지 못했어요. 잠시 뒤에 다시 눌러 주세요.';
   static const readingFirstWordLabel = '읽고 떠오른 낱말 하나';
+  static const readingFirstWordFixed = '이 낱말에서 대화를 시작했어요.';
   static const readingStartChat = '이 낱말로 대화 시작';
   static const readingContinueChat = '대화 이어 하기';
   static const readingEndWithWord = '낱말만 남기고 끝내기';
