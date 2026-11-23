@@ -10,6 +10,7 @@ import '../../data/fakes/fake_data.dart';
 import '../../data/models/chat_message.dart';
 import '../../data/models/reading.dart';
 import '../../data/repositories.dart';
+import '../../writers/fake_summary_writer.dart';
 import '../../writers/openrouter_summary_writer.dart';
 import '../../writers/summary_writer.dart';
 import 'pending_saves.dart';
@@ -118,9 +119,16 @@ class _SaveScreenState extends State<SaveScreen> {
     if (_isPublic) {
       SummaryRequest request = SummaryRequest(poemId: widget.poemId, firstWord: toSave.firstWord,
           conversation: toSave.conversation, interpretation: toSave.interpretation);
-      SummaryWriter writer =
-          widget.summaryWriter ?? await createSummaryWriter();
-      SummaryText result = await writer.write(request);
+      // 요약기는 원래 안 던지지만 혹시 새면 _isSaving이 안 풀려서 화면이 통째로 잠김
+      // 요약 때문에 저장 못 하면 안 되니까 사실 문장으로 대신함
+      SummaryText result;
+      try {
+        SummaryWriter writer =
+            widget.summaryWriter ?? await createSummaryWriter();
+        result = await writer.write(request);
+      } catch (e) {
+        result = await const FakeSummaryWriter().write(request);
+      }
       summary = result.text;
     }
 
@@ -205,29 +213,30 @@ class _SaveScreenState extends State<SaveScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 16),
-          // 근거 행 없으면 제목만 덩그러니 남아서 숨김
-          if (evidenceLines.isNotEmpty)
-          const Text(
-            AppStrings.saveEvidenceLabel,
-            style: AppText.label,
-          ),
-          for (final lineNo in evidenceLines)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Container(width: 20, height: 2, color: AppColors.confirmed),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      poem.lineAt(lineNo),
-                      style: AppText.poemQuote,
-                    ),
-                  ),
-                ],
-              ),
+          // 근거 행 없으면 제목이랑 위 여백까지 통째로 숨김 (제목만 덩그러니 남았음)
+          if (evidenceLines.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              AppStrings.saveEvidenceLabel,
+              style: AppText.label,
             ),
+            for (final lineNo in evidenceLines)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Container(width: 20, height: 2, color: AppColors.confirmed),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        poem.lineAt(lineNo),
+                        style: AppText.poemQuote,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
           const SizedBox(height: 16),
           // 대조 연 뒤라도 비공개였으면 공개로 바꿀 수 있음 (해석은 못 고치니까 그대로 다시 저장됨)
           // 공개는 못 되돌림. 스위치 색이 그대로라 안 눌리는 걸로 보여서 이유 적어 둠

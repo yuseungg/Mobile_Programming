@@ -25,6 +25,7 @@ import 'package:yeobaek/features/save/pending_saves.dart';
 import 'package:yeobaek/features/save/save_screen.dart';
 import 'package:yeobaek/main.dart';
 import 'package:yeobaek/shared/widgets/poem_view.dart';
+import 'package:yeobaek/writers/summary_writer.dart';
 
 // 테스트용: S04 멈춤 표시 저장만 실패하는 저장소
 class _MarkFailsReadingRepository extends FakeReadingRepository {
@@ -48,6 +49,14 @@ class _SlowSaveReadingRepository extends FakeReadingRepository {
   Future<String?> saveInterpretation(String userId, Reading reading, {required String? summary}) async {
     await gate.future;
     return super.saveInterpretation(userId, reading, summary: summary);
+  }
+}
+
+// 테스트용: 약속 어기고 예외 던지는 요약기
+class _ThrowingSummaryWriter implements SummaryWriter {
+  @override
+  Future<SummaryText> write(SummaryRequest request) async {
+    throw Exception('summary');
   }
 }
 
@@ -484,5 +493,23 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SaveScreen(poemId: 'bomgoyangi')));
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.saveEvidenceLabel), findsNothing);
+  });
+
+  testWidgets('S06 요약기가 예외 던져도 멈추지 않고 사실 문장으로 공개 저장', (tester) async {
+    Repositories.useFakes(signedInUserId: FakeData.myUserId);
+    await tester.pumpWidget(MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: SaveScreen(poemId: 'jindallae', summaryWriter: _ThrowingSummaryWriter())));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.byType(SwitchListTile), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pump();
+    await tester.tap(find.text(AppStrings.saveButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    List<PublicConversation> list = await Repositories.publicConversation.fetchForPoem('jindallae');
+    expect(list.where((c) => c.userId == FakeData.myUserId && c.summary.trim().isNotEmpty), isNotEmpty);
   });
 }
