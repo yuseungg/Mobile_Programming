@@ -66,6 +66,8 @@ flutter:
   assets:
     - assets/poems/
     - assets/badges/
+    # 마스코트 — 로딩 화면에서 걷는다 (lib/shared/widgets/app_loading.dart)
+    - assets/mascot/
 
   # 글꼴 — 명조는 시·사용자 해석·앱 이름, 고딕은 앱 UI (기획서 부록 B)
   # 시 본문은 네트워크 없이 보여야 하므로 앱에 직접 넣는다.

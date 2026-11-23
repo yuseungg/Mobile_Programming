@@ -11,11 +11,19 @@
 // test/compare/expert_parser_test.dart가 실제 번들로 검증한다.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/shared/widgets/app_loading.dart';
+
+/// 기다릴 로딩 표시들. AppLoading으로 갈아 끼운 화면도 여기서 함께 기다린다 —
+/// 스피너만 보면, 스피너를 뺀 화면에서 이 helper가 **첫 프레임에 바로
+/// 돌아와** 데이터가 오기 전의 화면을 검사하게 된다.
+bool _isLoadingVisible() =>
+    find.byType(CircularProgressIndicator).evaluate().isNotEmpty ||
+    find.byType(AppLoading).evaluate().isNotEmpty;
 
 Future<void> pumpUntilLoaded(WidgetTester tester, {int tries = 60}) async {
   for (var i = 0; i < tries; i++) {
     await tester.pump(const Duration(milliseconds: 20));
-    if (find.byType(CircularProgressIndicator).evaluate().isEmpty) return;
+    if (!_isLoadingVisible()) return;
   }
   throw StateError('로딩이 끝나지 않았다');
 }
