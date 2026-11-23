@@ -36,6 +36,21 @@ class _MarkFailsReadingRepository extends FakeReadingRepository {
   }
 }
 
+// 테스트용: 오프라인처럼 내 기록 불러오기 · 첫 낱말 저장이 실패하는 저장소
+class _OfflineReadingRepository extends FakeReadingRepository {
+  _OfflineReadingRepository(super.store);
+
+  @override
+  Future<List<Reading>> fetchMyReadings(String userId) async {
+    throw Exception('network');
+  }
+
+  @override
+  Future<void> saveProgress(String userId, Reading reading) async {
+    throw Exception('network');
+  }
+}
+
 // 테스트용: 네트워크 끊긴 것처럼 저장만 실패하는 저장소
 class _NetworkDownReadingRepository extends FakeReadingRepository {
   _NetworkDownReadingRepository(super.store);
@@ -395,5 +410,37 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('3명'), findsNothing); // 저장 못 해서 되돌림
     expect(find.text(AppStrings.readingMarkFailed), findsOneWidget);
+  });
+
+  testWidgets('S04 첫 낱말 저장 실패하면 대화로 안 넘어가고 안내', (tester) async {
+    Repositories.reading = _OfflineReadingRepository(FakeStore());
+    await tester.pumpWidget(const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: ReadingScreen(poemId: 'bomgoyangi')));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.byType(FilledButton), 200, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(find.byType(TextField), '봄');
+    await tester.pump();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.saveFailed), findsOneWidget);
+    expect(find.byType(ChatScreen), findsNothing);
+  });
+
+  testWidgets('홈 내 기록 못 불러오면 안내 뜨고 다시 시도하면 불러옴', (tester) async {
+    FakeStore store = FakeStore();
+    Repositories.reading = _OfflineReadingRepository(store);
+    await tester.pumpWidget(homeApp());
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.noticeUnavailable), findsOneWidget);
+
+    // 네트워크 돌아옴
+    Repositories.reading = FakeReadingRepository(store);
+    await tester.tap(find.text(AppStrings.noticeUnavailableAction));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.noticeUnavailable), findsNothing);
+    expect(find.text(AppStrings.homeContinueTitle), findsOneWidget); // 진달래꽃 하던 대화
   });
 }
