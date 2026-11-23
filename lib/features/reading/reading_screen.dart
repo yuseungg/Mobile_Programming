@@ -149,7 +149,11 @@ class _ReadingScreenState extends State<ReadingScreen> {
     if (!saved || !mounted) {
       return;
     }
-    Navigator.of(context).pushNamed(AppRoutes.chat(widget.poemId));
+    await Navigator.of(context).pushNamed(AppRoutes.chat(widget.poemId));
+    // S05 갔다 오면 대화가 생겼을 수 있어서 다시 불러옴 (안 그러면 첫 낱말이 안 잠김)
+    if (mounted) {
+      _load();
+    }
   }
 
   Future<void> _endWithWord() async {

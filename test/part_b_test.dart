@@ -448,4 +448,28 @@ void main() {
     expect(field.readOnly, true);
     expect(find.text(AppStrings.readingFirstWordFixed), findsOneWidget);
   });
+
+  testWidgets('S05 갔다 뒤로 오면 S04 첫 낱말 잠김', (tester) async {
+    // 봄은 고양이로다는 처음엔 대화 없음
+    await tester.pumpWidget(const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: ReadingScreen(poemId: 'bomgoyangi')));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.byType(FilledButton), 200, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(find.byType(TextField), '봄');
+    await tester.pump();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChatScreen), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1)); // S05 첫 질문 오면 대화 저장됨
+    await tester.pumpAndSettle();
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    TextField field = tester.widget(find.byType(TextField));
+    expect(field.readOnly, true);
+    expect(find.text(AppStrings.readingContinueChat), findsOneWidget);
+  });
 }
