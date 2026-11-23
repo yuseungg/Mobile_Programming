@@ -229,10 +229,13 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                       style: AppText.label,
                     ),
                   ),
-                  Text(
-                    AppStrings.comparisonMyEvidence(myEvidenceLines),
-                    style: AppText.evidenceTag,
-                  ),
+                  // 근거 행이 없으면 「내 근거:」만 덩그러니 남는다 — 아예 뺀다.
+                  // S05에서 시를 인용하지 않고 대화를 마치면 실제로 빈다.
+                  if (myEvidenceLines.isNotEmpty)
+                    Text(
+                      AppStrings.comparisonMyEvidence(myEvidenceLines),
+                      style: AppText.evidenceTag,
+                    ),
                 ],
               ),
             ),
@@ -265,10 +268,13 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        AppStrings.comparisonMineCaption,
-                        style:
-                            AppText.caption,
+                      // Expanded가 없으면 좁은 화면에서 줄바꿈을 못 해 넘친다.
+                      // 320픽셀 폭에서 27픽셀이 잘렸다 (태블릿에서는 안 보인다).
+                      const Expanded(
+                        child: Text(
+                          AppStrings.comparisonMineCaption,
+                          style: AppText.caption,
+                        ),
                       ),
                     ],
                   ),
@@ -430,11 +436,21 @@ class _ExpertCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 한 줄로 이어 쓰면 칸을 넘칠 때 한글이 글자 단위로 끊겨
+                  // 「8」과 「행」이 갈라진다 (태블릿 점검에서 나왔다).
+                  // 행마다 따로 그려서 Wrap이 행 사이에서만 줄을 바꾸게 한다.
                   SizedBox(
-                    width: 64,
-                    child: Text(
-                      AppStrings.lineList(claim.lines),
-                      style: AppText.caption,
+                    width: 72,
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 2,
+                      children: [
+                        for (final lineNo in claim.lines)
+                          Text(
+                            AppStrings.lineLabel(lineNo),
+                            style: AppText.caption,
+                          ),
+                      ],
                     ),
                   ),
                   Expanded(

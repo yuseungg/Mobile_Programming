@@ -23,10 +23,14 @@ class TabShell extends StatefulWidget {
 class _TabShellState extends State<TabShell> {
   late int _index = widget.initialTab.index;
   int _settingsOpenCount = 0; // 설정 탭을 누른 횟수 — S10의 key
+  // 모두의 대화 탭을 누른 횟수 — S08이 자물쇠를 다시 읽는 신호.
+  // S10처럼 key로 다시 만들지 않는 이유는 CommunityListScreen.openCount에 적었다.
+  int _communityOpenCount = 0;
 
   void _select(int index) {
     setState(() {
       if (index == AppTab.settings.index) _settingsOpenCount++;
+      if (index == AppTab.community.index) _communityOpenCount++;
       _index = index;
     });
   }
@@ -38,7 +42,7 @@ class _TabShellState extends State<TabShell> {
         index: _index,
         children: [
           const HomeScreen(),
-          const CommunityListScreen(),
+          CommunityListScreen(openCount: _communityOpenCount),
           SettingsScreen(key: ValueKey(_settingsOpenCount)),
         ],
       ),

@@ -44,8 +44,20 @@ class _ListData {
 class CommunityListScreen extends StatefulWidget {
   const CommunityListScreen({
     super.key,
+    this.openCount = 0,
     this.source = const RepositoryReadingSource(),
   });
+
+  /// 이 탭을 누른 횟수. 바뀌면 자물쇠를 다시 읽는다.
+  ///
+  /// 탭 화면은 IndexedStack 안에서 앱이 켜질 때 한 번 만들어지고 계속 살아
+  /// 있다. 그래서 S06에서 해석을 저장하고 이 탭으로 와도 칩의 자물쇠가 그대로
+  /// 잠겨 있었다 (태블릿 점검에서 나왔다. 앱을 껐다 켜야 풀렸다).
+  ///
+  /// 키를 새로 줘서 화면을 통째로 다시 만드는 길도 있고 S10이 그렇게 한다
+  /// (`tab_shell.dart`의 `_settingsOpenCount`). 여기서는 숫자만 받는다 —
+  /// 다시 만들면 목록과 스크롤 위치까지 날아가고 스피너가 한 번 번쩍인다.
+  final int openCount;
 
   final ReadingSource source;
 
@@ -56,8 +68,47 @@ class CommunityListScreen extends StatefulWidget {
 class _CommunityListScreenState extends State<CommunityListScreen> {
   late final ReadingSource _source = widget.source;
   late String _selectedPoemId = _source.todayPoemId;
-  late final Future<_ShellData> _shell = _loadShell();
+  late Future<_ShellData> _shell = _loadShell();
   late Future<_ListData> _list = _loadList(_selectedPoemId);
+
+  @override
+  void didUpdateWidget(covariant CommunityListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.openCount != oldWidget.openCount) _refreshLocks();
+  }
+
+  /// 탭을 다시 눌렀을 때 자물쇠만 다시 읽는다.
+  ///
+  /// 읽기가 실패하면 **아무것도 하지 않는다.** 자물쇠가 잠시 낡은 것이
+  /// 칩 줄이 사라지는 것보다 낫다 ([_refreshCard]와 같은 규칙이다).
+  Future<void> _refreshLocks() async {
+    final _ShellData shell;
+    try {
+      shell = await _loadShell();
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+
+    // 보고 있던 시가 그사이 열렸으면 잠금 안내 대신 목록을 보여 줘야 한다.
+    // 반대로 닫히는 일은 없다 (저장은 되돌릴 수 없다). 그래도 둘을 비교해
+    // 바뀌었을 때만 다시 읽는다 — 목록을 괜히 새로 불러오지 않는다.
+    final wasUnlocked = (await _list.catchError((_) => _lockedData)).isUnlocked;
+    final isUnlocked = shell.unlocked[_selectedPoemId] ?? false;
+    if (!mounted) return;
+
+    setState(() {
+      // SynchronousFuture라 칩 줄이 한 프레임도 비지 않는다.
+      _shell = SynchronousFuture(shell);
+      if (isUnlocked != wasUnlocked) _list = _loadList(_selectedPoemId);
+    });
+  }
+
+  static const _lockedData = _ListData(
+    isUnlocked: false,
+    conversations: [],
+    nicknames: {},
+  );
 
   Future<_ShellData> _loadShell() async {
     final poems = await _source.poems();
@@ -73,13 +124,7 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
       (await _source.readingFor(poemId))?.isSaved ?? false;
 
   Future<_ListData> _loadList(String poemId) async {
-    if (!await _isUnlocked(poemId)) {
-      return const _ListData(
-        isUnlocked: false,
-        conversations: [],
-        nicknames: {},
-      );
-    }
+    if (!await _isUnlocked(poemId)) return _lockedData;
     final conversations = await _source.conversationsFor(poemId);
     final nicknames = <String, String>{};
     for (final conversation in conversations) {
