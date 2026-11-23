@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +35,19 @@ class _MarkFailsReadingRepository extends FakeReadingRepository {
     // 조금 있다 실패 (그 사이 화면에 먼저 표시되는지 보려고)
     await Future<void>.delayed(const Duration(milliseconds: 100));
     throw Exception('network');
+  }
+}
+
+// 테스트용: 저장이 [gate] 풀릴 때까지 안 끝나는 저장소 (오래 걸리는 저장)
+class _SlowSaveReadingRepository extends FakeReadingRepository {
+  _SlowSaveReadingRepository(super.store, this.gate);
+
+  final Completer<void> gate;
+
+  @override
+  Future<String?> saveInterpretation(String userId, Reading reading, {required String? summary}) async {
+    await gate.future;
+    return super.saveInterpretation(userId, reading, summary: summary);
   }
 }
 
@@ -395,5 +410,25 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('3명'), findsNothing); // 저장 못 해서 되돌림
     expect(find.text(AppStrings.readingMarkFailed), findsOneWidget);
+  });
+
+  testWidgets('S06 저장 중엔 공개 토글이랑 해석 칸 못 건드림', (tester) async {
+    Completer<void> gate = Completer<void>();
+    Repositories.reading = _SlowSaveReadingRepository(FakeStore(), gate);
+    await tester.pumpWidget(const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: SaveScreen(poemId: 'jindallae')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(AppStrings.saveButton));
+    await tester.pump();
+
+    SwitchListTile toggle = tester.widget(find.byType(SwitchListTile));
+    expect(toggle.onChanged, isNull);
+    TextField field = tester.widget(find.byType(TextField));
+    expect(field.readOnly, true);
+
+    gate.complete();
+    await tester.pump(const Duration(milliseconds: 500));
   });
 }

@@ -190,7 +190,7 @@ class _SaveScreenState extends State<SaveScreen> {
           const SizedBox(height: 16),
           TextField(
             controller: _interpretationController,
-            readOnly: _isLocked,
+            readOnly: _isLocked || _isSaving,
             maxLength: 500,
             // 웹 기본값은 한글 조합 중엔 제한을 풀어서 500자 넘어감
             maxLengthEnforcement:MaxLengthEnforcement.enforced, //AI
@@ -233,7 +233,8 @@ class _SaveScreenState extends State<SaveScreen> {
             title: const Text(AppStrings.savePublicLabel),
             subtitle: Text(_wasPublic ? AppStrings.savePublicFixed : AppStrings.savePublicCaption),
             value: _isPublic,
-            onChanged: _wasPublic ? null : (value) => setState(() => _isPublic = value),
+            // 저장 중에 바꾸면 화면만 바뀌고 저장되는 값은 그대로라 막음 (공개 저장은 요약 쓰느라 오래 걸림)
+            onChanged: (_wasPublic || _isSaving) ? null : (value) => setState(() => _isPublic = value),
           ),
         ],
       ),
