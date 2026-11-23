@@ -449,7 +449,7 @@ void main() {
     expect(find.text(AppStrings.readingFirstWordFixed), findsOneWidget);
   });
 
-  testWidgets('S05 갔다 뒤로 오면 S04 첫 낱말 잠김', (tester) async {
+  testWidgets('S05 갔다 바로 뒤로 와도 S04 첫 낱말 잠김', (tester) async {
     // 봄은 고양이로다는 처음엔 대화 없음
     await tester.pumpWidget(const MaterialApp(
         onGenerateRoute: AppRouter.onGenerateRoute,
@@ -462,9 +462,8 @@ void main() {
     await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
     expect(find.byType(ChatScreen), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1)); // S05 첫 질문 오면 대화 저장됨
-    await tester.pumpAndSettle();
 
+    // 첫 질문 오기 전에 바로 뒤로 (대화가 아직 저장 안 됐어도 잠겨야 함)
     await tester.pageBack();
     await tester.pumpAndSettle();
 

@@ -150,9 +150,12 @@ class _ReadingScreenState extends State<ReadingScreen> {
       return;
     }
     await Navigator.of(context).pushNamed(AppRoutes.chat(widget.poemId));
-    // S05 갔다 오면 대화가 생겼을 수 있어서 다시 불러옴 (안 그러면 첫 낱말이 안 잠김)
+    // 이 낱말로 대화 시작했으니 돌아오면 바로 잠금
+    // (다시 불러오면 S05가 첫 질문 저장하기 전에 읽어서 안 잠길 수 있음)
     if (mounted) {
-      _load();
+      setState(() {
+        _hasConversation = true;
+      });
     }
   }
 
