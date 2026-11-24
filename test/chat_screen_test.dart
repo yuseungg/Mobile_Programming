@@ -85,8 +85,10 @@ void main() {
     await tester.pump();
     expect(find.text(AppStrings.chatHintTitle), findsOneWidget);
 
+    // 서시 시연 대화는 모델이 쓴 질문으로 끝나므로, 목록의 다음 질문이 아니라 그 질문에서 출발하는 힌트
     await _waitForReply(tester);
-    expect(find.text(fallbackQuestions['seosi']!.first), findsOneWidget);
+    expect(find.text(followUpHint), findsOneWidget);
+    expect(find.text(fallbackQuestions['seosi']!.first), findsNothing);
   });
 
   testWidgets('대화를 저장소에 저장하고, 다른 화면이 쓴 첫 낱말은 그대로 둔다', (tester) async {
