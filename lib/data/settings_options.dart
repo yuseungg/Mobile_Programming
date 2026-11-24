@@ -6,18 +6,30 @@
 //   google/gemma 계열은 호출이 되지 않아(429) 뺐다. 바뀌면 이 파일만 고친다.
 //   저장된 모델이 목록에 없으면 기본값으로 읽힌다 (PrefsSettingsRepository).
 
+import '../app/language.dart';
 import 'models/settings.dart';
 
 /// S11 모델 선택지. 질문 모델 · 비교 모델 둘 다 이 목록에서 고른다.
-const modelOptions = <({String model, String description})>[
-  (model: 'nvidia/nemotron-3.5-lightning:free', description: '신중함 · 느림'),
-  (model: 'dots-studio/dots-3-note-preview:free', description: '빠름'),
+/// 설명은 화면 오른쪽 위 KR / EN을 따른다 — 화면에서는 [modelDescriptionOf]로 꺼낸다.
+const modelOptions = <({String model, String description, String descriptionEn})>[
+  (
+    model: 'nvidia/nemotron-3.5-lightning:free',
+    description: '신중함 · 느림',
+    descriptionEn: 'Careful · slow',
+  ),
+  (
+    model: 'dots-studio/dots-3-note-preview:free',
+    description: '빠름',
+    descriptionEn: 'Fast',
+  ),
 ];
 
-/// 모델 이름 → S10 · S11에 함께 보여 줄 짧은 설명. 목록에 없으면 ''.
+/// 모델 이름 → S10 · S11에 함께 보여 줄 짧은 설명 (지금 고른 언어로). 목록에 없으면 ''.
 String modelDescriptionOf(String model) {
   for (final option in modelOptions) {
-    if (option.model == model) return option.description;
+    if (option.model == model) {
+      return isEnglish ? option.descriptionEn : option.description;
+    }
   }
   return '';
 }

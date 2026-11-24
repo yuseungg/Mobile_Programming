@@ -245,8 +245,8 @@ class _ModelPicker extends StatelessWidget {
             ListTile(
               onTap: () => onSelected(modelOptions[i].model),
               title: Text(modelOptions[i].model, style: AppText.bodyStrong),
-              subtitle:
-                  Text(modelOptions[i].description, style: AppText.caption),
+              subtitle: Text(modelDescriptionOf(modelOptions[i].model),
+                  style: AppText.caption),
               trailing: modelOptions[i].model == selected
                   ? const Icon(Icons.check_rounded, color: AppColors.confirmed)
                   : null,
