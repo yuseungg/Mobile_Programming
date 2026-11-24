@@ -8,6 +8,7 @@ import 'package:yeobaek/data/models/settings.dart';
 import 'package:yeobaek/writers/comparison_guard.dart';
 import 'package:yeobaek/writers/comparison_prompt.dart';
 import 'package:yeobaek/writers/comparison_writer.dart';
+import 'package:yeobaek/writers/quote_check.dart';
 import 'package:yeobaek/writers/summary_guard.dart';
 import 'package:yeobaek/writers/summary_prompt.dart';
 import 'package:yeobaek/writers/summary_writer.dart';
@@ -56,6 +57,17 @@ void main() {
       final messages = buildComparisonMessages(request: comparison, tone: Tone.plain);
       expect(systemOf(messages), contains('관계는 이미 정해져 있다'));
       expect(materialsOf(messages), contains('근거 행: 6행'));
+    });
+
+    test('인용 안에 축약형이 있어도 인용 검사가 꺼지지 않는다 (#55 리뷰)', () {
+      expect(quotesIn("The poem says 'don't look back' at the end."), ["don'tlookback"]);
+      expect(quotesIn("'It's all over' is what the line says."), ["It'sallover"]);
+      expect(quotesIn("This reading doesn't take 'the night wind' lightly."), ['thenightwind']);
+      expect(quotesIn("It's close to 'a star' and it isn't far."), ['astar']);
+      expect(quotesIn("이 해석은 '별을 노래하는 마음으로'에 머문다."), ['별을노래하는마음으로']);
+      // 원문에 없는 축약형 인용은 걸린다
+      expect(quotesAreGrounded("The poem says 'don't look back' at the end.", seosi.lines),
+          isFalse);
     });
 
     test('영어 비교 문장 — 통과하는 것과 걸리는 것', () {

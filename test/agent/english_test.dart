@@ -103,6 +103,11 @@ void main() {
       expect(passes("It's a long line. Which word don't you want to let go of?"), isTrue);
     });
 
+    test('인용 안에 축약형이 있어도 인용으로 본다', () {
+      // 인용으로 못 보면 인용 안의 물음표까지 세어 질문이 둘로 잡힌다
+      expect(passes("Where does 'don't you see?' come back to you?"), isTrue);
+    });
+
     test('한국어 검사는 그대로다', () {
       expect(violations('바람은 시련을 상징한다. 어떻게 느꼈나요?'),
           contains(GuardViolation.assertive));
