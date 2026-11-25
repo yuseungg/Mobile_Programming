@@ -2,8 +2,8 @@
 //
 // 모델은 요건 (a) 「무료 대형 멀티모달 모델」을 따른다. 2026-11-25 A가 실제 키로 확인했다.
 //   - nvidia/nemotron-3.5-super-vl:free — 글 · 이미지 · 영상. verify_quote · search_poem_lines ·
-//     compare_with_experts 모두 제대로 부름. 질문은 한 번에 17~35초(속으로 생각함),
-//     힌트는 생각을 끄고 1~4초
+//     compare_with_experts 모두 제대로 부름. 속으로 생각하게 두면 질문 하나에 17~35초라
+//     앱은 생각을 끄고 부른다 (OpenRouterClient.reasoningOff) — 끈 힌트 실측 1~4초
 //   - nvidia/nemotron-3.5-lightning:free — 글만. 툴 호출은 되지만 생각이 길어 힌트가 14~65초
 //   뺀 것: dots-studio/dots-3-note-preview(2026-11-25 내려감, 404),
 //          baidu/ernie-5.5-flash-preview(글만 받고, 저장 뒤 전문가 해석을 지어냄),

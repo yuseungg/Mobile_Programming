@@ -47,9 +47,6 @@ class OpenRouterChatAgent implements ChatAgent {
   static const defaultHintDeadline = Duration(seconds: 15);
   final Duration hintDeadline;
 
-  /// 추론을 끌 수 없는 모델이 있다 (끄라고 하면 400). 한 번 겪으면 다시 청하지 않는다.
-  bool _reasoningAlwaysOn = false;
-
   final OpenRouterClient client;
   final String model; // 질문 모델 — 설정(S10 · S11)의 questionModel
   final Tone tone;
@@ -95,37 +92,17 @@ class OpenRouterChatAgent implements ChatAgent {
     }
   }
 
-  /// 모델을 한 번 부른다. [reasoningOff]면 속으로 생각하지 말라고 청한다 — 무료 모델은
-  /// 답하기 전에 수천 토큰을 생각하느라 한 번에 15~60초가 걸렸다 (실측).
-  /// 끌 수 없는 모델이면 켠 채로 한 번 더 부른다.
+  /// 모델을 한 번 부른다. 속으로 생각하지 말라는 청은 클라이언트가 늘 붙인다 (OpenRouterClient.reasoningOff).
   Future<ChatCompletion> _complete({
     required List<Map<String, Object?>> messages,
     List<Map<String, Object?>>? tools,
     String? toolChoice,
-    bool reasoningOff = false,
     Duration? timeout,
     CancelToken? cancelToken,
-  }) async {
-    final asksReasoningOff = reasoningOff && !_reasoningAlwaysOn;
+  }) {
     _countModelCall();
-    final completion = await client.complete(
+    return client.complete(
       model: model,
-      messages: messages,
-      tools: tools,
-      toolChoice: toolChoice,
-      reasoning: asksReasoningOff ? const {'enabled': false} : null,
-      timeout: timeout,
-      cancelToken: cancelToken,
-    );
-    final failure = completion.failure;
-    final isReasoningRefused = asksReasoningOff &&
-        failure != null &&
-        failure.statusCode == 400 &&
-        failure.message.toLowerCase().contains('reasoning');
-    if (!isReasoningRefused) return completion;
-    _reasoningAlwaysOn = true;
-    debugPrint('[agent] 이 모델은 추론을 끌 수 없어 켠 채로 다시 부름: $failure');
-    return _complete(
       messages: messages,
       tools: tools,
       toolChoice: toolChoice,
@@ -172,9 +149,8 @@ class OpenRouterChatAgent implements ChatAgent {
     );
   }
 
-  /// 힌트는 빨라야 한다. 그래서 세 가지가 질문과 다르다.
+  /// 힌트는 빨라야 한다 (누른 사람은 막혀 있는 사람이다). 그래서 두 가지가 질문과 다르다.
   ///  - 툴 없이 한 번에 답하게 한다 — 툴 라운드만큼 호출이 늘어난다
-  ///  - 속으로 생각하지 않게 한다 (끌 수 없는 모델은 켠 채로)
   ///  - [hintDeadline] 안에 안 오면 요청을 끊고 직전 질문의 짝 힌트를 보여 준다
   @override
   Future<AgentReply> hint({
@@ -211,7 +187,7 @@ class OpenRouterChatAgent implements ChatAgent {
     required List<ChatMessage> conversation,
     String? instruction, // 화면에 보이지 않는 앱 안내 (첫 질문 · 힌트)
     required String fallbackText,
-    bool isHint = false, // 툴 없이 · 추론 없이 · 짧게 (hint 참고)
+    bool isHint = false, // 툴 없이 · 짧게 (hint 참고)
     CancelToken? cancelToken,
   }) async {
     var tools = AgentTools(
@@ -266,7 +242,6 @@ class OpenRouterChatAgent implements ChatAgent {
           messages: messages,
           tools: isHint ? null : tools.definitions,
           toolChoice: isHint || !isLastRound ? null : 'none',
-          reasoningOff: isHint,
           timeout: isHint ? hintDeadline : null,
           cancelToken: cancelToken,
         );
@@ -324,7 +299,6 @@ class OpenRouterChatAgent implements ChatAgent {
           messages: messages,
           tools: isHint ? null : tools.definitions,
           toolChoice: isHint ? null : 'none',
-          reasoningOff: isHint,
           timeout: isHint ? hintDeadline : null,
           cancelToken: cancelToken,
         );

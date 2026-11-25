@@ -252,14 +252,14 @@ void main() {
       expect(transport.wasAborted, isTrue); // 기다리던 요청은 끊었다
     });
 
-    test('질문(reply)은 그대로 — 툴을 쓰고 추론 설정을 보내지 않는다', () async {
+    test('질문도 속으로 생각하지 말라고 하고 보낸다 — 툴은 그대로 쓴다', () async {
       final transport = _ScriptedTransport([_text(goodQuestion)]);
       await agentWith(transport)
           .reply(poem: seosi, conversation: const [quoteMessage]);
 
       final request = transport.requests.single;
       expect(request['tools'], isNotNull);
-      expect(request.containsKey('reasoning'), isFalse);
+      expect(request['reasoning'], {'enabled': false});
     });
   });
 
