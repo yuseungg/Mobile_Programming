@@ -5,6 +5,7 @@
 // - 출력 필터에 걸리면 이유를 알려 주고 다시 쓰게 한다. 2회까지. 그래도 안 되면 준비된 관찰 질문
 // - 모델 호출이 실패해도 준비된 관찰 질문으로 대신한다 (기획서 7장)
 // S05는 질문 모델 하나로 툴 호출과 질문을 함께 한다. 비교 모델은 D가 S07 · S09에서 쓴다.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -35,10 +36,19 @@ class OpenRouterChatAgent implements ChatAgent {
     this.loadExperts,
     this.onComparisonOpened,
     this.onModelCall,
+    this.hintDeadline = defaultHintDeadline,
   });
 
   static const maxToolRounds = 5;
   static const maxRewrites = 2;
+
+  /// 힌트는 이 안에 오지 않으면 직전 질문의 짝 힌트(fallback_questions.dart)로 대신한다.
+  /// 힌트를 누른 사람은 막혀 있는 사람이다 — 실기기에서 30초~1분 기다리면 멈춘 것으로 보였다.
+  static const defaultHintDeadline = Duration(seconds: 15);
+  final Duration hintDeadline;
+
+  /// 추론을 끌 수 없는 모델이 있다 (끄라고 하면 400). 한 번 겪으면 다시 청하지 않는다.
+  bool _reasoningAlwaysOn = false;
 
   final OpenRouterClient client;
   final String model; // 질문 모델 — 설정(S10 · S11)의 questionModel
@@ -85,18 +95,41 @@ class OpenRouterChatAgent implements ChatAgent {
     }
   }
 
+  /// 모델을 한 번 부른다. [reasoningOff]면 속으로 생각하지 말라고 청한다 — 무료 모델은
+  /// 답하기 전에 수천 토큰을 생각하느라 한 번에 15~60초가 걸렸다 (실측).
+  /// 끌 수 없는 모델이면 켠 채로 한 번 더 부른다.
   Future<ChatCompletion> _complete({
     required List<Map<String, Object?>> messages,
-    required List<Map<String, Object?>> tools,
+    List<Map<String, Object?>>? tools,
     String? toolChoice,
+    bool reasoningOff = false,
+    Duration? timeout,
     CancelToken? cancelToken,
-  }) {
+  }) async {
+    final asksReasoningOff = reasoningOff && !_reasoningAlwaysOn;
     _countModelCall();
-    return client.complete(
+    final completion = await client.complete(
       model: model,
       messages: messages,
       tools: tools,
       toolChoice: toolChoice,
+      reasoning: asksReasoningOff ? const {'enabled': false} : null,
+      timeout: timeout,
+      cancelToken: cancelToken,
+    );
+    final failure = completion.failure;
+    final isReasoningRefused = asksReasoningOff &&
+        failure != null &&
+        failure.statusCode == 400 &&
+        failure.message.toLowerCase().contains('reasoning');
+    if (!isReasoningRefused) return completion;
+    _reasoningAlwaysOn = true;
+    debugPrint('[agent] 이 모델은 추론을 끌 수 없어 켠 채로 다시 부름: $failure');
+    return _complete(
+      messages: messages,
+      tools: tools,
+      toolChoice: toolChoice,
+      timeout: timeout,
       cancelToken: cancelToken,
     );
   }
@@ -139,19 +172,38 @@ class OpenRouterChatAgent implements ChatAgent {
     );
   }
 
+  /// 힌트는 빨라야 한다. 그래서 세 가지가 질문과 다르다.
+  ///  - 툴 없이 한 번에 답하게 한다 — 툴 라운드만큼 호출이 늘어난다
+  ///  - 속으로 생각하지 않게 한다 (끌 수 없는 모델은 켠 채로)
+  ///  - [hintDeadline] 안에 안 오면 요청을 끊고 직전 질문의 짝 힌트를 보여 준다
   @override
   Future<AgentReply> hint({
     required Poem poem,
     required List<ChatMessage> conversation,
     CancelToken? cancelToken,
-  }) {
-    return _respond(
-      poem: poem,
-      conversation: conversation,
-      instruction: hintInstruction(lastAgentQuestion(conversation)),
-      fallbackText: fallbackHint(poem.poemId, conversation),
-      cancelToken: cancelToken,
-    );
+  }) async {
+    // 화면이 시트를 닫아도, 시간이 다 돼도 같은 토큰으로 요청을 끊는다
+    final hintToken = CancelToken();
+    void cancelFromScreen() => hintToken.cancel();
+    cancelToken?.addListener(cancelFromScreen);
+    final deadline = Timer(hintDeadline, hintToken.cancel);
+    try {
+      final reply = await _respond(
+        poem: poem,
+        conversation: conversation,
+        instruction: hintInstruction(lastAgentQuestion(conversation)),
+        fallbackText: fallbackHint(poem.poemId, conversation),
+        isHint: true,
+        cancelToken: hintToken,
+      );
+      if (hintToken.isCancelled && !(cancelToken?.isCancelled ?? false)) {
+        debugPrint('[agent] 힌트가 ${hintDeadline.inSeconds}초 안에 오지 않아 짝 힌트로 대신함');
+      }
+      return reply;
+    } finally {
+      deadline.cancel();
+      cancelToken?.removeListener(cancelFromScreen);
+    }
   }
 
   Future<AgentReply> _respond({
@@ -159,6 +211,7 @@ class OpenRouterChatAgent implements ChatAgent {
     required List<ChatMessage> conversation,
     String? instruction, // 화면에 보이지 않는 앱 안내 (첫 질문 · 힌트)
     required String fallbackText,
+    bool isHint = false, // 툴 없이 · 추론 없이 · 짧게 (hint 참고)
     CancelToken? cancelToken,
   }) async {
     var tools = AgentTools(
@@ -211,8 +264,10 @@ class OpenRouterChatAgent implements ChatAgent {
         final isLastRound = round == maxToolRounds;
         final completion = await _complete(
           messages: messages,
-          tools: tools.definitions,
-          toolChoice: isLastRound ? 'none' : null,
+          tools: isHint ? null : tools.definitions,
+          toolChoice: isHint || !isLastRound ? null : 'none',
+          reasoningOff: isHint,
+          timeout: isHint ? hintDeadline : null,
           cancelToken: cancelToken,
         );
         final failure = completion.failure;
@@ -267,8 +322,10 @@ class OpenRouterChatAgent implements ChatAgent {
         ]);
         final completion = await _complete(
           messages: messages,
-          tools: tools.definitions,
-          toolChoice: 'none',
+          tools: isHint ? null : tools.definitions,
+          toolChoice: isHint ? null : 'none',
+          reasoningOff: isHint,
+          timeout: isHint ? hintDeadline : null,
           cancelToken: cancelToken,
         );
         final failure = completion.failure;

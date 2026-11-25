@@ -195,6 +195,22 @@ class AppStrings {
   static String get chatStopButton => _t('중단', 'Stop');
   static String get chatResponding =>
       _t('질문을 고르는 중…', 'Choosing a question…');
+  // 힌트를 기다리는 동안 — 멈춘 게 아니라는 것을 보인다. 늦어지면 준비한 힌트로 대신한다
+  static String get chatHintWaiting =>
+      _t('시에서 실마리를 찾고 있어요…', 'Looking for a clue in the poem…');
+  static String get chatHintWaitingLong => _t(
+        '조금 걸리고 있어요. 늦어지면 준비해 둔 힌트를 보여 드릴게요.',
+        "This is taking a moment. If it runs late, you'll see a prepared hint.",
+      );
+  // 대화를 저장하지 못했을 때 — 조용히 넘어가면 대화가 날아가도 모른다
+  static String get chatSaveFailed => _t(
+        '대화를 저장하지 못했어요. 다음 말을 보낼 때 다시 저장할게요.',
+        "Couldn't save the conversation. We'll try again with your next message.",
+      );
+  static String get chatSaveBlocked => _t(
+        '대화를 아직 저장하지 못해 정리로 넘어갈 수 없어요. 연결을 확인하고 다시 눌러 주세요.',
+        "The conversation isn't saved yet, so you can't move on. Check your connection and tap again.",
+      );
 
   // ── S06 정리 · 저장 (B) ────────────────────────
   static String get saveTitle => _t('내 해석', 'My interpretation');

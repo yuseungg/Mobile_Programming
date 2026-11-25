@@ -32,11 +32,15 @@ class OpenRouterClient {
   bool get isAvailable => apiKey.isNotEmpty && _canPost;
 
   /// 채팅 완성 한 번. [toolChoice]에 'none'을 주면 툴 없이 답하게 한다.
+  /// [reasoning]은 OpenRouter의 추론 설정 그대로 (예: `{'enabled': false}` — 속으로 생각하지 않기).
+  /// [timeout]을 주면 이 호출만 그 시간까지 기다린다 (없으면 [OpenRouterClient.timeout]).
   Future<ChatCompletion> complete({
     required String model,
     required List<Map<String, Object?>> messages,
     List<Map<String, Object?>>? tools,
     String? toolChoice,
+    Map<String, Object?>? reasoning,
+    Duration? timeout,
     CancelToken? cancelToken,
   }) async {
     if (cancelToken?.isCancelled ?? false) {
@@ -51,8 +55,9 @@ class OpenRouterClient {
           'messages': messages,
           'tools': ?tools,
           'tool_choice': ?toolChoice,
+          'reasoning': ?reasoning,
         }),
-        timeout: timeout,
+        timeout: timeout ?? this.timeout,
         cancelToken: cancelToken,
       );
       return ChatCompletion.fromResponse(response);

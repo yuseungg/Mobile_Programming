@@ -1,6 +1,8 @@
 // 진짜 에이전트의 루프 (A) — 기획서 6장 「에이전트 구조」
 // 네트워크 대신 정해진 응답을 차례로 돌려주는 가짜 전송을 끼워서, 무료 한도를 쓰지 않고 확인한다.
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show HttpException;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yeobaek/agent/cancel_token.dart';
@@ -31,6 +33,26 @@ class _ScriptedTransport {
   }) async {
     requests.add(jsonDecode(body) as Map<String, Object?>);
     return _responses.removeAt(0);
+  }
+}
+
+/// 답이 오지 않는 전송 — 끊길 때(cancelToken)까지 기다린다. 끊기면 요청이 깨진 것처럼 던진다
+class _HangingTransport {
+  bool wasAborted = false;
+
+  Future<HttpResponseData> post(
+    Uri uri, {
+    required Map<String, String> headers,
+    required String body,
+    required Duration timeout,
+    CancelToken? cancelToken,
+  }) {
+    final aborted = Completer<HttpResponseData>();
+    cancelToken?.addListener(() {
+      wasAborted = true;
+      aborted.completeError(const HttpException('aborted'));
+    });
+    return aborted.future;
   }
 }
 
@@ -174,6 +196,71 @@ void main() {
         await agentWith(failTransport).hint(poem: seosi, conversation: conversation);
     expect(reply.isFallback, isTrue);
     expect(reply.text, preparedQuestions['seosi']![1].hint);
+  });
+
+  group('힌트는 빨라야 한다 — 실기기에서 30초~1분 걸렸다', () {
+    const goodHint = "5행에서 '별' 바로 뒤에는 어떤 말이 오나요?";
+    final conversation = [
+      ChatMessage(role: ChatRole.assistant, text: fallbackQuestions['seosi']![1]),
+    ];
+
+    test('툴 없이, 속으로 생각하지 말라고 하고 한 번에 받는다', () async {
+      final transport = _ScriptedTransport([_text(goodHint)]);
+      final reply =
+          await agentWith(transport).hint(poem: seosi, conversation: conversation);
+
+      expect(reply.text, goodHint);
+      expect(reply.isFallback, isFalse);
+      final request = transport.requests.single; // 툴 라운드가 없다
+      expect(request['tools'], isNull);
+      expect(request['tool_choice'], isNull);
+      expect(request['reasoning'], {'enabled': false});
+    });
+
+    test('추론을 끌 수 없는 모델이면 켠 채로 다시 부르고, 다음부터는 청하지 않는다', () async {
+      final transport = _ScriptedTransport([
+        _error(400, 'Reasoning is mandatory for this endpoint and cannot be disabled.'),
+        _text(goodHint),
+        _text(goodHint),
+      ]);
+      final agent = agentWith(transport);
+
+      final first = await agent.hint(poem: seosi, conversation: conversation);
+      expect(first.text, goodHint);
+      expect(first.isFallback, isFalse);
+      expect(transport.requests[0]['reasoning'], {'enabled': false});
+      expect(transport.requests[1].containsKey('reasoning'), isFalse);
+
+      await agent.hint(poem: seosi, conversation: conversation);
+      expect(transport.requests, hasLength(3));
+      expect(transport.requests[2].containsKey('reasoning'), isFalse);
+    });
+
+    test('시간 안에 안 오면 요청을 끊고 직전 질문의 짝 힌트를 보여 준다', () async {
+      final transport = _HangingTransport();
+      final agent = OpenRouterChatAgent(
+        client: OpenRouterClient(apiKey: 'test-key', postJson: transport.post),
+        model: 'test/model',
+        tone: Tone.plain,
+        isSaved: false,
+        hintDeadline: const Duration(milliseconds: 50),
+      );
+
+      final reply = await agent.hint(poem: seosi, conversation: conversation);
+      expect(reply.isFallback, isTrue);
+      expect(reply.text, preparedQuestions['seosi']![1].hint);
+      expect(transport.wasAborted, isTrue); // 기다리던 요청은 끊었다
+    });
+
+    test('질문(reply)은 그대로 — 툴을 쓰고 추론 설정을 보내지 않는다', () async {
+      final transport = _ScriptedTransport([_text(goodQuestion)]);
+      await agentWith(transport)
+          .reply(poem: seosi, conversation: const [quoteMessage]);
+
+      final request = transport.requests.single;
+      expect(request['tools'], isNotNull);
+      expect(request.containsKey('reasoning'), isFalse);
+    });
   });
 
   test('HTTP 200이어도 본문에 error가 있으면 실패로 본다', () async {
