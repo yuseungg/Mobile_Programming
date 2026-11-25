@@ -66,6 +66,15 @@ void main() {
           'demo@gmail.com');
     });
 
+    testWidgets('긴 글을 넣어도 이메일 64자 · 비밀번호 32자까지만 들어간다', (tester) async {
+      await tester.pumpWidget(_app(const SignInScreen()));
+      await tester.enterText(_field(0), '${'a' * 200}@gmail.com');
+      await tester.enterText(_field(1), 'a1' * 100);
+      expect(tester.widget<TextField>(_field(0)).controller!.text.length, maxEmailLength);
+      expect(tester.widget<TextField>(_field(1)).controller!.text.length, maxPasswordLength);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('gmail 주소가 아니면 로그인 버튼이 눌리지 않는다', (tester) async {
       await tester.pumpWidget(_app(const SignInScreen()));
       await tester.enterText(_field(0), 'demo@naver.com');
