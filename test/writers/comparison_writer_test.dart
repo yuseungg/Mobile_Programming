@@ -1,5 +1,6 @@
 // 주인: D — 비교 문장 폴백 (기획서 4장 · 9장 「오프라인·실패 처리」)
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/data/fakes/fake_data.dart';
 import 'package:yeobaek/data/models/expert_interpretation.dart';
 import 'package:yeobaek/writers/comparison_writer.dart';
@@ -31,13 +32,34 @@ ComparisonRequest request({
     );
 
 void main() {
-  group('미리 쓴 문장이 있으면 그것을 쓴다', () {
+  group('미리 쓴 문장이 있으면 관계 한 줄 뒤에 붙인다', () {
     test('전문가 순서와 같은 자리의 문장', () async {
       const writer = FakeComparisonWriter(prewritten: {
         'seosi': ['첫째 문장', '둘째 문장'],
       });
-      expect((await writer.write(request(index: 0))).text, '첫째 문장');
-      expect((await writer.write(request(index: 1))).text, '둘째 문장');
+      expect((await writer.write(request(index: 0))).text, endsWith('첫째 문장'));
+      expect((await writer.write(request(index: 1))).text, endsWith('둘째 문장'));
+    });
+
+    // 미리 쓴 문장은 시연용 해석에 맞춰 쓰여 있어서, 그것만 내보내면 사람이
+    // 쓰지도 않은 해석 내용을 단정한다 (태블릿 점검). 내 해석에 대한 말은
+    // 근거 행에서 계산하는 관계 한 줄만 한다.
+    test('내 해석에 대한 말은 관계 한 줄이 맡는다 — 미리 쓴 문장만 내보내지 않는다',
+        () async {
+      const writer = FakeComparisonWriter(prewritten: {
+        'seosi': ['이 해석은 6행을 결심으로 읽어요.'],
+      });
+
+      // 근거가 6행으로 같을 때와 다를 때, 앞머리가 실제로 달라져야 한다
+      final same = (await writer.write(request())).text;
+      final different = (await writer.write(request(
+        myLines: [10],
+        relation: Relation.differentLines,
+      ))).text;
+
+      expect(same, startsWith(AppStrings.comparisonFallbackSameLines([6])));
+      expect(different, startsWith(AppStrings.comparisonFallbackDifferentLines));
+      expect(same, isNot(different));
     });
 
     test('미리 쓴 것도 폴백으로 표시된다 — 모델이 쓴 게 아니다', () async {
