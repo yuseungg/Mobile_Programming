@@ -241,4 +241,9 @@ class AppStrings {
   static String introDays(int count) => '시를 읽은 날 $count일';
   static String introShared(int count) => '모두에게 나눈 글 $count편';
   static String introBadges(int count) => '받은 뱃지 $count개';
+
+  // ── 로딩 (공용, D) ────────────────────────────
+  /// 기다리는 동안 보이는 글자. 한 글자씩 파도치듯 튄다 (AppLoading).
+  /// 글자 수가 바뀌면 파도 길이도 그만큼 바뀐다 — 마음껏 줄이고 늘려도 된다.
+  static const loadingLabel = 'LOADING......';
 }
