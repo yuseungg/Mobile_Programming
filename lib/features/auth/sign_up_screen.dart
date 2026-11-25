@@ -6,6 +6,7 @@
 // 이메일 · 비밀번호 칸을 숨기고 닉네임만 정한다 (화면을 새로 만들지 않고 S02를 다시 쓴다).
 import 'package:flutter/material.dart';
 
+import '../../app/language.dart';
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
@@ -30,7 +31,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
-  String _nickname = drawNickname();
+  // 닉네임은 화면 언어로 짓는다. 가입 전에 KR / EN을 바꾸면 build에서 그 언어로 다시 짓는다.
+  bool _nicknameIsEnglish = isEnglish;
+  String _nickname = drawNickname(english: isEnglish);
   bool _isBusy = false;
 
   /// 계정은 만들었는데 프로필 저장이 실패했을 때, 다시 누르면 계정을 또 만들지 않는다.
@@ -55,7 +58,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           (_isEmailValid && _isPasswordValid && _isPasswordConfirmed));
 
   void _refreshNickname() {
-    setState(() => _nickname = drawNickname(except: _nickname));
+    setState(() => _nickname = drawNickname(english: isEnglish, except: _nickname));
   }
 
   Future<void> _submit() async {
@@ -114,6 +117,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 가입 전에 KR / EN을 바꾸면 앱 전체가 다시 그려진다 — 그때 닉네임도 그 언어로 새로 짓는다
+    if (_nicknameIsEnglish != isEnglish) {
+      _nicknameIsEnglish = isEnglish;
+      _nickname = drawNickname(english: isEnglish);
+    }
     final isNicknameOnly = widget.isNicknameOnly;
     final showEmailError = _emailController.text.isNotEmpty && !_isEmailValid;
     final showPasswordShort = _passwordController.text.isNotEmpty &&

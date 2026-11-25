@@ -1,11 +1,13 @@
 // S01 로그인 · S02 가입 — 주인: C
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/app/language.dart';
 import 'package:yeobaek/app/router.dart';
 import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/app/tab_shell.dart';
 import 'package:yeobaek/app/theme.dart';
 import 'package:yeobaek/data/fakes/fake_auth_repository.dart';
+import 'package:yeobaek/data/nickname_words.dart';
 import 'package:yeobaek/data/repositories.dart';
 import 'package:yeobaek/features/auth/auth_input_rules.dart';
 import 'package:yeobaek/features/auth/sign_in_screen.dart';
@@ -143,6 +145,13 @@ void main() {
       await tester.tap(find.byTooltip(AppStrings.signUpNicknameRefresh));
       await tester.pump();
       expect(_nicknameShown(tester), isNot(before));
+    });
+
+    testWidgets('EN으로 열면 닉네임이 영어 단어로 지어진다', (tester) async {
+      appLanguage.value = AppLanguage.en;
+      await tester.pumpWidget(_app(const SignUpScreen()));
+      final noun = _nicknameShown(tester).split(' ').last;
+      expect(nicknameNounsEn, contains(noun));
     });
 
     testWidgets('가입하면 계정과 프로필이 생기고 홈으로 간다', (tester) async {
