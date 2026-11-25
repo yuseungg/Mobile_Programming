@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +25,7 @@ import 'package:yeobaek/features/save/pending_saves.dart';
 import 'package:yeobaek/features/save/save_screen.dart';
 import 'package:yeobaek/main.dart';
 import 'package:yeobaek/shared/widgets/poem_view.dart';
+import 'package:yeobaek/writers/summary_writer.dart';
 
 // 테스트용: S04 멈춤 표시 저장만 실패하는 저장소
 class _MarkFailsReadingRepository extends FakeReadingRepository {
@@ -33,6 +36,27 @@ class _MarkFailsReadingRepository extends FakeReadingRepository {
     // 조금 있다 실패 (그 사이 화면에 먼저 표시되는지 보려고)
     await Future<void>.delayed(const Duration(milliseconds: 100));
     throw Exception('network');
+  }
+}
+
+// 테스트용: 저장이 [gate] 풀릴 때까지 안 끝나는 저장소 (오래 걸리는 저장)
+class _SlowSaveReadingRepository extends FakeReadingRepository {
+  _SlowSaveReadingRepository(super.store, this.gate);
+
+  final Completer<void> gate;
+
+  @override
+  Future<String?> saveInterpretation(String userId, Reading reading, {required String? summary}) async {
+    await gate.future;
+    return super.saveInterpretation(userId, reading, summary: summary);
+  }
+}
+
+// 테스트용: 약속 어기고 예외 던지는 요약기
+class _ThrowingSummaryWriter implements SummaryWriter {
+  @override
+  Future<SummaryText> write(SummaryRequest request) async {
+    throw Exception('summary');
   }
 }
 
@@ -92,14 +116,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('13명'), findsOneWidget); // 다른 사람 12 + 나
 
-    await tester.scrollUntilVisible(
-      find.byType(TextField),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.enterText(find.byType(TextField), '부끄럼');
-    await tester.pump();
-    // 서시는 가짜 데이터에 하던 대화가 있어서 버튼이 '대화 이어 하기'
+    // 서시는 가짜 데이터에 '부끄러움'으로 시작한 대화가 있어서 첫 낱말은 못 고치고 버튼이 '대화 이어 하기'
     await tester.scrollUntilVisible(
       find.text('대화 이어 하기'),
       200,
@@ -108,9 +125,9 @@ void main() {
     await tester.tap(find.text('대화 이어 하기'));
     await tester.pumpAndSettle();
 
-    // 첫 낱말이 저장소에 들어갔는지 (S05가 여기서 꺼내 씀)
+    // 첫 낱말은 대화 시작한 그대로 (S05가 여기서 꺼내 씀)
     Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'seosi');
-    expect(reading!.firstWord, '부끄럼');
+    expect(reading!.firstWord, '부끄러움');
     expect(reading.markedLines, contains(2));
 
     await tester.tap(find.text('내 해석 정리하기'));
@@ -145,7 +162,8 @@ void main() {
   testWidgets('첫 낱말은 한글 조합 중에도 20자를 넘지 않는다', (tester) async {
     // 맥은 웹이랑 기본 방식이 같아서 맥으로 흉내
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS; //AI
-    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'seosi')));
+    // 대화한 시(서시)는 첫 낱말이 잠겨서 대화 없는 시로
+    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'bomgoyangi')));
     Finder field = find.byType(TextField);
     await tester.scrollUntilVisible(field, 200,
         scrollable: find.byType(Scrollable).first);
@@ -412,6 +430,26 @@ void main() {
     expect(find.text(AppStrings.readingMarkFailed), findsOneWidget);
   });
 
+  testWidgets('S06 저장 중엔 공개 토글이랑 해석 칸 못 건드림', (tester) async {
+    Completer<void> gate = Completer<void>();
+    Repositories.reading = _SlowSaveReadingRepository(FakeStore(), gate);
+    await tester.pumpWidget(const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: SaveScreen(poemId: 'jindallae')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(AppStrings.saveButton));
+    await tester.pump();
+
+    SwitchListTile toggle = tester.widget(find.byType(SwitchListTile));
+    expect(toggle.onChanged, isNull);
+    TextField field = tester.widget(find.byType(TextField));
+    expect(field.readOnly, true);
+
+    gate.complete();
+    await tester.pump(const Duration(milliseconds: 500));
+  });
+
   testWidgets('S04 첫 낱말 저장 실패하면 대화로 안 넘어가고 안내', (tester) async {
     Repositories.reading = _OfflineReadingRepository(FakeStore());
     await tester.pumpWidget(const MaterialApp(
@@ -442,5 +480,64 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.noticeUnavailable), findsNothing);
     expect(find.text(AppStrings.homeContinueTitle), findsOneWidget); // 진달래꽃 하던 대화
+  });
+
+  testWidgets('대화한 시는 S04 첫 낱말 못 고치고 안내 보여줌', (tester) async {
+    // 서시는 가짜 데이터에 '부끄러움'으로 시작한 대화가 있음
+    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'seosi')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byType(TextField), 200, scrollable: find.byType(Scrollable).first);
+
+    TextField field = tester.widget(find.byType(TextField));
+    expect(field.readOnly, true);
+    expect(find.text(AppStrings.readingFirstWordFixed), findsOneWidget);
+  });
+
+  testWidgets('S05 갔다 바로 뒤로 와도 S04 첫 낱말 잠김', (tester) async {
+    // 봄은 고양이로다는 처음엔 대화 없음
+    await tester.pumpWidget(const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: ReadingScreen(poemId: 'bomgoyangi')));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.byType(FilledButton), 200, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(find.byType(TextField), '봄');
+    await tester.pump();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChatScreen), findsOneWidget);
+
+    // 첫 질문 오기 전에 바로 뒤로 (대화가 아직 저장 안 됐어도 잠겨야 함)
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    TextField field = tester.widget(find.byType(TextField));
+    expect(field.readOnly, true);
+    expect(find.text(AppStrings.readingContinueChat), findsOneWidget);
+  });
+
+  testWidgets('S06 근거 행 없으면 근거 제목 안 보임', (tester) async {
+    // 봄은 고양이로다는 기록 없음 → 근거 행 없음
+    await tester.pumpWidget(const MaterialApp(home: SaveScreen(poemId: 'bomgoyangi')));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.saveEvidenceLabel), findsNothing);
+  });
+
+  testWidgets('S06 요약기가 예외 던져도 멈추지 않고 사실 문장으로 공개 저장', (tester) async {
+    Repositories.useFakes(signedInUserId: FakeData.myUserId);
+    await tester.pumpWidget(MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: SaveScreen(poemId: 'jindallae', summaryWriter: _ThrowingSummaryWriter())));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.byType(SwitchListTile), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pump();
+    await tester.tap(find.text(AppStrings.saveButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    List<PublicConversation> list = await Repositories.publicConversation.fetchForPoem('jindallae');
+    expect(list.where((c) => c.userId == FakeData.myUserId && c.summary.trim().isNotEmpty), isNotEmpty);
   });
 }

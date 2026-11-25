@@ -133,7 +133,8 @@ void main() {
 
     final result = await writerWith(transport).write(requestFor(expertA));
 
-    expect(result.text, '미리 쓴 비교 문장');
+    // 관계 한 줄 뒤에 미리 쓴 문장이 붙는다 — 미리 쓴 쪽은 전문가만 설명한다
+    expect(result.text, endsWith('미리 쓴 비교 문장'));
     expect(result.isFallback, isTrue);
     expect(transport.requests, hasLength(1));
   });
@@ -161,7 +162,8 @@ void main() {
 
     final result = await writerWith(transport).write(requestFor(expertA));
 
-    expect(result.text, '미리 쓴 비교 문장');
+    // 관계 한 줄 뒤에 미리 쓴 문장이 붙는다 — 미리 쓴 쪽은 전문가만 설명한다
+    expect(result.text, endsWith('미리 쓴 비교 문장'));
     expect(result.isFallback, isTrue);
     // 다시 쓰기는 한 번만 (한 화면에 전문가 수만큼 불리므로)
     expect(transport.requests, hasLength(2));
