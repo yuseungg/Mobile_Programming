@@ -70,18 +70,24 @@ void main() {
   });
 
   group('기기에 남기기', () {
-    test('고른 언어를 다음 실행에서 다시 읽는다', () async {
-      await changeAppLanguage(AppLanguage.en);
-      appLanguage.value = AppLanguage.ko; // 앱을 껐다 켠 셈
-      await loadAppLanguage();
+    test('처음 켜면 영어 — 교수님 공지', () async {
+      expect(defaultAppLanguage, AppLanguage.en);
+      await loadAppLanguage(); // 남긴 값 없음 = 처음 설치
       expect(appLanguage.value, AppLanguage.en);
     });
 
-    test('남긴 게 없거나 모르는 값이면 한국어', () async {
-      SharedPreferences.setMockInitialValues({'appLanguage': 'fr'});
+    test('고른 언어를 다음 실행에서 다시 읽는다', () async {
       appLanguage.value = AppLanguage.en;
+      await changeAppLanguage(AppLanguage.ko);
+      appLanguage.value = AppLanguage.en; // 앱을 껐다 켠 셈
       await loadAppLanguage();
       expect(appLanguage.value, AppLanguage.ko);
+    });
+
+    test('모르는 값이면 영어', () async {
+      SharedPreferences.setMockInitialValues({'appLanguage': 'fr'});
+      await loadAppLanguage();
+      expect(appLanguage.value, AppLanguage.en);
     });
   });
 
@@ -105,6 +111,14 @@ void main() {
       await tester.tap(find.text(AppStrings.languageKorean));
       await tester.pumpAndSettle();
       expect(find.text('로그인'), findsOneWidget);
+    });
+
+    testWidgets('처음 설치하고 켜면 S01부터 영어', (tester) async {
+      await loadAppLanguage(); // main()이 runApp 전에 부르는 것과 같다
+      await tester.pumpWidget(const YeobaekApp());
+      await tester.pumpAndSettle();
+      expect(find.text('Sign in'), findsOneWidget);
+      expect(find.text('Continue with Google'), findsOneWidget);
     });
 
     testWidgets('뒤에 쌓인 화면도 같이 바뀐다', (tester) async {
