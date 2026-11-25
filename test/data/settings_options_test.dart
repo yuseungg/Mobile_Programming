@@ -7,15 +7,25 @@ void main() {
   tearDown(() => appLanguage.value = AppLanguage.ko);
 
   test('모델 설명은 고른 언어로 나온다', () {
-    final careful = modelOptions.first.model;
-    final fast = modelOptions.last.model;
+    const multimodal = 'nvidia/nemotron-3.5-super-vl:free';
 
-    expect(modelDescriptionOf(careful), '신중함 · 느림');
-    expect(modelDescriptionOf(fast), '빠름');
+    expect(modelDescriptionOf(multimodal), '이미지도 읽음 · 신중함');
 
     appLanguage.value = AppLanguage.en;
-    expect(modelDescriptionOf(careful), 'Careful · slow');
-    expect(modelDescriptionOf(fast), 'Fast');
+    expect(modelDescriptionOf(multimodal), 'Reads images too · careful');
+  });
+
+  test('기본 모델은 목록에 있다 — 없으면 S10에 설명이 비고, 저장된 값도 기본값으로 못 돌아간다', () {
+    final models = modelOptions.map((option) => option.model);
+    expect(models, contains(defaultSettings.questionModel));
+    expect(models, contains(defaultSettings.comparisonModel));
+  });
+
+  test('내려간 모델은 목록에 없다 (dots — 2026-11-25 404)', () {
+    expect(
+      modelOptions.map((option) => option.model),
+      isNot(contains('dots-studio/dots-3-note-preview:free')),
+    );
   });
 
   test('모든 선택지에 영어 설명이 있다', () {

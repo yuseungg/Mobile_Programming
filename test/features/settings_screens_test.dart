@@ -55,8 +55,13 @@ void main() {
 
     await pumpSettings(tester);
 
-    expect(find.text(defaultSettings.questionModel), findsOneWidget);
-    expect(find.text(defaultSettings.comparisonModel), findsOneWidget);
+    // 질문 · 비교가 같은 모델이면 이름이 두 번 나온다 (지금 기본값이 그렇다)
+    final sameModel =
+        defaultSettings.questionModel == defaultSettings.comparisonModel;
+    expect(find.text(defaultSettings.questionModel),
+        findsNWidgets(sameModel ? 2 : 1));
+    expect(find.text(defaultSettings.comparisonModel),
+        findsNWidgets(sameModel ? 2 : 1));
     expect(find.text('부드럽게'), findsOneWidget);
     expect(
       find.text('질문 ${FakeData.usageQuestionCount + 1}회 · '
