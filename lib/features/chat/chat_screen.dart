@@ -20,6 +20,7 @@ import '../../data/repositories.dart';
 import '../../data/settings_options.dart';
 import '../../ports/repository_reading_source.dart';
 import '../../shared/widgets/chat_bubble.dart';
+import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/message_input.dart';
 import '../../shared/widgets/poem_view.dart';
 
@@ -219,6 +220,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppStrings.chatTitle(_poem.title), style: AppText.bodySub),
+        actions: const [LanguageToggle()],
       ),
       body: SafeArea(
         child: Column(
@@ -245,7 +247,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 itemCount: _conversation.length + (_isResponding ? 1 : 0),
                 itemBuilder: (context, index) => index < _conversation.length
                     ? ChatBubble(message: _conversation[index])
-                    : const ChatBubble(
+                    : ChatBubble(
                         message: ChatMessage(
                           role: ChatRole.assistant,
                           text: AppStrings.chatResponding,
@@ -275,14 +277,14 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: OutlinedButton(
                           onPressed:
                               _isResponding || _isLoading ? null : _showHint,
-                          child: const Text(AppStrings.chatHintButton),
+                          child: Text(AppStrings.chatHintButton),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: OutlinedButton(
                           onPressed: _isLoading ? null : _goToSave,
-                          child: const Text(AppStrings.chatSummarizeButton),
+                          child: Text(AppStrings.chatSummarizeButton),
                         ),
                       ),
                     ],
@@ -312,7 +314,7 @@ class _HintSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(AppStrings.chatHintTitle, style: AppText.label),
+            Text(AppStrings.chatHintTitle, style: AppText.label),
             const SizedBox(height: 10),
             FutureBuilder<AgentReply>(
               future: hint,

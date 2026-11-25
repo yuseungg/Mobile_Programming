@@ -13,6 +13,7 @@ import '../../data/repositories.dart';
 import '../../writers/fake_summary_writer.dart';
 import '../../writers/openrouter_summary_writer.dart';
 import '../../writers/summary_writer.dart';
+import '../../shared/widgets/language_toggle.dart';
 import 'pending_saves.dart';
 
 class SaveScreen extends StatefulWidget {
@@ -185,8 +186,9 @@ class _SaveScreenState extends State<SaveScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(AppStrings.saveTitle),
+        title: Text(AppStrings.saveTitle),
         backgroundColor: AppColors.background,
+        actions: const [LanguageToggle()],
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -216,7 +218,7 @@ class _SaveScreenState extends State<SaveScreen> {
           // 근거 행 없으면 제목이랑 위 여백까지 통째로 숨김 (제목만 덩그러니 남았음)
           if (evidenceLines.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const Text(
+            Text(
               AppStrings.saveEvidenceLabel,
               style: AppText.label,
             ),
@@ -241,7 +243,7 @@ class _SaveScreenState extends State<SaveScreen> {
           // 대조 연 뒤라도 비공개였으면 공개로 바꿀 수 있음 (해석은 못 고치니까 그대로 다시 저장됨)
           // 공개는 못 되돌림. 스위치 색이 그대로라 안 눌리는 걸로 보여서 이유 적어 둠
           SwitchListTile(
-            title: const Text(AppStrings.savePublicLabel),
+            title: Text(AppStrings.savePublicLabel),
             subtitle: Text(_wasPublic ? AppStrings.savePublicFixed : AppStrings.savePublicCaption),
             value: _isPublic,
             // 저장 중에 바꾸면 화면만 바뀌고 저장되는 값은 그대로라 막음 (공개 저장은 요약 쓰느라 오래 걸림)
@@ -261,10 +263,10 @@ class _SaveScreenState extends State<SaveScreen> {
               style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
               onPressed:
                   (_interpretationController.text.trim().isEmpty || _isSaving) ? null : _save,
-              child: const Text(AppStrings.saveButton),
+              child: Text(AppStrings.saveButton),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               AppStrings.saveLockNotice,
               textAlign: TextAlign.center,
               style: AppText.caption,

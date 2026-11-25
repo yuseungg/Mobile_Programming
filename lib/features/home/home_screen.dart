@@ -9,6 +9,7 @@ import '../../data/models/poem.dart';
 import '../../data/models/reading.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/repositories.dart';
+import '../../shared/widgets/language_toggle.dart';
 import '../save/pending_saves.dart';
 
 
@@ -58,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _load();
 
     if (saved > 0 && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.homePendingSaved)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.homePendingSaved)));
     }
   }
 
@@ -114,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(AppStrings.appName),
+        title: Text(AppStrings.appName),
         backgroundColor: AppColors.background,
         actions: [
           IconButton(
@@ -123,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.of(context)
                 .pushNamed(AppRoutes.profile(_userId)),
           ),
+          const LanguageToggle(),
         ],
       ),
       body: ListView(
@@ -131,8 +133,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_loadFailed)
             Row(
               children: [
-                const Expanded(child: Text(AppStrings.noticeUnavailable, style: AppText.bodySub)),
-                TextButton(onPressed: _load, child: const Text(AppStrings.noticeUnavailableAction)),
+                Expanded(child: Text(AppStrings.noticeUnavailable, style: AppText.bodySub)),
+                TextButton(onPressed: _load, child: Text(AppStrings.noticeUnavailableAction)),
               ],
             )
           else
@@ -141,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: AppText.bodySub,
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             AppStrings.homeTodayPoem,
             style: AppText.label,
           ),
@@ -171,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: double.infinity,
                     child: FilledButton(
                       onPressed: () => openReading(poem.poemId),
-                      child: const Text(AppStrings.homeStartReading),
+                      child: Text(AppStrings.homeStartReading),
                     ),
                   ),
                 ],
@@ -181,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 24),
 
           if (_inProgress.isNotEmpty) ...[
-            const Text(AppStrings.homeContinueTitle, style: AppText.label),
+            Text(AppStrings.homeContinueTitle, style: AppText.label),
             for (Reading reading in _inProgress)
               ListTile(
                 title: Text(FakeData.poemById(reading.poemId).title, style: AppText.poemTitleSmall),
@@ -191,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             const SizedBox(height: 24),
           ],
-          const Text(
+          Text(
             AppStrings.homePoemList,
             style: AppText.label,
           ),
@@ -202,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title: Text(p.title, style: AppText.poemTitleSmall),
               subtitle: Text(p.author),
               trailing: _readPoemIds.contains(p.poemId)
-                    ? const Text(AppStrings.homeReadMark, style: AppText.caption)
+                    ? Text(AppStrings.homeReadMark, style: AppText.caption)
                     : const Icon(Icons.chevron_right),
                 onTap: () => openReading(p.poemId)
             ),

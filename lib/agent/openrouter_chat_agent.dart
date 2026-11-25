@@ -148,8 +148,8 @@ class OpenRouterChatAgent implements ChatAgent {
     return _respond(
       poem: poem,
       conversation: conversation,
-      instruction: hintInstruction,
-      fallbackText: nextFallbackQuestion(poem.poemId, conversation),
+      instruction: hintInstruction(lastAgentQuestion(conversation)),
+      fallbackText: fallbackHint(poem.poemId, conversation),
       cancelToken: cancelToken,
     );
   }
