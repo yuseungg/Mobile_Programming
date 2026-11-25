@@ -12,6 +12,7 @@ import '../../data/repositories.dart';
 import '../../data/settings_options.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/section_label.dart';
 
 String toneLabel(Tone tone) => switch (tone) {
@@ -55,13 +56,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.settingsTitle)),
+      appBar: AppBar(
+        title: Text(AppStrings.settingsTitle),
+        actions: const [LanguageToggle()],
+      ),
       body: FutureBuilder<_SettingsData>(
         future: _data,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             // 설정을 못 읽어도 로그아웃은 할 수 있어야 한다
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Column(
@@ -95,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
       children: [
-        const SectionLabel(AppStrings.settingsModelSection),
+        SectionLabel(AppStrings.settingsModelSection),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Column(
@@ -114,15 +118,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(AppStrings.settingsModelCaption, style: AppText.caption),
+        Text(AppStrings.settingsModelCaption, style: AppText.caption),
         const SizedBox(height: 28),
-        const SectionLabel(AppStrings.settingsToneSection),
+        SectionLabel(AppStrings.settingsToneSection),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Text(toneLabel(settings.tone), style: AppText.bodyStrong),
         ),
         const SizedBox(height: 28),
-        const SectionLabel(AppStrings.settingsUsageSection),
+        SectionLabel(AppStrings.settingsUsageSection),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Text(
@@ -160,19 +164,19 @@ class _SignOutButtonState extends State<_SignOutButton> {
     final isConfirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(AppStrings.settingsSignOutDialogTitle),
-        content: const Text(
+        title: Text(AppStrings.settingsSignOutDialogTitle),
+        content: Text(
           AppStrings.settingsSignOutDialogBody,
           style: AppText.body,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(AppStrings.settingsSignOutCancel),
+            child: Text(AppStrings.settingsSignOutCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(AppStrings.settingsSignOut),
+            child: Text(AppStrings.settingsSignOut),
           ),
         ],
       ),
@@ -195,7 +199,7 @@ class _SignOutButtonState extends State<_SignOutButton> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text(AppStrings.settingsSignOutFailed)),
+          SnackBar(content: Text(AppStrings.settingsSignOutFailed)),
         );
     }
   }
@@ -204,7 +208,7 @@ class _SignOutButtonState extends State<_SignOutButton> {
   Widget build(BuildContext context) {
     return TextButton(
       onPressed: _isSigningOut ? null : _signOut,
-      child: const Text(AppStrings.settingsSignOut),
+      child: Text(AppStrings.settingsSignOut),
     );
   }
 }

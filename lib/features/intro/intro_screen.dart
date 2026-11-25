@@ -25,6 +25,7 @@ import '../../app/theme.dart';
 import '../../ports/reading_source.dart';
 import '../../ports/repository_reading_source.dart';
 import '../../shared/widgets/app_button.dart';
+import '../../shared/widgets/language_toggle.dart';
 import 'inking_text.dart';
 
 class IntroScreen extends StatefulWidget {
@@ -130,7 +131,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     children: [
                       _Block(
                         height: blockHeight,
-                        child: const Column(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -169,13 +170,23 @@ class _IntroScreenState extends State<IntroScreen> {
             ),
             // 스크롤과 함께 움직이지 않는다. 밑의 버튼까지 두어 번
             // 넘기지 않아도 여기서 바로 나갈 수 있다.
+            // 오른쪽 끝은 KR / EN — 건너뛰기는 그 왼쪽에 그대로 둔다.
             Positioned(
               top: 0,
               right: 0,
-              child: TextButton(
-                onPressed: _goHome,
-                child: const Text(AppStrings.introSkip,
-                    style: AppText.caption),
+              child: SizedBox(
+                height: kToolbarHeight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: _goHome,
+                      child: Text(AppStrings.introSkip,
+                          style: AppText.caption),
+                    ),
+                    const LanguageToggle(),
+                  ],
+                ),
               ),
             ),
           ],
@@ -210,10 +221,10 @@ class _ImpressiveLines extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(AppStrings.introLinesTitle, style: AppText.sectionTitle),
+        Text(AppStrings.introLinesTitle, style: AppText.sectionTitle),
         const SizedBox(height: 24),
         if (lines.isEmpty)
-          const Text(AppStrings.introLinesEmpty, style: AppText.bodySub)
+          Text(AppStrings.introLinesEmpty, style: AppText.bodySub)
         else
           for (final (index, line) in lines.indexed) ...[
             if (index > 0) const SizedBox(height: 28),
@@ -248,7 +259,7 @@ class _Status extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(AppStrings.introStatusTitle, style: AppText.sectionTitle),
+        Text(AppStrings.introStatusTitle, style: AppText.sectionTitle),
         const SizedBox(height: 20),
         Text(AppStrings.introDays(days), style: AppText.body),
         const SizedBox(height: 10),

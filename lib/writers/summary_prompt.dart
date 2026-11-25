@@ -5,8 +5,12 @@
 // 대화에 없는 것을 넣지 않기(원칙 6).
 //
 // 걸러내는 쪽은 summary_guard.dart다. 지시문만으로는 새어 나온다.
+//
+// 화면 오른쪽 위 KR / EN을 따라 한국어 · 영어로 쓰게 한다. 공개 대화에는 쓴 사람이
+// 저장할 때 고른 언어로 남는다.
 
 import '../agent/output_guard.dart';
+import '../app/language.dart';
 import '../data/models/poem.dart';
 import '../data/models/settings.dart';
 import 'summary_guard.dart';
@@ -23,7 +27,41 @@ List<Map<String, Object?>> buildSummaryMessages({
       {'role': 'user', 'content': _materials(request, poem)},
     ];
 
-String _systemPrompt(SummaryRequest request, Tone tone) {
+String _systemPrompt(SummaryRequest request, Tone tone) =>
+    isEnglish ? _englishSystemPrompt(request, tone) : _koreanSystemPrompt(request, tone);
+
+String _englishSystemPrompt(SummaryRequest request, Tone tone) {
+  final forbiddenWords = [
+    ...OutputGuard.forbiddenWordsEnglish,
+    ...OutputGuard.forbiddenWords,
+  ].map((word) => '"$word"').join(', ');
+  final toneRule = switch (tone) {
+    Tone.plain => '- Keep the tone plain.',
+    Tone.gentle => '- Keep the tone gentle.',
+  };
+
+  return '''
+You turn a conversation that a person had with AI after reading a poem into a short summary
+attached to that person's public post. Other people will read it.
+
+Rules
+- Write in English.
+- Write **only what actually happened** in the conversation. Do not add guesses.
+- Do not copy the conversation. Write only where it started and where it went.
+- Do not judge the interpretation. Never use words that rate it, such as good, deep or lacking.
+  This app never scores or ranks interpretations.
+- Put in quotation marks only words that appear exactly in the materials below, in their original language.
+  Never put a translation inside quotation marks.
+- The conversation started from the first word "${request.firstWord}". Start from there.
+- Do not ask questions. Do not use a question mark.
+- Do not state meanings, such as "this means ..." or "this symbolizes ...".
+- Never use words like $forbiddenWords.
+- Finish within ${SummaryGuard.maxSentences} sentences and ${SummaryGuard.maxChars} characters. Write only the summary, nothing else.
+$toneRule
+''';
+}
+
+String _koreanSystemPrompt(SummaryRequest request, Tone tone) {
   final forbiddenWords =
       OutputGuard.forbiddenWords.map((word) => '"$word"').join(', ');
   final toneRule = switch (tone) {
@@ -50,7 +88,34 @@ $toneRule
 ''';
 }
 
-String _materials(SummaryRequest request, Poem poem) {
+String _materials(SummaryRequest request, Poem poem) =>
+    isEnglish ? _englishMaterials(request, poem) : _koreanMaterials(request, poem);
+
+String _englishMaterials(SummaryRequest request, Poem poem) {
+  final numberedLines = [
+    for (var lineNo = 1; lineNo <= poem.lines.length; lineNo++)
+      if (poem.lineAt(lineNo).isNotEmpty) 'Line $lineNo: ${poem.lineAt(lineNo)}',
+  ].join('\n');
+  final transcript = [
+    for (final message in request.conversation)
+      '${message.isUser ? 'User' : 'AI'}: ${message.text}',
+  ].join('\n');
+
+  return '''
+Poem: ${poem.author}, "${poem.title}"
+$numberedLines
+
+First word: ${request.firstWord}
+
+[Conversation]
+$transcript
+
+[Final interpretation the user saved]
+${request.interpretation.trim().isEmpty ? '(empty)' : request.interpretation.trim()}
+''';
+}
+
+String _koreanMaterials(SummaryRequest request, Poem poem) {
   final numberedLines = [
     for (var lineNo = 1; lineNo <= poem.lines.length; lineNo++)
       if (poem.lineAt(lineNo).isNotEmpty) '$lineNo행: ${poem.lineAt(lineNo)}',
@@ -77,6 +142,11 @@ ${request.interpretation.trim().isEmpty ? '(비어 있음)' : request.interpreta
 /// 걸렸을 때 이유를 알려 주고 다시 쓰게 하는 안내
 String summaryRewriteInstruction(List<SummaryViolation> violations) {
   final reasons = violations.map(summaryViolationReason).join(', ');
+  if (isEnglish) {
+    return '(App note) Your last summary broke the rules: $reasons. '
+        'Write it again in English with only what was in the conversation, '
+        'within ${SummaryGuard.maxSentences} sentences, without judging.';
+  }
   return '(앱 안내) 방금 요약은 규칙에 맞지 않았다: $reasons. '
       '대화에 있던 것만, ${SummaryGuard.maxSentences}문장 안에서, 평가하지 말고 다시 적어 줘.';
 }
