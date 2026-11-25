@@ -39,7 +39,7 @@ class UnavailableNotice extends StatelessWidget {
             const SizedBox(height: 20),
             TextButton(
               onPressed: onRetry,
-              child: const Text(AppStrings.noticeUnavailableAction),
+              child: Text(AppStrings.noticeUnavailableAction),
             ),
           ],
         ],
@@ -81,7 +81,7 @@ class LockedNotice extends StatelessWidget {
               onPressed: () => Navigator.of(context).pushNamed(
                 AppRoutes.reading(target),
               ),
-              child: const Text(AppStrings.communityLockedAction),
+              child: Text(AppStrings.communityLockedAction),
             ),
           ],
         ],

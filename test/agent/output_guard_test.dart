@@ -85,8 +85,11 @@ void main() {
 
   test('준비된 관찰 질문은 모두 필터를 통과한다', () {
     final questions = [
-      for (final list in fallbackQuestions.values) ...list,
-      ...generalFallbackQuestions,
+      for (final list in preparedQuestions.values)
+        for (final prepared in list) ...[prepared.question, prepared.hint],
+      for (final prepared in generalPreparedQuestions)
+        ...[prepared.question, prepared.hint],
+      followUpHint,
       openingFallbackQuestion('부끄러움'),
     ];
     for (final question in questions) {

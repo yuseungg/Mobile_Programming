@@ -8,6 +8,7 @@ import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
 import '../../data/models/reading.dart';
 import '../../data/repositories.dart';
+import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/poem_view.dart';
 
 class ReadingScreen extends StatefulWidget {
@@ -90,7 +91,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
       setState(() {
         _setMarked(lineNo, !isMarked);
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.readingMarkFailed)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.readingMarkFailed)));
       return;
     }
     _savingLines.remove(lineNo);
@@ -132,7 +133,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
       return true;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.saveFailed)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.saveFailed)));
       }
       return false;
     } finally {
@@ -186,6 +187,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
           style: AppText.bodySub,
         ),
         backgroundColor: AppColors.background,
+        actions: const [LanguageToggle()],
       ),
       // 폰 내비게이션 바에 맨 아래 버튼 가려져서
       body: SafeArea(
@@ -208,12 +210,12 @@ class _ReadingScreenState extends State<ReadingScreen> {
             onLineTap: _toggleLine,
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             AppStrings.readingStopGuide,
             style: AppText.bodySub, // caption은 작고 흐려서 잘 안 보임
           ),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             AppStrings.readingFirstWordLabel,
             style: AppText.label,
           ),
@@ -242,7 +244,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
           const SizedBox(height: 8),
           OutlinedButton(
             onPressed: (!hasFirstWord || _isSavingWord) ? null : _endWithWord,
-            child: const Text(AppStrings.readingEndWithWord),
+            child: Text(AppStrings.readingEndWithWord),
           ),
         ],
       ),

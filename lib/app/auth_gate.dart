@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/repositories.dart';
+import '../shared/widgets/language_toggle.dart';
 import 'router.dart';
 import 'strings.dart';
 import 'theme.dart';
@@ -61,27 +62,32 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: _hasFailed
-            ? Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      AppStrings.authGateFailed,
-                      style: AppText.bodySub,
-                      textAlign: TextAlign.center,
+      body: Stack(
+        children: [
+          Center(
+            child: _hasFailed
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppStrings.authGateFailed,
+                          style: AppText.bodySub,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: _retry,
+                          child: Text(AppStrings.authGateRetry),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: _retry,
-                      child: const Text(AppStrings.authGateRetry),
-                    ),
-                  ],
-                ),
-              )
-            : const CircularProgressIndicator(),
+                  )
+                : const CircularProgressIndicator(),
+          ),
+          const LanguageToggleCorner(),
+        ],
       ),
     );
   }
