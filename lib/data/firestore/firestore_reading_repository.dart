@@ -132,6 +132,8 @@ class FirestoreReadingRepository implements ReadingRepository {
         'interpretation': saved.interpretation,
         'empathyCount': 0,
         'evidenceLines': saved.evidenceLines,
+        // 대화 전체를 공개 문서로 복사한다 (S09 「3. 대화 기록」)
+        'conversation': saved.conversation.map(chatMessageToMap).toList(),
         'createdAt': FieldValue.serverTimestamp(),
       });
       return conversationId;

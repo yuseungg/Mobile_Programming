@@ -89,6 +89,7 @@ class FakeReadingRepository implements ReadingRepository {
       interpretation: saved.interpretation,
       empathyCount: 0,
       evidenceLines: List<int>.unmodifiable(saved.evidenceLines),
+      conversation: List.unmodifiable(saved.conversation), // S09 「3. 대화 기록」
       createdAt: _store.now(),
     );
     return conversationId;

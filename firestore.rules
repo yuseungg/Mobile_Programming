@@ -214,7 +214,8 @@ service cloud.firestore {
       allow create: if signedIn()
         && conversationId == request.auth.uid + '_' + request.resource.data.poemId
         && request.resource.data.keys().hasOnly(['userId', 'poemId', 'firstWord', 'summaryKo', 'summaryEn',
-                                                  'interpretation', 'empathyCount', 'evidenceLines', 'createdAt'])
+                                                  'interpretation', 'empathyCount', 'evidenceLines',
+                                                  'conversation', 'createdAt'])
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.empathyCount == 0
         && request.resource.data.createdAt == request.time
@@ -223,6 +224,9 @@ service cloud.firestore {
         && request.resource.data.summaryKo.size() > 0
         && request.resource.data.summaryEn is string
         && request.resource.data.summaryEn.size() > 0
+        // 대화 전체 (S09 「3. 대화 기록」) — 읽기 기록의 대화와 같은 한도
+        && request.resource.data.conversation is list
+        && request.resource.data.conversation.size() <= 200
         && hasSavedAfter(request.auth.uid, request.resource.data.poemId)
         && getAfter(readingPath(request.auth.uid, request.resource.data.poemId)).data.isPublic == true;
 

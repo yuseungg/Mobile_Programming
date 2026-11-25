@@ -62,6 +62,7 @@ PublicConversation? publicConversationToCreate({
     interpretation: reading.interpretation,
     empathyCount: 0,
     evidenceLines: List<int>.unmodifiable(reading.evidenceLines),
+    conversation: List.unmodifiable(reading.conversation), // 대화 전체가 공개된다
     createdAt: createdAt,
   );
 }

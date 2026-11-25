@@ -32,14 +32,14 @@
 **지금** — 그 자리에 최종 해석 한 문단만 (`community_detail_screen.dart:333`).
 공개 대화 문서에는 대화가 **없다** — 대화는 개인 기록 `users/{uid}/readings/{poemId}.conversation`에만 있음.
 
-- [ ] **데이터** — 공개 저장할 때 대화를 공개 문서로 복사
+- [x] **데이터** — 공개 저장할 때 대화를 공개 문서로 복사
   - `PublicConversation`에 대화 필드 추가 (이름: 네이밍규칙 2장 「대화 = `conversation`」)
   - `saveInterpretation`에서 공개 문서 만들 때 같이 넣기 (fake · firestore 둘 다)
   - `firestore.rules:216` 허용 필드 + 타입 검사 추가
-- [ ] **화면** — `community_detail_screen.dart:333` 구역을 대화 기록으로
+- [x] **화면** — `community_detail_screen.dart:333` 구역을 대화 기록으로
   - `ChatBubble`(`lib/shared/widgets/chat_bubble.dart`) 다시 쓰면 S05와 같은 모양
   - 근거 행 · 첫 낱말 구역은 그대로
-- [ ] **문구** (`lib/app/strings.dart`, 한/영 둘 다)
+- [x] **문구** (`lib/app/strings.dart`, 한/영 둘 다)
   - `communityDetailInterpretation`(:335) · `communityDetailInterpretationCaption`(:337) → 「대화 기록」 쪽으로
   - `savePublicCaption`(:209) — 지금 「AI가 의미 있는 내용만 뽑아 올린다」 → **대화 전체가 공개된다**로 (사용자가 동의하는 범위가 바뀜)
 - **S11 「대화 기록 지우기」** — 그대로 둠. 지금도 개인 대화만 비우고 공개 대화는 남긴다

@@ -206,9 +206,10 @@ class AppStrings {
       _t('내가 근거로 삼은 구절', 'Lines I based it on');
   static String get savePublicLabel =>
       _t('대화를 모두의 대화에 공개', 'Share this conversation in Conversations');
+  // 공개하면 대화 전체가 올라간다 (S09 「3. 대화 기록」) — 동의하는 범위라 그대로 적는다
   static String get savePublicCaption => _t(
-        'AI가 대화에서 의미 있는 내용만 뽑아 닉네임과 함께 올립니다',
-        'AI picks out the meaningful parts and posts them with your nickname',
+        '대화 전체와 AI 요약을 닉네임과 함께 올립니다',
+        'Your whole conversation and an AI summary are posted with your nickname',
       );
   static String get savePublicFixed => _t(
         '이미 공개한 대화는 되돌릴 수 없어요.',
@@ -337,11 +338,15 @@ class AppStrings {
         '확인된 근거 구절: ${lineList(lines)}',
         'Confirmed evidence: ${lineList(lines)}',
       );
-  static String get communityDetailInterpretation =>
-      _t('3. 최종 해석', '3. Final interpretation');
-  static String get communityDetailInterpretationCaption => _t(
-        '대화를 거쳐 도달한 고유한 생각',
-        'A thought of their own, reached through the conversation',
+  static String get communityDetailTranscript =>
+      _t('3. 대화 기록', '3. The conversation');
+  static String get communityDetailTranscriptCaption => _t(
+        'AI의 질문과 쓴 사람의 답, 처음부터 끝까지',
+        "The AI's questions and the reader's replies, start to finish",
+      );
+  static String get communityDetailTranscriptEmpty => _t(
+        '함께 올라온 대화 기록이 없어요.',
+        'No conversation was posted with this.',
       );
   static String communityDetailEmpathyCount(int count) =>
       _t('공감 $count', 'Empathy $count');
