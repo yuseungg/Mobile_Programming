@@ -236,6 +236,9 @@ class _ReadingScreenState extends State<ReadingScreen> {
             AppStrings.readingStopGuide,
             style: AppText.bodySub, // caption은 작고 흐려서 잘 안 보임
           ),
+          // 못 불러왔으면 하던 대화가 있는지 몰라서 칸 · 버튼 아예 안 그림
+          // (그리면 처음 읽는 시처럼 「대화 시작하기」가 떠서 헷갈림)
+          if (!_loadFailed) ...[
           const SizedBox(height: 32),
           Text(
             AppStrings.readingFirstWordLabel,
@@ -260,14 +263,15 @@ class _ReadingScreenState extends State<ReadingScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: (!hasFirstWord || _isSavingWord || _loadFailed) ? null : _startChat,
+            onPressed: (!hasFirstWord || _isSavingWord) ? null : _startChat,
             child: Text(_hasConversation ? AppStrings.readingContinueChat : AppStrings.readingStartChat),
           ),
           const SizedBox(height: 8),
           OutlinedButton(
-            onPressed: (!hasFirstWord || _isSavingWord || _loadFailed) ? null : _endWithWord,
+            onPressed: (!hasFirstWord || _isSavingWord) ? null : _endWithWord,
             child: Text(AppStrings.readingEndWithWord),
           ),
+          ],
         ],
       ),
       ),
