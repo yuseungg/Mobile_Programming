@@ -491,27 +491,26 @@ void main() {
     expect(find.byType(ChatScreen), findsNothing);
   });
 
-  testWidgets('S04 기록 못 불러오면 안내 뜨고 버튼 막힘, 다시 시도하면 불러옴', (tester) async {
+  testWidgets('S04 기록 못 불러오면 안내만 뜨고 첫 낱말 칸 · 버튼 안 보임, 다시 시도하면 불러옴', (tester) async {
+    // 화면 끝까지 한 번에 그려지게 길게 (스크롤 밖은 안 그려져서 없는 걸 못 확인함)
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     FakeStore store = FakeStore();
     Repositories.reading = _LoadFailsReadingRepository(store);
     await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'jindallae')));
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.noticeUnavailable), findsOneWidget);
 
-    // 진달래꽃은 하던 대화가 있는데 못 불러와서 칸이 빔. 새로 써도 못 넘어가야 함
-    await tester.scrollUntilVisible(find.byType(FilledButton), 200, scrollable: find.byType(Scrollable).first);
-    await tester.enterText(find.byType(TextField), '꽃');
-    await tester.pump();
-    FilledButton start = tester.widget(find.byType(FilledButton));
-    expect(start.onPressed, isNull);
+    // 진달래꽃은 하던 대화가 있는데 못 불러옴. 처음 읽는 시처럼 「대화 시작하기」가 뜨면 안 됨
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text(AppStrings.readingStartChat), findsNothing);
 
     // 네트워크 돌아옴
     Repositories.reading = FakeReadingRepository(store);
-    await tester.scrollUntilVisible(find.text(AppStrings.noticeUnavailableAction), -200, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text(AppStrings.noticeUnavailableAction));
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.noticeUnavailable), findsNothing);
-    await tester.scrollUntilVisible(find.text(AppStrings.readingContinueChat), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text(AppStrings.readingContinueChat), findsOneWidget); // 하던 대화 불러옴
   });
 

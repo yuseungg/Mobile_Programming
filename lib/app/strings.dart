@@ -478,9 +478,15 @@ class AppStrings {
         count == 1 ? '1 badge earned' : '$count badges earned',
       );
 
-  // ── 로딩 (공용, D) ────────────────────────────
+  // ── 로딩 (S06 → S07 전환, D) ──────────────────
   /// 기다리는 동안 보이는 글자. 한 글자씩 파도치듯 튄다 (AppLoading).
   /// 글자 수가 바뀌면 파도 길이도 그만큼 바뀐다 — 마음껏 줄이고 늘려도 된다.
   /// 이미 영어라 KR / EN 모두 같다. AppLoading의 const 기본값으로 쓰여서 const로 둔다.
   static const loadingLabel = 'LOADING......';
+
+  /// 글자 아래 한 줄. S06에서 저장을 누르고 S07 대조가 열리기까지가 이 앱에서
+  /// 가장 긴 기다림이라(저장소 쓰기 + 모델이 비교 문장을 쓰는 시간) 무엇을
+  /// 기다리는지 적어 둔다. 로딩 화면은 지금 이 한 자리에서만 쓴다.
+  static String get loadingSavingConversation =>
+      _t('대화를 저장소에 저장하고 있어요', 'Saving your conversation');
 }
