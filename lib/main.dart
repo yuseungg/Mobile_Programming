@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'app/language.dart';
 import 'app/router.dart';
 import 'app/strings.dart';
 import 'app/theme.dart';
@@ -29,11 +30,42 @@ Future<void> main() async {
   } else {
     Repositories.useFakes(signedOut: true); // S01부터 — 실제 앱처럼 로그인해서 들어간다
   }
+  await loadAppLanguage();
   runApp(const YeobaekApp());
 }
 
-class YeobaekApp extends StatelessWidget {
+class YeobaekApp extends StatefulWidget {
   const YeobaekApp({super.key});
+
+  @override
+  State<YeobaekApp> createState() => _YeobaekAppState();
+}
+
+class _YeobaekAppState extends State<YeobaekApp> {
+  @override
+  void initState() {
+    super.initState();
+    appLanguage.addListener(_redrawEverything);
+  }
+
+  @override
+  void dispose() {
+    appLanguage.removeListener(_redrawEverything);
+    super.dispose();
+  }
+
+  /// KR / EN을 바꾸면 쌓여 있는 화면까지 전부 다시 그린다 — 문구는 AppStrings가
+  /// 그릴 때마다 읽으므로 다시 그리기만 하면 바뀐다. 위젯을 새로 만들지 않으니
+  /// 입력 중인 글 · 스크롤 위치 · 화면 이동 기록은 그대로다.
+  void _redrawEverything() {
+    setState(() {});
+    void markNeedsBuild(Element element) {
+      element.markNeedsBuild();
+      element.visitChildren(markNeedsBuild);
+    }
+
+    (context as Element).visitChildren(markNeedsBuild);
+  }
 
   @override
   Widget build(BuildContext context) {

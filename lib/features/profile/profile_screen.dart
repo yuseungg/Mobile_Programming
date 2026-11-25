@@ -13,6 +13,7 @@ import '../../app/theme.dart';
 import '../../data/models/user_profile.dart';
 import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
+import '../../shared/widgets/language_toggle.dart';
 import 'badge_image.dart';
 
 /// 화면 한 번에 필요한 것 — 읽기를 한 곳에 모아 둔다
@@ -85,12 +86,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (snapshot.hasError) {
           return const Scaffold(
             backgroundColor: AppColors.background,
+            appBar: LanguageToggleAppBar(),
             body: Center(child: UnavailableNotice()),
           );
         }
         if (data == null) {
           return const Scaffold(
             backgroundColor: AppColors.background,
+            appBar: LanguageToggleAppBar(),
             body: Center(child: CircularProgressIndicator()),
           );
         }
@@ -111,6 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? AppStrings.profileMyTitle
               : AppStrings.profileOtherTitle(profile.nickname),
         ),
+        actions: const [LanguageToggle()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -148,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: AppText.profileName,
                   ),
                   if (isMe)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 4),
                       child: Text(
                         AppStrings.profileEmailLinked,
@@ -221,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               AppStrings.profileBadgesCaption,
               style: AppText.caption,
             ),
@@ -262,7 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (isMe) ...[
               const Divider(color: AppColors.border),
               const SizedBox(height: 12),
-              const Center(
+              Center(
                 child: Text(
                   AppStrings.profileShelfNote,
                   style: AppText.captionItalic,

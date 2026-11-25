@@ -8,6 +8,7 @@ import '../../app/theme.dart';
 import '../../data/fakes/fake_data.dart';
 import '../../data/models/reading.dart';
 import '../../data/repositories.dart';
+import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/poem_view.dart';
 
 class ReadingScreen extends StatefulWidget {
@@ -105,7 +106,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
       setState(() {
         _setMarked(lineNo, !isMarked);
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.readingMarkFailed)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.readingMarkFailed)));
       return;
     }
     _savingLines.remove(lineNo);
@@ -147,7 +148,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
       return true;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.saveFailed)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.saveFailed)));
       }
       return false;
     } finally {
@@ -164,7 +165,14 @@ class _ReadingScreenState extends State<ReadingScreen> {
     if (!saved || !mounted) {
       return;
     }
-    Navigator.of(context).pushNamed(AppRoutes.chat(widget.poemId));
+    await Navigator.of(context).pushNamed(AppRoutes.chat(widget.poemId));
+    // 이 낱말로 대화 시작했으니 돌아오면 바로 잠금
+    // (다시 불러오면 S05가 첫 질문 저장하기 전에 읽어서 안 잠길 수 있음)
+    if (mounted) {
+      setState(() {
+        _hasConversation = true;
+      });
+    }
   }
 
   Future<void> _endWithWord() async {
@@ -194,6 +202,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
           style: AppText.bodySub,
         ),
         backgroundColor: AppColors.background,
+        actions: const [LanguageToggle()],
       ),
       // 폰 내비게이션 바에 맨 아래 버튼 가려져서
       body: SafeArea(
@@ -223,12 +232,12 @@ class _ReadingScreenState extends State<ReadingScreen> {
             onLineTap: _toggleLine,
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             AppStrings.readingStopGuide,
             style: AppText.bodySub, // caption은 작고 흐려서 잘 안 보임
           ),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             AppStrings.readingFirstWordLabel,
             style: AppText.label,
           ),
@@ -239,10 +248,14 @@ class _ReadingScreenState extends State<ReadingScreen> {
             //웹 기본값은 한글 조합 중엔 제한을 풀어서 20자 넘어감
               maxLengthEnforcement:  MaxLengthEnforcement.enforced,//AI
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
+            // 대화 시작한 낱말은 못 바꿈. 바꾸면 S05는 예전 낱말로 한 대화를 이어 가고
+            // 저장된 첫 낱말만 바뀌어서 S09에서 둘이 안 맞음
+            readOnly: _hasConversation,
+            decoration: InputDecoration(
               filled: true,
               fillColor: AppColors.input,
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              helperText: _hasConversation ? AppStrings.readingFirstWordFixed : null,
             ),
           ),
           const SizedBox(height: 16),
@@ -253,7 +266,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
           const SizedBox(height: 8),
           OutlinedButton(
             onPressed: (!hasFirstWord || _isSavingWord || _loadFailed) ? null : _endWithWord,
-            child: const Text(AppStrings.readingEndWithWord),
+            child: Text(AppStrings.readingEndWithWord),
           ),
         ],
       ),

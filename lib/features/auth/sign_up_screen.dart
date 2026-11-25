@@ -14,6 +14,7 @@ import '../../data/repositories.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/app_text_field.dart';
+import '../../shared/widgets/language_toggle.dart';
 import 'auth_input_rules.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -124,6 +125,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ? AppStrings.nicknameOnlyTitle
             : AppStrings.signUpTitle),
         automaticallyImplyLeading: !isNicknameOnly,
+        actions: const [LanguageToggle()],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -155,7 +157,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   inputFormatters: emailInputFormatters,
                   onChanged: (_) => setState(() {}),
                   below: showEmailError
-                      ? const Text(AppStrings.signUpEmailInvalid,
+                      ? Text(AppStrings.signUpEmailInvalid,
                           style: AppText.warningNotice)
                       : null,
                 ),
@@ -204,18 +206,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Center(
                   child: TextButton(
                     onPressed: _isBusy ? null : _useOtherAccount,
-                    child: const Text(AppStrings.nicknameOnlyOtherAccount),
+                    child: Text(AppStrings.nicknameOnlyOtherAccount),
                   ),
                 )
               else
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(AppStrings.signUpHaveAccount,
+                    Text(AppStrings.signUpHaveAccount,
                         style: AppText.caption),
                     TextButton(
                       onPressed: _isBusy ? null : _goToSignIn,
-                      child: const Text(AppStrings.signUpGoToSignIn),
+                      child: Text(AppStrings.signUpGoToSignIn),
                     ),
                   ],
                 ),
@@ -278,7 +280,7 @@ class _NicknameCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(AppStrings.signUpNicknameLabel, style: AppText.label),
+              Text(AppStrings.signUpNicknameLabel, style: AppText.label),
               const Spacer(),
               Text(nickname, style: AppText.bodyStrong),
               IconButton(
@@ -289,7 +291,7 @@ class _NicknameCard extends StatelessWidget {
               ),
             ],
           ),
-          const Text(AppStrings.signUpNicknameNotice, style: AppText.caption),
+          Text(AppStrings.signUpNicknameNotice, style: AppText.caption),
         ],
       ),
     );

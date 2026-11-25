@@ -3,6 +3,8 @@
 // 시 표면(낱말 · 반복 · 행의 위치)에서 답을 찾을 수 있는 질문만 둔다. 해석을 주지 않는다.
 // 질문마다 짝이 되는 힌트를 하나 둔다 — 힌트는 그 질문에 다가가는 더 작은 관찰 질문이다.
 // ⚠ 초안 — 팀이 읽고 고친다. 시를 추가하면 여기에도 4개를 넣는다.
+// 영어(화면 오른쪽 위 EN)일 때는 아래 영어 질문을 쓴다. 시의 낱말은 원문 그대로 따옴표에 둔다.
+import '../../app/language.dart';
 import '../../data/models/chat_message.dart';
 
 /// 관찰 질문 하나와, 그 질문에서 막혔을 때 보여 줄 힌트
@@ -101,9 +103,105 @@ final generalFallbackQuestions = [
   for (final prepared in generalPreparedQuestions) prepared.question,
 ];
 
+/// 영어(화면 EN)용. 한국어와 같은 순서 · 같은 짝이다 — 언어를 바꿔도 같은 자리의 힌트를 찾는다.
+const englishPreparedQuestions = <String, List<PreparedQuestion>>{
+  'seosi': [
+    (
+      question: "How many times does '바람' (wind) appear in this poem, and what words come with it each time?",
+      hint: "In which line does '바람' (wind) appear for the first time?",
+    ),
+    (
+      question: "In the two lines where '별' (star) appears, what words sit next to it?",
+      hint: "In line 5, what word comes right after '별' (star)?",
+    ),
+    (
+      question: "Which lines end with '-야지' or '-겠다'?",
+      hint: "If you read only the last word of each line in order, which one ends with '-야지'?",
+    ),
+    (
+      question: 'The last line stands apart on its own. What looks different about it from the lines before?',
+      hint: 'Which words in the last line also appeared in the lines before it?',
+    ),
+  ],
+  'jindallae': [
+    (
+      question: 'If you set stanza 1 beside stanza 4, which words stay the same and which change?',
+      hint: 'If you read only the third line of stanza 1 beside the third line of stanza 4, what is different?',
+    ),
+    (
+      question: "How many lines end with '-우리다'?",
+      hint: 'If you gather just the last three syllables of the last line of each stanza, what do you see?',
+    ),
+    (
+      question: "In the two lines where '꽃' (flower) appears, where is the flower placed each time?",
+      hint: "If you find every line with the letter '꽃' (flower), which lines are they?",
+    ),
+    (
+      question: 'In which lines do words about the steps of the one who leaves appear?',
+      hint: "Which lines have a word starting with '가-', like '가실' or '가시는'?",
+    ),
+  ],
+  'bomgoyangi': [
+    (
+      question: "Which part of the cat's body appears in each of the four stanzas?",
+      hint: "In '고양이의 ○○에' in the first line of each stanza, what goes in the place of ○○?",
+    ),
+    (
+      question: "If you gather the words placed right before '봄' (spring), what are they?",
+      hint: "In line 2, what word is placed right before '봄' (spring)?",
+    ),
+    (
+      question: "Which lines end with '-도다' and which with '-아라'?",
+      hint: 'If you read only the last word of the second line of each stanza in order, how does it sound?',
+    ),
+    (
+      question: "Which lines compare something to something else, with a word like '~와 같이' (like)?",
+      hint: "If you find every line with the word '같이' (like), which lines are they?",
+    ),
+  ],
+};
+
+/// 질문을 따로 준비하지 않은 시에 쓰는 질문 (영어)
+const generalEnglishPreparedQuestions = <PreparedQuestion>[
+  (
+    question: 'Which line held your eyes the longest on your first reading?',
+    hint: 'Reading it again, if you find a word that feels strange or new, which line is it in?',
+  ),
+  (
+    question: 'Which words appear more than once in this poem?',
+    hint: 'Pick one word from the first line. Does it appear again later in the poem?',
+  ),
+  (
+    question: 'If you set the first line beside the last line, what looks different?',
+    hint: 'Is there a word that appears in both the first line and the last line?',
+  ),
+  (
+    question: 'In which lines do you find words you can hear or see, like a sound or a light?',
+    hint: 'Is there a line with a word for a color or a sound?',
+  ),
+];
+
+/// [followUpHint]의 영어
+const englishFollowUpHint =
+    'Go down the poem one line at a time and stop where you see a word connected to that last question. '
+    'Which line is it?';
+
+/// 시별 준비된 질문 (영어) — 질문 글만
+final englishFallbackQuestions = <String, List<String>>{
+  for (final entry in englishPreparedQuestions.entries)
+    entry.key: [for (final prepared in entry.value) prepared.question],
+};
+
+/// 질문을 따로 준비하지 않은 시에 쓰는 질문 (영어) — 질문 글만
+final generalEnglishFallbackQuestions = [
+  for (final prepared in generalEnglishPreparedQuestions) prepared.question,
+];
+
 /// 대화에 아직 나오지 않은 관찰 질문 하나. 다 썼으면 처음부터 돌아간다.
 String nextFallbackQuestion(String poemId, List<ChatMessage> conversation) {
-  final questions = fallbackQuestions[poemId] ?? generalFallbackQuestions;
+  final questions = isEnglish
+      ? englishFallbackQuestions[poemId] ?? generalEnglishFallbackQuestions
+      : fallbackQuestions[poemId] ?? generalFallbackQuestions;
   final asked = {
     for (final message in conversation)
       if (!message.isUser) message.text,
@@ -124,19 +222,30 @@ String lastAgentQuestion(List<ChatMessage> conversation) {
 
 /// 힌트를 모델에게서 받지 못했을 때 — 직전 질문의 짝 힌트.
 /// 직전 질문이 준비된 질문이 아니면 [followUpHint], 대화가 비었으면 다음 관찰 질문.
+/// 힌트는 지금 언어(KR / EN)로 준다. 대화 중에 언어를 바꿨으면 직전 질문은 다른 언어일 수 있어서,
+/// 두 언어 목록에서 자리를 찾고 그 자리의 힌트를 지금 언어로 꺼낸다.
 String fallbackHint(String poemId, List<ChatMessage> conversation) {
   final lastQuestion = lastAgentQuestion(conversation);
   if (lastQuestion.isEmpty) return nextFallbackQuestion(poemId, conversation);
-  for (final prepared in [
-    ...?preparedQuestions[poemId],
-    ...generalPreparedQuestions,
-  ]) {
-    if (prepared.question == lastQuestion) return prepared.hint;
+  final korean = [...?preparedQuestions[poemId], ...generalPreparedQuestions];
+  final english = [
+    ...?englishPreparedQuestions[poemId],
+    ...generalEnglishPreparedQuestions,
+  ];
+  for (var index = 0; index < korean.length && index < english.length; index++) {
+    if (korean[index].question == lastQuestion ||
+        english[index].question == lastQuestion) {
+      return (isEnglish ? english : korean)[index].hint;
+    }
   }
-  return followUpHint;
+  return isEnglish ? englishFollowUpHint : followUpHint;
 }
 
 /// 첫 질문을 모델에게서 받지 못했을 때 — 첫 낱말에서 출발한다
-String openingFallbackQuestion(String firstWord) => firstWord.isEmpty
-    ? generalFallbackQuestions.first
-    : "'$firstWord'라는 낱말이 남았군요. 어느 행을 읽을 때 그 낱말이 떠올랐나요?";
+String openingFallbackQuestion(String firstWord) => isEnglish
+    ? (firstWord.isEmpty
+        ? generalEnglishFallbackQuestions.first
+        : 'You kept the word "$firstWord". Which line were you reading when it came to mind?')
+    : (firstWord.isEmpty
+        ? generalFallbackQuestions.first
+        : "'$firstWord'라는 낱말이 남았군요. 어느 행을 읽을 때 그 낱말이 떠올랐나요?");

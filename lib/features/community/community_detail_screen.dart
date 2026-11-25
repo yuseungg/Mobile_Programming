@@ -16,6 +16,7 @@ import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
 import '../../writers/fake_summary_writer.dart';
 import '../../writers/summary_writer.dart';
+import '../../shared/widgets/language_toggle.dart';
 import 'locked_notice.dart';
 
 /// 화면 한 번에 필요한 것
@@ -123,7 +124,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
         _empathyCount = previousCount;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppStrings.communityDetailEmpathyFailed)),
+        SnackBar(content: Text(AppStrings.communityDetailEmpathyFailed)),
       );
       return;
     } finally {
@@ -149,12 +150,14 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
           // C의 저장소는 저장하지 않은 시의 대화를 읽으면 예외를 던진다.
           return const Scaffold(
             backgroundColor: AppColors.background,
+            appBar: LanguageToggleAppBar(),
             body: Center(child: UnavailableNotice()),
           );
         }
         if (data == null) {
           return const Scaffold(
             backgroundColor: AppColors.background,
+            appBar: LanguageToggleAppBar(),
             body: Center(child: CircularProgressIndicator()),
           );
         }
@@ -173,6 +176,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(AppStrings.communityDetailTitle(poem.title)),
+        actions: const [LanguageToggle()],
       ),
       body: data.isLocked
           ? LockedNotice(poemId: conversation.poemId)
@@ -234,7 +238,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             const SizedBox(height: 24),
 
             // 1. 첫 낱말 (대화의 출발점)
-            const _SectionHeader(
+            _SectionHeader(
               title: AppStrings.communityDetailFirstWord,
               subtitle: AppStrings.communityDetailFirstWordCaption,
             ),
@@ -274,7 +278,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             const SizedBox(height: 24),
 
             // 2. 대화 요약 & 근거 구절
-            const _SectionHeader(
+            _SectionHeader(
               title: AppStrings.communityDetailSummary,
               subtitle: AppStrings.communityDetailSummaryCaption,
             ),
@@ -325,7 +329,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             const SizedBox(height: 24),
 
             // 3. 최종 해석
-            const _SectionHeader(
+            _SectionHeader(
               title: AppStrings.communityDetailInterpretation,
               subtitle: AppStrings.communityDetailInterpretationCaption,
             ),
@@ -377,7 +381,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            const Center(
+            Center(
               child: Text(
                 AppStrings.communityDetailEmpathyNote,
                 style: AppText.lineNumber,
