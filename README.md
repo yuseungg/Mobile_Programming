@@ -11,10 +11,10 @@ Chung-Ang University, Mobile Programming team project (4 people) · Flutter + Op
 | Stage | What | Status |
 | --- | --- | --- |
 | **1 · Screens** | 13 screens and the navigation between them. Clickable end to end on fake data | ✅ Done (name unification: `docs/여백-이름대조표.md`) |
-| **2 · Features** | Firebase Auth · Firestore, the question agent, the save-first lock, model-written comparison and summary | ✅ Wired up (what is left is under [Not done yet](#not-done-yet)) |
+| **2 · Features** | Firebase Auth · Firestore, the question agent, the save-first lock, model-written comparison and summary, KR / EN switching | ✅ Wired up (what is left is under [Not done yet](#not-done-yet)) |
 | 3 · Integration | Walk the demo scenario, build the APK, submit (week 15) | In progress |
 
-On `develop`: `flutter analyze` reports 0 issues and `flutter test` passes **357 tests**. GitHub Actions runs the same checks on every PR.
+On `develop`: `flutter analyze` reports 0 issues and `flutter test` passes **398 tests**. GitHub Actions runs the same checks on every PR.
 
 Two releases have gone to `main` so far — #19 (mid-term checkpoint) and #38 (sign-in gate, model-written S07 · S09, empathy and profile wiring, fourth poem).
 
@@ -47,6 +47,14 @@ Without a key the app does not die — it falls back to pre-written questions an
 
 The models live in `lib/data/settings_options.dart` and are chosen on S11 — `nvidia/nemotron-3.5-lightning:free` for questions (careful, slow) and `dots-studio/dots-3-note-preview:free` for comparisons (fast). Both are free models whose calls were verified against the professor's key on 2026-11-17.
 
+## Language
+
+Every screen carries a **KR / EN** toggle in the top right, and the app **starts in English** (the professor's notice). The choice is kept on the device and read back on the next launch.
+
+Switching also changes what the AI is told: in EN the agent asks its questions in English, and the comparison and summary writers produce English.
+
+All UI strings live in `lib/app/strings.dart` as Korean/English pairs (`_t('닫기', 'Close')`); the current choice is held in `lib/app/language.dart`. Because a string changes with the language, never write `const Text(AppStrings.x)` in a screen.
+
 ## Checks
 
 ```bash
@@ -75,7 +83,7 @@ The source-of-truth documents live in `docs/`, in Korean. **The feature set is s
 1. **The AI does not give answers.** Every response ends in a question, and asks only one thing at a time.
 2. **Saving is the only thing that unlocks.** Until you save your own interpretation you cannot see the expert interpretations, other people's conversations, or the background of the poem.
 3. **We do not grade.** The standard is the evidence inside the poem, not a textbook. No score, ranking or reward is given for the quality of an interpretation.
-4. The words **"정답" (correct answer), "해설" (explication) and "올바른" (proper)** appear nowhere in the app.
+4. The words **"정답" (correct answer), "해설" (explication) and "올바른" (proper)** appear nowhere in the app — nor do their English counterparts (answer · correct · explanation · commentary). One `grep` over `lib/app/strings.dart` is enough to check.
 5. **Myeongjo (serif) for the poem and the reader's own writing, Gothic (sans) for the app.**
 6. The AI does not invent words the reader never wrote. Quotes are checked **in code** against the source text (`lib/writers/quote_check.dart`, `lib/agent/tools/verify_quote.dart`).
 
@@ -108,9 +116,11 @@ lib/
 ├─ app/
 │  ├─ router.dart                C   routes · navigation
 │  ├─ auth_gate.dart             C   sign-in branch (the gate at app start)
+│  ├─ language.dart              A   which language is showing (KR / EN)
 │  ├─ tab_shell.dart             C   bottom tab bar
 │  ├─ theme.dart                 A   colors · fonts (design tokens live only here)
-│  └─ strings.dart               everyone — UI strings (add only your own screen's lines)
+│  └─ strings.dart               everyone — UI strings, Korean and English side by side
+│                                  (add only your own screen's lines)
 ├─ data/                         C
 │  ├─ repositories.dart              one place to swap the repositories (useFakes / useFirebase)
 │  ├─ repositories/                  interfaces — screens see nothing else
@@ -129,7 +139,8 @@ lib/
 │                                   (rules only; C's repository transaction does the calling)
 ├─ shared/widgets/
 │  ├─ poem_view.dart             B   the poem body (shared by S04 · S05 · S07)
-│  ├─ app_loading.dart           D   shared loading (16 mascot frames · LOADING wave)
+│  ├─ app_loading.dart           D   the loading screen (16 mascot frames · LOADING wave)
+│  ├─ language_toggle.dart       A   the KR / EN toggle every screen carries
 │  └─ buttons · fields · cards · bubbles · char counter   A
 └─ features/                     the screens (owners in the table above)
 
