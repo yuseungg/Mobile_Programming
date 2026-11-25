@@ -13,7 +13,8 @@ class ThemeHeader extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget> actions;
 
   // 너비 따라 커지면 태블릿에서 화면을 너무 먹어서 고정 (테마설계 7장)
-  // 폰 너비(약 375)에서 3:1 그림이 거의 안 잘리는 높이
+  // 상태바 높이는 Scaffold가 위에 더해서 실제로는 120 + 상태바 (폰에서 약 167)
+  // 그만큼 3:1 그림이 위아래로 더 잘리는데 bottomCenter라 언덕 · 눈은 남음
   static const double height = 120;
 
   @override

@@ -19,7 +19,8 @@ class AppColors {
   static const accent = Color(0xFFEE5A24); // 주요 버튼 · 사용자 강조 (주황)
   static const accentDark = Color(0xFFD2481A); // 주황 버튼 아래 두께
   static const accentBg = Color(0xFFFDE8DE); // 내 말풍선 · 선택된 탭 배경
-  static const confirmed = Color(0xFF1AA89F); // 확인된 근거 행 · 입력 칸 강조 테두리 (청록)
+  // 시안은 #1AA89F인데 흰 카드 위 선 대비가 2.94라 3:1 못 넘어서 조금 어둡게 (3.6)
+  static const confirmed = Color(0xFF0F8C85); // 확인된 근거 행 · 입력 칸 강조 테두리 (청록)
   static const info = Color(0xFF036963); // 보조 버튼 · 정보
   static const link = Color(0xFFE5482A); // 「가입하기」 같은 글 링크
 }
