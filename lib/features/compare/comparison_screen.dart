@@ -19,6 +19,7 @@ import '../../shared/widgets/app_loading.dart';
 import '../../writers/comparison_writer.dart';
 import '../../writers/fake_comparison_writer.dart';
 import '../../writers/openrouter_comparison_writer.dart';
+import '../../shared/widgets/language_toggle.dart';
 
 /// 화면 한 번에 필요한 것
 class _ComparisonData {
@@ -140,7 +141,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                   ),
                 ),
               ),
-              const Text(
+              Text(
                 AppStrings.comparisonCreationBackgroundTitle,
                 style: AppText.poemTitleSmall,
               ),
@@ -162,7 +163,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(AppStrings.close),
+                  child: Text(AppStrings.close),
                 ),
               ),
             ],
@@ -181,6 +182,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         if (snapshot.hasError) {
           return const Scaffold(
             backgroundColor: AppColors.background,
+            appBar: LanguageToggleAppBar(),
             body: Center(child: UnavailableNotice()),
           );
         }
@@ -188,8 +190,9 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
           // 저장을 누르고 여기가 열리기까지가 이 앱에서 가장 긴 기다림이다 —
           // 저장소 쓰기(markComparisonOpened)가 끝나고, 그 위에 모델이 비교
           // 문장을 쓴다. 스피너로는 멈춘 것과 구분이 되지 않아 로딩 화면을 쓴다.
-          // 시 제목은 아직 읽히지 않았으므로 앱바 없이 띄운다.
-          return const LoadingPage(
+          // 시 제목은 아직 읽히지 않았으므로 제목 없이 띄운다 — 그래도 오른쪽
+          // 위 KR / EN 토글은 LoadingPage가 붙여 준다.
+          return LoadingPage(
             message: AppStrings.loadingSavingConversation,
           );
         }
@@ -207,7 +210,10 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(AppStrings.comparisonTitle(poem.title))),
+      appBar: AppBar(
+        title: Text(AppStrings.comparisonTitle(poem.title)),
+        actions: const [LanguageToggle()],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
@@ -263,13 +269,13 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                           color: AppColors.accent,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
+                        child: Text(
                           AppStrings.comparisonMine,
                           style: AppText.tagOnAccent,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         AppStrings.comparisonMineCaption,
                         style:
                             AppText.caption,
@@ -288,7 +294,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
             // 2. 전문가 해석 — 항상 전부 (관계는 코드가 계산)
             if (experts.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(bottom: 20),
                 child: Text(
                   AppStrings.comparisonNoExperts,
@@ -312,7 +318,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
             OutlinedButton.icon(
               onPressed: () => _showCreationBackground(context, poem),
               icon: const Icon(Icons.history_edu_outlined, size: 18),
-              label: const Text(AppStrings.comparisonCreationBackground),
+              label: Text(AppStrings.comparisonCreationBackground),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.text,
                 side: const BorderSide(color: AppColors.border),
@@ -328,7 +334,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
             ElevatedButton.icon(
               onPressed: () => AppRouter.goToTab(context, AppRoutes.community),
               icon: const Icon(Icons.people_outline, size: 18),
-              label: const Text(AppStrings.comparisonGoCommunity),
+              label: Text(AppStrings.comparisonGoCommunity),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.card,

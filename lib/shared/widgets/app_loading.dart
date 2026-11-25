@@ -36,6 +36,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/strings.dart';
 import '../../app/theme.dart';
+import 'language_toggle.dart';
 
 /// 기다리는 동안 보여 주는 위젯. 마스코트가 앉아서 책을 읽고, 아래 글자가
 /// 한 글자씩 파도치듯 튄다. [message]를 주면 그 아래에 한 줄이 더 붙는다.
@@ -275,13 +276,16 @@ class _WaveLabel extends StatelessWidget {
 /// 화면 하나를 채우는 로딩 화면.
 ///
 /// 지금 쓰는 자리는 하나다 — S07 대조가 데이터를 기다리는 동안의 body
-/// (`comparison_screen.dart`). 시 제목은 아직 읽히지 않았으므로 제목 없이 띄운다.
+/// (`comparison_screen.dart`). 시 제목은 아직 읽히지 않았으므로 제목 없이 띄우고,
+/// 그러면 오른쪽 위 KR / EN 토글만 있는 앱바가 붙는다 (#55 — 모든 화면에 있다).
 ///
 /// ```dart
 /// if (data == null) {
-///   return const LoadingPage(message: AppStrings.loadingSavingConversation);
+///   return LoadingPage(message: AppStrings.loadingSavingConversation);
 /// }
 /// ```
+///
+/// 문구가 KR / EN을 따라 바뀌므로 `const`로 쓰지 않는다.
 ///
 /// 화면 전환 자체를 가로채지는 않는다 — 그것은 `lib/app/router.dart`가 할 일이고
 /// 그 파일은 주인 외 금지다. 여기서는 **부를 수 있는 화면**만 둔다.
@@ -294,7 +298,7 @@ class LoadingPage extends StatelessWidget {
     this.mascot,
   });
 
-  /// 앱바에 넣을 제목. 비우면 앱바를 두지 않는다 (가는 중인 화면의 제목을 모를 때).
+  /// 앱바에 넣을 제목. 비우면 제목 없이 KR / EN 토글만 있는 앱바를 둔다 (가는 중인 화면의 제목을 모를 때).
   final String? title;
 
   /// [AppLoading.label]로 넘긴다.
@@ -309,10 +313,14 @@ class LoadingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final heading = title;
+    // 오른쪽 위 KR / EN은 모든 화면에 있다 — 제목이 없어도 토글만 있는 앱바를 둔다.
     return Scaffold(
       appBar: heading == null
-          ? null
-          : AppBar(title: Text(heading, style: AppText.screenTitle)),
+          ? const LanguageToggleAppBar()
+          : AppBar(
+              title: Text(heading, style: AppText.screenTitle),
+              actions: const [LanguageToggle()],
+            ),
       body: Center(
         child: AppLoading(
           label: label ?? AppStrings.loadingLabel,

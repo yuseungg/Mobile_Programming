@@ -2,6 +2,7 @@
 // 이름은 기획서 그대로 snake_case, Dart 함수는 lowerCamelCase (네이밍규칙 2장).
 // compare_with_experts · get_poem_context의 본체는 D가 만든다 (lib/compare/compare_tools.dart).
 // 툴 권한은 앱 상태에 따라 바뀐다 — 저장 전에는 그 둘을 보내지 않고, 불러도 거부한다.
+import '../../app/language.dart';
 import '../../compare/compare_tools.dart';
 import '../../data/models/expert_interpretation.dart';
 import '../../data/models/poem.dart';
@@ -41,66 +42,87 @@ class AgentTools {
   static const getPoemContextName = 'get_poem_context';
 
   /// 모델에게 보내는 툴 정의 (OpenAI 형식). 저장 전에는 A의 두 툴만, 저장 뒤에는 넷 다.
+  /// 설명은 화면 오른쪽 위 KR / EN을 따른다. 툴 이름 · 인자 이름은 언어와 상관없이 같다.
   List<Map<String, Object?>> get definitions => [
-        ..._alwaysDefinitions,
-        if (isSaved) ..._afterSaveDefinitions,
-      ];
-
-  static const _alwaysDefinitions = [
-        {
-          'type': 'function',
-          'function': {
-            'name': verifyQuoteName,
-            'description': '구절이 시 원문에 그대로 있는지 확인한다. '
+        _function(
+          verifyQuoteName,
+          _t(
+            '구절이 시 원문에 그대로 있는지 확인한다. '
                 '사용자가 근거로 든 구절이나 네가 언급하려는 구절은 반드시 먼저 이것으로 확인한다. '
                 '원문에 있으면 행 번호(1부터)를, 없으면 found=false를 돌려준다.',
-            'parameters': {
-              'type': 'object',
-              'properties': {
-                'quote': {'type': 'string', 'description': '확인할 구절 (따옴표 없이)'},
-              },
-              'required': ['quote'],
+            'Checks whether a phrase appears word for word in the original poem. '
+                'Always check a phrase the user cites as evidence, or one you are about to mention, with this first. '
+                'Pass the original words of the poem, not a translation. '
+                'Returns the line numbers (from 1) if found, otherwise found=false.',
+          ),
+          {
+            'quote': {
+              'type': 'string',
+              'description': _t('확인할 구절 (따옴표 없이)',
+                  'The phrase to check, in the original language, without quotation marks'),
             },
           },
-        },
-        {
-          'type': 'function',
-          'function': {
-            'name': searchPoemLinesName,
-            'description': '시 안에서 낱말을 찾아, 그 낱말이 나오는 행 번호(1부터)와 행을 돌려준다.',
-            'parameters': {
-              'type': 'object',
-              'properties': {
-                'word': {'type': 'string', 'description': '찾을 낱말'},
-              },
-              'required': ['word'],
+        ),
+        _function(
+          searchPoemLinesName,
+          _t(
+            '시 안에서 낱말을 찾아, 그 낱말이 나오는 행 번호(1부터)와 행을 돌려준다.',
+            'Finds a word in the poem and returns the line numbers (from 1) and lines where it appears. '
+                'Search with a word in the original language of the poem.',
+          ),
+          {
+            'word': {
+              'type': 'string',
+              'description': _t('찾을 낱말', 'The word to find, in the original language'),
             },
           },
-        },
+        ),
+        if (isSaved) ...[
+          _function(
+            compareWithExpertsName,
+            _t(
+              '사용자가 저장한 해석과 전문가 해석 각각의 관계를 돌려준다. '
+                  'relation은 앱이 근거 행으로 정한 것이다 — sameLines(같은 곳을 봤다), '
+                  'partialOverlap(같은 줄에서 출발했다), differentLines(다른 행을 중심으로 읽었다). '
+                  '사용자가 전문가 해석이나 다른 읽기를 궁금해할 때 부른다.',
+              "Returns how the user's saved interpretation relates to each expert interpretation. "
+                  'The app decides the relation from the evidence lines — sameLines (looked at the same place), '
+                  'partialOverlap (started from the same line), differentLines (centered on other lines). '
+                  'Call it when the user is curious about the expert interpretations or other readings.',
+            ),
+          ),
+          _function(
+            getPoemContextName,
+            _t(
+              '시의 창작 배경(사실만)을 돌려준다. '
+                  '사용자가 시가 쓰인 때나 배경을 궁금해할 때 부른다.',
+              'Returns the background of the poem (facts only). '
+                  'Call it when the user is curious about when or how the poem was written.',
+            ),
+          ),
+        ],
       ];
 
-  static const _afterSaveDefinitions = [
-    {
-      'type': 'function',
-      'function': {
-        'name': compareWithExpertsName,
-        'description': '사용자가 저장한 해석과 전문가 해석 각각의 관계를 돌려준다. '
-            'relation은 앱이 근거 행으로 정한 것이다 — sameLines(같은 곳을 봤다), '
-            'partialOverlap(같은 줄에서 출발했다), differentLines(다른 행을 중심으로 읽었다). '
-            '사용자가 전문가 해석이나 다른 읽기를 궁금해할 때 부른다.',
-        'parameters': {'type': 'object', 'properties': <String, Object?>{}},
-      },
-    },
-    {
-      'type': 'function',
-      'function': {
-        'name': getPoemContextName,
-        'description': '시의 창작 배경(사실만)을 돌려준다. '
-            '사용자가 시가 쓰인 때나 배경을 궁금해할 때 부른다.',
-        'parameters': {'type': 'object', 'properties': <String, Object?>{}},
-      },
-    },
-  ];
+  static String _t(String korean, String english) =>
+      isEnglish ? english : korean;
+
+  static Map<String, Object?> _function(
+    String name,
+    String description, [
+    Map<String, Object?> properties = const {},
+  ]) =>
+      {
+        'type': 'function',
+        'function': {
+          'name': name,
+          'description': description,
+          'parameters': {
+            'type': 'object',
+            'properties': properties,
+            if (properties.isNotEmpty) 'required': properties.keys.toList(),
+          },
+        },
+      };
 
   ToolResult run(String name, Map<String, Object?> arguments) {
     switch (name) {
@@ -130,10 +152,12 @@ class AgentTools {
         if (!isSaved) return _lockedResult;
         return ToolResult(getPoemContext(poem: poem));
       default:
-        return ToolResult({'error': '없는 툴이다: $name'});
+        return ToolResult({'error': _t('없는 툴이다: $name', 'No such tool: $name')});
     }
   }
 
-  static const _lockedResult =
-      ToolResult({'error': '해석을 저장한 뒤에만 쓸 수 있는 툴이다.'});
+  static ToolResult get _lockedResult => ToolResult({
+        'error': _t('해석을 저장한 뒤에만 쓸 수 있는 툴이다.',
+            'This tool can be used only after the interpretation is saved.'),
+      });
 }

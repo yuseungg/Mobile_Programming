@@ -11,6 +11,7 @@ import '../../data/fakes/fake_data.dart';
 import '../../data/repositories.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_text_field.dart';
+import '../../shared/widgets/language_toggle.dart';
 import 'auth_input_rules.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -37,14 +38,14 @@ class _SignInScreenState extends State<SignInScreen> {
       isValidGmail(_emailController.text) &&
       _passwordController.text.isNotEmpty;
 
-  Future<void> _signInWithEmail() =>
-      _run(() => Repositories.auth.signInWithEmail(
-            _emailController.text.trim().toLowerCase(),
-            _passwordController.text,
-          ));
+  Future<void> _signInWithEmail() => _run(
+    () => Repositories.auth.signInWithEmail(
+      _emailController.text.trim().toLowerCase(),
+      _passwordController.text,
+    ),
+  );
 
-  Future<void> _signInWithGoogle() =>
-      _run(Repositories.auth.signInWithGoogle);
+  Future<void> _signInWithGoogle() => _run(Repositories.auth.signInWithGoogle);
 
   /// 로그인을 시도하고, 프로필이 있으면 S13 안내로, 없으면 닉네임 정하기로 간다.
   Future<void> _run(Future<String> Function() signIn) async {
@@ -80,64 +81,71 @@ class _SignInScreenState extends State<SignInScreen> {
     final quote = FakeData.poemById('seosi').lineAt(10);
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(28, 56, 28, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(AppStrings.appName, style: AppText.appName),
-              const SizedBox(height: 4),
-              const Text(AppStrings.appSubtitle, style: AppText.bodySub),
-              const SizedBox(height: 24),
-              _PoemQuote(text: quote),
-              const SizedBox(height: 40),
-              AppTextField(
-                controller: _emailController,
-                label: AppStrings.signInEmailLabel,
-                hintText: AppStrings.signInEmailHint,
-                keyboardType: TextInputType.emailAddress,
-                inputFormatters: emailInputFormatters,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 18),
-              AppTextField(
-                controller: _passwordController,
-                label: AppStrings.signInPasswordLabel,
-                hintText: AppStrings.signInPasswordHint,
-                obscureText: true,
-                inputFormatters: passwordInputFormatters,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 28),
-              AppPrimaryButton(
-                label: AppStrings.signInButton,
-                onPressed: _canSubmit ? _signInWithEmail : null,
-              ),
-              const SizedBox(height: 20),
-              const _OrDivider(),
-              const SizedBox(height: 20),
-              AppSecondaryButton(
-                label: AppStrings.signInGoogleButton,
-                icon: Icons.account_circle_outlined,
-                onPressed: _isBusy ? null : _signInWithGoogle,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(28, 56, 28, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(AppStrings.signInNoAccount, style: AppText.caption),
-                  TextButton(
-                    onPressed: _isBusy
-                        ? null
-                        : () => Navigator.of(context).pushNamed(AppRoutes.signUp),
-                    child: const Text(AppStrings.signInGoToSignUp),
+                  Text(AppStrings.appName, style: AppText.appName),
+                  const SizedBox(height: 4),
+                  Text(AppStrings.appSubtitle, style: AppText.bodySub),
+                  const SizedBox(height: 24),
+                  _PoemQuote(text: quote),
+                  const SizedBox(height: 40),
+                  AppTextField(
+                    controller: _emailController,
+                    label: AppStrings.signInEmailLabel,
+                    hintText: AppStrings.signInEmailHint,
+                    keyboardType: TextInputType.emailAddress,
+                    inputFormatters: emailInputFormatters,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 18),
+                  AppTextField(
+                    controller: _passwordController,
+                    label: AppStrings.signInPasswordLabel,
+                    hintText: AppStrings.signInPasswordHint,
+                    obscureText: true,
+                    inputFormatters: passwordInputFormatters,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 28),
+                  AppPrimaryButton(
+                    label: AppStrings.signInButton,
+                    onPressed: _canSubmit ? _signInWithEmail : null,
+                  ),
+                  const SizedBox(height: 20),
+                  const _OrDivider(),
+                  const SizedBox(height: 20),
+                  AppSecondaryButton(
+                    label: AppStrings.signInGoogleButton,
+                    icon: Icons.account_circle_outlined,
+                    onPressed: _isBusy ? null : _signInWithGoogle,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(AppStrings.signInNoAccount, style: AppText.caption),
+                      TextButton(
+                        onPressed: _isBusy
+                            ? null
+                            : () =>
+                                  Navigator.of(context)
+                                      .pushNamed(AppRoutes.signUp),
+                        child: Text(AppStrings.signInGoToSignUp),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
+          const LanguageToggleCorner(),
+        ],
       ),
     );
   }
@@ -166,7 +174,7 @@ class _OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
         Expanded(child: Divider()),
         Padding(

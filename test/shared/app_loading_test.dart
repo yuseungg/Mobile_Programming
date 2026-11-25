@@ -8,8 +8,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/app/language.dart';
 import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/shared/widgets/app_loading.dart';
+import 'package:yeobaek/shared/widgets/language_toggle.dart';
 
 import '../support/pump.dart';
 
@@ -153,7 +155,7 @@ void main() {
   testWidgets('문구를 주면 글자 아래 한 줄로 보인다', (tester) async {
     await pumpLoading(
       tester,
-      loading: const AppLoading(
+      loading: AppLoading(
         message: AppStrings.loadingSavingConversation,
       ),
     );
@@ -169,7 +171,7 @@ void main() {
   testWidgets('문구는 함께 튀지 않는다 — 읽는 줄이기 때문이다', (tester) async {
     await pumpLoading(
       tester,
-      loading: const AppLoading(
+      loading: AppLoading(
         message: AppStrings.loadingSavingConversation,
       ),
     );
@@ -180,6 +182,21 @@ void main() {
 
     // 글자는 움직인다 (위 테스트) — 이 줄은 그대로여야 한다
     expect(tester.getTopLeft(finder), before);
+  });
+
+  testWidgets('EN이면 그 줄도 영어로 보인다', (tester) async {
+    appLanguage.value = AppLanguage.en;
+    addTearDown(() => appLanguage.value = AppLanguage.ko);
+
+    await pumpLoading(
+      tester,
+      loading: AppLoading(message: AppStrings.loadingSavingConversation),
+    );
+
+    expect(find.text('Saving your conversation'), findsOneWidget);
+    expect(find.text('대화를 저장소에 저장하고 있어요'), findsNothing);
+    // LOADING......은 이미 영어라 양쪽에서 같다
+    expect(find.text('L'), findsOneWidget);
   });
 
   testWidgets('문구를 주지 않으면 그 줄을 그리지 않는다', (tester) async {
@@ -211,7 +228,7 @@ void main() {
 
     testWidgets('문구를 AppLoading으로 넘긴다', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: LoadingPage(message: AppStrings.loadingSavingConversation),
         ),
       );
@@ -219,10 +236,16 @@ void main() {
       expect(find.text(AppStrings.loadingSavingConversation), findsOneWidget);
     });
 
-    testWidgets('제목이 없으면 앱바를 두지 않는다', (tester) async {
+    testWidgets('제목이 없으면 제목 없이 KR / EN 토글만 있는 앱바', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: LoadingPage()));
 
-      expect(find.byType(AppBar), findsNothing);
+      // 오른쪽 위 KR / EN은 모든 화면에 있다 (#55)
+      expect(find.byType(LanguageToggleAppBar), findsOneWidget);
+      expect(find.byType(LanguageToggle), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.byType(Text)),
+        findsNWidgets(2), // KR · EN 두 글자뿐 — 제목은 없다
+      );
       expect(find.byType(AppLoading), findsOneWidget);
     });
 

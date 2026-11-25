@@ -6,8 +6,12 @@
 //
 // 지키지 못했을 때 걸러내는 쪽은 comparison_guard.dart다. 프롬프트만으로는
 // 턴이 쌓이면 새어 나온다 (A가 OutputGuard를 둔 것과 같은 이유).
+//
+// 화면 오른쪽 위 KR / EN을 따라 한국어 · 영어로 쓰게 한다. 시와 전문가 해석은
+// 원문 그대로 준다 — 인용 검사(quote_check)가 준 재료와 글자 그대로 대조하기 때문이다.
 
 import '../agent/output_guard.dart';
+import '../app/language.dart';
 import '../app/strings.dart';
 import '../compare/relation.dart';
 import '../data/models/expert_interpretation.dart';
@@ -25,7 +29,40 @@ List<Map<String, Object?>> buildComparisonMessages({
       {'role': 'user', 'content': _materials(request)},
     ];
 
-String _systemPrompt(ComparisonRequest request, Tone tone) {
+String _systemPrompt(ComparisonRequest request, Tone tone) =>
+    isEnglish ? _englishSystemPrompt(request, tone) : _koreanSystemPrompt(request, tone);
+
+String _englishSystemPrompt(ComparisonRequest request, Tone tone) {
+  final forbiddenWords = [
+    ...OutputGuard.forbiddenWordsEnglish,
+    ...OutputGuard.forbiddenWords,
+  ].map((word) => '"$word"').join(', ');
+  final toneRule = switch (tone) {
+    Tone.plain => '- Keep the tone plain. Write briefly, with nothing extra.',
+    Tone.gentle => '- Keep the tone gentle, as if holding both readings together.',
+  };
+
+  return '''
+You set one person's interpretation beside an expert interpretation and write, in one or two
+sentences, how the two readings meet. You never decide which one is right.
+
+Rules
+- Write in English.
+- The relation is already decided: "${_relationText(request)}". Do not judge it again or overturn it.
+- Start with what they share. If both readings looked at the same lines, start from those lines.
+- Do not correct the user's reading. Do not call it lacking, and do not teach what was missed.
+- Put in quotation marks only words that appear exactly in the materials below, in their original language.
+  Never put a translation inside quotation marks.
+- Call lines "line N". Lines are counted from 1, and the blank line between stanzas also takes a number.
+  The last line of the poem is line ${request.poem.lines.length}. Never name a larger number.
+- Do not state meanings, such as "this means ..." or "this symbolizes ...".
+- Never use words like $forbiddenWords.
+- No more than three sentences. Do not ask questions. Write only the sentences, nothing else.
+$toneRule
+''';
+}
+
+String _koreanSystemPrompt(ComparisonRequest request, Tone tone) {
   final forbiddenWords =
       OutputGuard.forbiddenWords.map((word) => '"$word"').join(', ');
   final toneRule = switch (tone) {
@@ -51,7 +88,39 @@ $toneRule
 ''';
 }
 
-String _materials(ComparisonRequest request) {
+String _materials(ComparisonRequest request) =>
+    isEnglish ? _englishMaterials(request) : _koreanMaterials(request);
+
+String _englishMaterials(ComparisonRequest request) {
+  final poem = request.poem;
+  final numberedLines = [
+    for (var lineNo = 1; lineNo <= poem.lines.length; lineNo++)
+      if (poem.lineAt(lineNo).isNotEmpty) 'Line $lineNo: ${poem.lineAt(lineNo)}',
+  ].join('\n');
+  final theirLines = expertLines(request.expert);
+  final shared = (request.myEvidenceLines.toSet().intersection(theirLines.toSet())
+        .toList()
+    ..sort());
+
+  return '''
+Poem: ${poem.author}, "${poem.title}"
+$numberedLines
+
+[My interpretation]
+Evidence lines: ${_lineList(request.myEvidenceLines)}
+${request.myInterpretation.trim().isEmpty ? '(empty)' : request.myInterpretation.trim()}
+
+[${request.expert.label}]
+Stance: ${request.expert.stance}
+Evidence lines: ${_lineList(theirLines)}
+${[for (final claim in request.expert.claims) '- ${_lineList(claim.lines)}: ${claim.point}'].join('\n')}
+
+Lines both looked at: ${shared.isEmpty ? 'none' : _lineList(shared)}
+Relation: ${_relationText(request)}
+''';
+}
+
+String _koreanMaterials(ComparisonRequest request) {
   final poem = request.poem;
   final numberedLines = [
     for (var lineNo = 1; lineNo <= poem.lines.length; lineNo++)
@@ -83,8 +152,12 @@ ${[for (final claim in request.expert.claims) '- ${_lineList(claim.lines)}: ${cl
 /// 걸렸을 때 이유를 알려 주고 다시 쓰게 하는 안내
 String comparisonRewriteInstruction(List<ComparisonViolation> violations) {
   final reasons = violations.map(comparisonViolationReason).join(', ');
-  return '(앱 안내) 방금 문장은 규칙에 맞지 않았다: $reasons. '
-      '같은 관계를 그대로 두고, 공통점부터, 세 문장 안에서, 단정하지 말고 다시 적어 줘.';
+  return isEnglish
+      ? '(App note) Your last sentences broke the rules: $reasons. '
+          'Keep the same relation, start with what they share, stay within three sentences, '
+          'do not state meanings, and write it again in English.'
+      : '(앱 안내) 방금 문장은 규칙에 맞지 않았다: $reasons. '
+          '같은 관계를 그대로 두고, 공통점부터, 세 문장 안에서, 단정하지 말고 다시 적어 줘.';
 }
 
 String _relationText(ComparisonRequest request) => switch (request.relation) {
@@ -95,4 +168,4 @@ String _relationText(ComparisonRequest request) => switch (request.relation) {
     };
 
 String _lineList(List<int> lines) =>
-    lines.isEmpty ? '없음' : AppStrings.lineList(lines);
+    lines.isEmpty ? (isEnglish ? 'none' : '없음') : AppStrings.lineList(lines);
