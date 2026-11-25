@@ -51,6 +51,16 @@ class _OfflineReadingRepository extends FakeReadingRepository {
   }
 }
 
+// 테스트용: 오프라인에서 처음 여는 시처럼 내 기록 불러오기만 실패하는 저장소
+class _LoadFailsReadingRepository extends FakeReadingRepository {
+  _LoadFailsReadingRepository(super.store);
+
+  @override
+  Future<Reading?> fetchReading(String userId, String poemId) async {
+    throw Exception('client is offline');
+  }
+}
+
 // 테스트용: 네트워크 끊긴 것처럼 저장만 실패하는 저장소
 class _NetworkDownReadingRepository extends FakeReadingRepository {
   _NetworkDownReadingRepository(super.store);
@@ -427,6 +437,30 @@ void main() {
 
     expect(find.text(AppStrings.saveFailed), findsOneWidget);
     expect(find.byType(ChatScreen), findsNothing);
+  });
+
+  testWidgets('S04 기록 못 불러오면 안내 뜨고 버튼 막힘, 다시 시도하면 불러옴', (tester) async {
+    FakeStore store = FakeStore();
+    Repositories.reading = _LoadFailsReadingRepository(store);
+    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'jindallae')));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.noticeUnavailable), findsOneWidget);
+
+    // 진달래꽃은 하던 대화가 있는데 못 불러와서 칸이 빔. 새로 써도 못 넘어가야 함
+    await tester.scrollUntilVisible(find.byType(FilledButton), 200, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(find.byType(TextField), '꽃');
+    await tester.pump();
+    FilledButton start = tester.widget(find.byType(FilledButton));
+    expect(start.onPressed, isNull);
+
+    // 네트워크 돌아옴
+    Repositories.reading = FakeReadingRepository(store);
+    await tester.scrollUntilVisible(find.text(AppStrings.noticeUnavailableAction), -200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text(AppStrings.noticeUnavailableAction));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.noticeUnavailable), findsNothing);
+    await tester.scrollUntilVisible(find.text(AppStrings.readingContinueChat), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text(AppStrings.readingContinueChat), findsOneWidget); // 하던 대화 불러옴
   });
 
   testWidgets('홈 내 기록 못 불러오면 안내 뜨고 다시 시도하면 불러옴', (tester) async {
