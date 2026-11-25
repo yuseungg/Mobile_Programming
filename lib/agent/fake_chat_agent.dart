@@ -2,6 +2,7 @@
 // 키 없이도 S05 화면 동작과 S05 → S06 흐름을 확인할 수 있다.
 // 모델은 부르지 않지만 툴(verify_quote · search_poem_lines)과 근거 행 계산은 진짜를 쓴다.
 // 그래서 따옴표로 구절을 인용하거나 "N행"이라고 쓰면 초록 실선 · 회색 점선이 실제로 바뀐다.
+import '../app/language.dart';
 import '../data/models/chat_message.dart';
 import '../data/models/poem.dart';
 import 'cancel_token.dart';
@@ -17,7 +18,9 @@ class FakeChatAgent implements ChatAgent {
 
   final Duration delay; // 응답을 기다리는 화면 상태를 볼 수 있게 조금 늦춘다
 
-  static final _quoted = RegExp(r'''['‘"“「『]([^'’"”」』]+)['’"”」』]''');
+  // 곧은 작은따옴표는 영어 낱말 사이(don't · it's)에서는 따옴표가 아니다
+  static final _quoted = RegExp(
+      r'''(?<![A-Za-z])['‘]([^'’]+)['’](?![A-Za-z])|["“「『]([^"”」』]+)["”」』]''');
   static const _particles = '을를이가은는의에도와과로';
 
   @override
@@ -42,13 +45,16 @@ class FakeChatAgent implements ChatAgent {
         : '';
 
     // 1) 따옴표로 인용한 구절 → verify_quote. 없으면 첫 낱말로 search_poem_lines 재탐색
-    final quote = _quoted.firstMatch(userText)?.group(1)?.trim() ?? '';
+    final quoted = _quoted.firstMatch(userText);
+    final quote = (quoted?.group(1) ?? quoted?.group(2))?.trim() ?? '';
     if (quote.isNotEmpty) {
       final check = verifyQuote(poem, quote);
       if (check.isFound) {
         return _reply(
           poem,
-          '${check.lineNos.first}행의 그 구절에서 어떤 말이 가장 오래 남았나요?',
+          isEnglish
+              ? 'In that phrase in line ${check.lineNos.first}, which word stayed with you the longest?'
+              : '${check.lineNos.first}행의 그 구절에서 어떤 말이 가장 오래 남았나요?',
           userText: userText,
           quoteChecks: [check],
         );
@@ -57,14 +63,16 @@ class FakeChatAgent implements ChatAgent {
       final matches = searchPoemLines(poem, word);
       final lineNos = [for (final match in matches) match.lineNo];
       final subject = "'$word'${_particle(word, '이', '가')}";
-      final text = switch (lineNos.length) {
+      final text = isEnglish
+          ? _englishNotFound(word, lineNos)
+          : switch (lineNos.length) {
         0 => '그 표현은 이 시에서 찾지 못했어요. 어느 행을 읽다가 떠올랐나요?',
         1 => '그 표현은 이 시에 없어요. $subject 나오는 건 ${lineNos.first}행인데, 그 행이었을까요?',
         2 => '그 표현은 이 시에 없어요. $subject 나오는 건 ${lineNos.first}행과 ${lineNos.last}행인데, '
             '둘 중 어느 쪽이었을까요?',
         _ => '그 표현은 이 시에 없어요. $subject 나오는 건 ${lineNos.map((lineNo) => '$lineNo행').join(', ')}인데, '
             '어느 행이었을까요?',
-      };
+            };
       return _reply(poem, text,
           userText: userText, quoteChecks: [check], searches: [matches]);
     }
@@ -75,7 +83,9 @@ class FakeChatAgent implements ChatAgent {
       final lineNo = userLineNos.first;
       return _reply(
         poem,
-        '$lineNo행의 어떤 말이 그렇게 느끼게 했나요?',
+        isEnglish
+            ? 'What words in line $lineNo made you feel that way?'
+            : '$lineNo행의 어떤 말이 그렇게 느끼게 했나요?',
         userText: userText,
         quoteChecks: [verifyQuote(poem, poem.lineAt(lineNo))],
       );
@@ -116,6 +126,18 @@ class FakeChatAgent implements ChatAgent {
       pointingLine: marks.pointingLine,
     );
   }
+
+  /// 영어 — 인용한 표현이 원문에 없을 때 실제로 나오는 행을 가리키며 되묻는다
+  String _englishNotFound(String word, List<int> lineNos) => switch (lineNos.length) {
+        0 => "I couldn't find that expression in this poem. "
+            'Which line were you reading when it came to mind?',
+        1 => "That expression isn't in this poem. '$word' appears in line ${lineNos.first}"
+            ' — was it that line?',
+        2 => "That expression isn't in this poem. '$word' appears in lines "
+            '${lineNos.first} and ${lineNos.last} — which of the two was it?',
+        _ => "That expression isn't in this poem. '$word' appears in lines "
+            '${lineNos.join(', ')} — which line was it?',
+      };
 
   /// 낱말 끝의 조사 하나를 뗀다 (별을 → 별)
   String _stem(String word) =>
