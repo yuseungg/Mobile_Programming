@@ -15,6 +15,7 @@ import '../../data/models/expert_interpretation.dart';
 import '../../data/models/poem.dart';
 import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
+import '../../shared/widgets/app_loading.dart';
 import '../../writers/comparison_writer.dart';
 import '../../writers/fake_comparison_writer.dart';
 import '../../writers/openrouter_comparison_writer.dart';
@@ -186,10 +187,13 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
           );
         }
         if (data == null) {
-          return const Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: LanguageToggleAppBar(),
-            body: Center(child: CircularProgressIndicator()),
+          // 저장을 누르고 여기가 열리기까지가 이 앱에서 가장 긴 기다림이다 —
+          // 저장소 쓰기(markComparisonOpened)가 끝나고, 그 위에 모델이 비교
+          // 문장을 쓴다. 스피너로는 멈춘 것과 구분이 되지 않아 로딩 화면을 쓴다.
+          // 시 제목은 아직 읽히지 않았으므로 제목 없이 띄운다 — 그래도 오른쪽
+          // 위 KR / EN 토글은 LoadingPage가 붙여 준다.
+          return LoadingPage(
+            message: AppStrings.loadingSavingConversation,
           );
         }
         return _content(context, data);

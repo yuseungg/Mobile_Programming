@@ -1,13 +1,18 @@
-// 주인: D — 공용 로딩 (기다리는 동안 「멈춘 게 아니다」를 보여 준다)
+// 주인: D — 로딩 (기다리는 동안 「멈춘 게 아니다」를 보여 준다)
 //
-// 지금까지는 화면마다 날것 CircularProgressIndicator를 놓았다. 그것은 멈춤과
-// 진행을 잘 구분해 주지 않고, 명조 중심 화면에 머티리얼 기본 모양이 섞인다.
+// ── 쓰는 자리는 한 곳이다 ──
+// S06에서 저장을 누르고 S07 대조가 열리기까지, 그 사이에만 쓴다
+// (lib/features/compare/comparison_screen.dart). 이 앱에서 가장 긴 기다림이라
+// 그렇다 — 저장소 쓰기가 끝나고, 그 위에 모델이 비교 문장을 쓴다(모델에 따라
+// 한 턴 16~25초). 그 자리를 메우려고 만든 것이다.
+//
+// **다른 화면의 CircularProgressIndicator를 이것으로 바꾸지 않는다.** 짧게
+// 끝나는 읽기에 마스코트가 한 바퀴도 못 돌고 사라지면 깜빡임만 남는다.
+// 다른 긴 기다림이 생기면 그때 이 주석에 그 자리를 함께 적는다.
 //
 // 두 가지를 같이 둔다.
-//  - [AppLoading]  — 자리만 차지하는 위젯. FutureBuilder 안에 그대로 끼운다.
-//  - [LoadingPage] — 화면 하나를 채우는 쪽. 라우트로 띄울 수 있다.
-// 다른 파트 화면은 고치지 않았다. 각자 자기 화면에서 스피너를 이것으로
-// 바꿔 끼우면 된다 (바꾸는 쪽은 아래 「테스트에서」를 함께 읽는다).
+//  - [AppLoading]  — 자리만 차지하는 위젯. 화면 안에 그대로 끼운다.
+//  - [LoadingPage] — 화면 하나를 채우는 쪽. S07이 데이터를 기다릴 때 쓴다.
 //
 // ── 마스코트 ──
 // assets/mascot/mascot_01.png ~ mascot_16.png. 앉아서 책을 읽는 병아리다.
@@ -34,11 +39,12 @@ import '../../app/theme.dart';
 import 'language_toggle.dart';
 
 /// 기다리는 동안 보여 주는 위젯. 마스코트가 앉아서 책을 읽고, 아래 글자가
-/// 한 글자씩 파도치듯 튄다.
+/// 한 글자씩 파도치듯 튄다. [message]를 주면 그 아래에 한 줄이 더 붙는다.
 class AppLoading extends StatefulWidget {
   const AppLoading({
     super.key,
     this.label = AppStrings.loadingLabel,
+    this.message,
     this.mascot,
     this.size = 96,
   });
@@ -52,6 +58,10 @@ class AppLoading extends StatefulWidget {
 
   /// 글자. 한 글자씩 튄다. 비우면 마스코트만 남는다.
   final String label;
+
+  /// 글자 아래 한 줄 — 무엇을 기다리는지 적는다. 비워 두면 그리지 않는다.
+  /// 움직이지 않는다 (파도치는 글자 옆에서 함께 움직이면 읽기 어렵다).
+  final String? message;
 
   /// 마스코트. 비우면 [frameAsset]의 그림 16장.
   final Widget? mascot;
@@ -118,28 +128,53 @@ class _AppLoadingState extends State<AppLoading>
 
   @override
   Widget build(BuildContext context) {
+    final message = widget.message;
+    // 읽어 주는 쪽에는 무엇을 기다리는지가 먼저다. 글자(LOADING......)는
+    // 한 글자씩 떨어져 있어 소리로는 뜻이 되지 않는다.
+    final spoken = message?.isNotEmpty == true
+        ? message
+        : (widget.label.isEmpty ? null : widget.label);
+
     return Semantics(
-      label: widget.label.isEmpty ? null : widget.label,
+      label: spoken,
       liveRegion: true,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) {
-          final t = _controller.value;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _Mascot(
-                t: t,
-                size: widget.size,
-                child: widget.mascot,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 움직이는 부분만 여기 안에 둔다 — 아래 한 줄은 프레임마다 다시
+          // 그릴 이유가 없다
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final t = _controller.value;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _Mascot(
+                    t: t,
+                    size: widget.size,
+                    child: widget.mascot,
+                  ),
+                  if (widget.label.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    _WaveLabel(t: t, label: widget.label),
+                  ],
+                ],
+              );
+            },
+          ),
+          if (message != null && message.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                message,
+                style: AppText.bodySub,
+                textAlign: TextAlign.center,
               ),
-              if (widget.label.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                _WaveLabel(t: t, label: widget.label),
-              ],
-            ],
-          );
-        },
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -238,24 +273,39 @@ class _WaveLabel extends StatelessWidget {
 
 // ── 화면 하나를 채우는 쪽 ─────────────────────────────
 
-/// 라우트로 띄울 수 있는 로딩 화면.
+/// 화면 하나를 채우는 로딩 화면.
+///
+/// 지금 쓰는 자리는 하나다 — S07 대조가 데이터를 기다리는 동안의 body
+/// (`comparison_screen.dart`). 시 제목은 아직 읽히지 않았으므로 제목 없이 띄우고,
+/// 그러면 오른쪽 위 KR / EN 토글만 있는 앱바가 붙는다 (#55 — 모든 화면에 있다).
+///
+/// ```dart
+/// if (data == null) {
+///   return LoadingPage(message: AppStrings.loadingSavingConversation);
+/// }
+/// ```
+///
+/// 문구가 KR / EN을 따라 바뀌므로 `const`로 쓰지 않는다.
 ///
 /// 화면 전환 자체를 가로채지는 않는다 — 그것은 `lib/app/router.dart`가 할 일이고
-/// 그 파일은 주인 외 금지다. 여기서는 **부를 수 있는 화면**만 둔다. 쓰는 쪽은 둘이다.
-///
-/// 1. 다음 화면이 뜰 때까지 이것을 먼저 보여 준다
-///    `Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoadingPage()))`
-/// 2. 화면 안에서 데이터를 기다리는 동안 body로 쓴다
-///    `snapshot.hasData ? _body(...) : LoadingPage(title: AppStrings.settingsTitle)`
-///    (문구가 KR / EN을 따라 바뀌므로 `const`로 쓰지 않는다)
+/// 그 파일은 주인 외 금지다. 여기서는 **부를 수 있는 화면**만 둔다.
 class LoadingPage extends StatelessWidget {
-  const LoadingPage({super.key, this.title, this.label, this.mascot});
+  const LoadingPage({
+    super.key,
+    this.title,
+    this.label,
+    this.message,
+    this.mascot,
+  });
 
   /// 앱바에 넣을 제목. 비우면 제목 없이 KR / EN 토글만 있는 앱바를 둔다 (가는 중인 화면의 제목을 모를 때).
   final String? title;
 
   /// [AppLoading.label]로 넘긴다.
   final String? label;
+
+  /// [AppLoading.message]로 넘긴다 — 무엇을 기다리는지 적는 한 줄.
+  final String? message;
 
   /// [AppLoading.mascot]으로 넘긴다.
   final Widget? mascot;
@@ -274,6 +324,7 @@ class LoadingPage extends StatelessWidget {
       body: Center(
         child: AppLoading(
           label: label ?? AppStrings.loadingLabel,
+          message: message,
           mascot: mascot,
         ),
       ),

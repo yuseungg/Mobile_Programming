@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/app/language.dart';
 import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/shared/widgets/app_loading.dart';
 import 'package:yeobaek/shared/widgets/language_toggle.dart';
@@ -30,6 +31,11 @@ void main() {
     expect(AppLoading.frameAsset(0), 'assets/mascot/mascot_01.png');
     expect(AppLoading.frameAsset(15), 'assets/mascot/mascot_16.png');
   });
+
+  // ── 무엇을 기다리는지 적는 한 줄 ──
+  // 이 로딩은 S06 저장 → S07 대조 사이에서만 쓴다. 그 기다림이 길어서
+  // (저장소 쓰기 + 모델이 비교 문장을 쓰는 시간) 글자만으로는 왜 기다리는지
+  // 알 수 없다. 그래서 한 줄을 받는다.
 
   Future<void> pumpLoading(
     WidgetTester tester, {
@@ -146,6 +152,70 @@ void main() {
     expect(find.byKey(AppLoading.defaultMascotKey), findsOneWidget);
   });
 
+  testWidgets('문구를 주면 글자 아래 한 줄로 보인다', (tester) async {
+    await pumpLoading(
+      tester,
+      loading: AppLoading(
+        message: AppStrings.loadingSavingConversation,
+      ),
+    );
+
+    expect(find.text(AppStrings.loadingSavingConversation), findsOneWidget);
+    // 파도치는 글자보다 아래에 있다
+    final letter = tester.getTopLeft(find.text('L'));
+    final line =
+        tester.getTopLeft(find.text(AppStrings.loadingSavingConversation));
+    expect(line.dy, greaterThan(letter.dy));
+  });
+
+  testWidgets('문구는 함께 튀지 않는다 — 읽는 줄이기 때문이다', (tester) async {
+    await pumpLoading(
+      tester,
+      loading: AppLoading(
+        message: AppStrings.loadingSavingConversation,
+      ),
+    );
+
+    final finder = find.text(AppStrings.loadingSavingConversation);
+    final before = tester.getTopLeft(finder);
+    await tester.pump(const Duration(milliseconds: 120));
+
+    // 글자는 움직인다 (위 테스트) — 이 줄은 그대로여야 한다
+    expect(tester.getTopLeft(finder), before);
+  });
+
+  testWidgets('EN이면 그 줄도 영어로 보인다', (tester) async {
+    appLanguage.value = AppLanguage.en;
+    addTearDown(() => appLanguage.value = AppLanguage.ko);
+
+    await pumpLoading(
+      tester,
+      loading: AppLoading(message: AppStrings.loadingSavingConversation),
+    );
+
+    expect(find.text('Saving your conversation'), findsOneWidget);
+    expect(find.text('대화를 저장소에 저장하고 있어요'), findsNothing);
+    // LOADING......은 이미 영어라 양쪽에서 같다
+    expect(find.text('L'), findsOneWidget);
+  });
+
+  testWidgets('문구를 주지 않으면 그 줄을 그리지 않는다', (tester) async {
+    await pumpLoading(tester);
+
+    // 한 글자씩 그린 Text만 있다 — 한 줄이 더 끼면 여기서 수가 어긋난다
+    expect(find.byType(Text), findsNWidgets(AppStrings.loadingLabel.length));
+  });
+
+  testWidgets('문구만 주고 글자를 비울 수도 있다', (tester) async {
+    await pumpLoading(
+      tester,
+      loading: const AppLoading(label: '', message: '저장하고 있어요'),
+    );
+
+    expect(find.byType(Text), findsOneWidget);
+    expect(find.text('저장하고 있어요'), findsOneWidget);
+  });
+
   group('LoadingPage', () {
     testWidgets('제목을 주면 앱바에 보인다', (tester) async {
       await tester.pumpWidget(
@@ -154,6 +224,16 @@ void main() {
 
       expect(find.text('대조'), findsOneWidget);
       expect(find.byType(AppLoading), findsOneWidget);
+    });
+
+    testWidgets('문구를 AppLoading으로 넘긴다', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LoadingPage(message: AppStrings.loadingSavingConversation),
+        ),
+      );
+
+      expect(find.text(AppStrings.loadingSavingConversation), findsOneWidget);
     });
 
     testWidgets('제목이 없으면 제목 없이 KR / EN 토글만 있는 앱바', (tester) async {
