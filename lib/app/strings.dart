@@ -172,6 +172,10 @@ class AppStrings {
       );
   static String get readingFirstWordLabel =>
       _t('읽고 떠오른 낱말 하나', 'One word that came to mind');
+  static String get readingFirstWordFixed => _t(
+        '이 낱말에서 대화를 시작했어요.',
+        'You started the conversation with this word.',
+      );
   static String get readingStartChat =>
       _t('이 낱말로 대화 시작', 'Start a conversation with this word');
   static String get readingContinueChat =>

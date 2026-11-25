@@ -116,14 +116,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('13명'), findsOneWidget); // 다른 사람 12 + 나
 
-    await tester.scrollUntilVisible(
-      find.byType(TextField),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.enterText(find.byType(TextField), '부끄럼');
-    await tester.pump();
-    // 서시는 가짜 데이터에 하던 대화가 있어서 버튼이 '대화 이어 하기'
+    // 서시는 가짜 데이터에 '부끄러움'으로 시작한 대화가 있어서 첫 낱말은 못 고치고 버튼이 '대화 이어 하기'
     await tester.scrollUntilVisible(
       find.text('대화 이어 하기'),
       200,
@@ -132,9 +125,9 @@ void main() {
     await tester.tap(find.text('대화 이어 하기'));
     await tester.pumpAndSettle();
 
-    // 첫 낱말이 저장소에 들어갔는지 (S05가 여기서 꺼내 씀)
+    // 첫 낱말은 대화 시작한 그대로 (S05가 여기서 꺼내 씀)
     Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'seosi');
-    expect(reading!.firstWord, '부끄럼');
+    expect(reading!.firstWord, '부끄러움');
     expect(reading.markedLines, contains(2));
 
     await tester.tap(find.text('내 해석 정리하기'));
@@ -169,7 +162,8 @@ void main() {
   testWidgets('첫 낱말은 한글 조합 중에도 20자를 넘지 않는다', (tester) async {
     // 맥은 웹이랑 기본 방식이 같아서 맥으로 흉내
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS; //AI
-    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'seosi')));
+    // 대화한 시(서시)는 첫 낱말이 잠겨서 대화 없는 시로
+    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'bomgoyangi')));
     Finder field = find.byType(TextField);
     await tester.scrollUntilVisible(field, 200,
         scrollable: find.byType(Scrollable).first);
@@ -486,6 +480,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.noticeUnavailable), findsNothing);
     expect(find.text(AppStrings.homeContinueTitle), findsOneWidget); // 진달래꽃 하던 대화
+  });
+
+  testWidgets('대화한 시는 S04 첫 낱말 못 고치고 안내 보여줌', (tester) async {
+    // 서시는 가짜 데이터에 '부끄러움'으로 시작한 대화가 있음
+    await tester.pumpWidget(const MaterialApp(home: ReadingScreen(poemId: 'seosi')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byType(TextField), 200, scrollable: find.byType(Scrollable).first);
+
+    TextField field = tester.widget(find.byType(TextField));
+    expect(field.readOnly, true);
+    expect(find.text(AppStrings.readingFirstWordFixed), findsOneWidget);
+  });
+
+  testWidgets('S05 갔다 바로 뒤로 와도 S04 첫 낱말 잠김', (tester) async {
+    // 봄은 고양이로다는 처음엔 대화 없음
+    await tester.pumpWidget(const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: ReadingScreen(poemId: 'bomgoyangi')));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.byType(FilledButton), 200, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(find.byType(TextField), '봄');
+    await tester.pump();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChatScreen), findsOneWidget);
+
+    // 첫 질문 오기 전에 바로 뒤로 (대화가 아직 저장 안 됐어도 잠겨야 함)
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    TextField field = tester.widget(find.byType(TextField));
+    expect(field.readOnly, true);
+    expect(find.text(AppStrings.readingContinueChat), findsOneWidget);
   });
 
   testWidgets('S06 근거 행 없으면 근거 제목 안 보임', (tester) async {
