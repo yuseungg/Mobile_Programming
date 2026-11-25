@@ -8,6 +8,7 @@
 import 'package:flutter/foundation.dart' show SynchronousFuture;
 import 'package:flutter/material.dart';
 
+import '../../app/language.dart';
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
@@ -349,9 +350,9 @@ class _ConversationCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // AI 요약 미리보기
+                // AI 요약 미리보기 — 보는 사람이 고른 KR / EN으로
                 Text(
-                  conversation.summary,
+                  conversation.summaryIn(english: isEnglish),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppText.caption.copyWith(fontSize: 13, color: AppColors.textSub),

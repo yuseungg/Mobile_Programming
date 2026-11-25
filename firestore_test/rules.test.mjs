@@ -96,7 +96,8 @@ async function seedConversation(db, ownerUid, poemId, empathyCount = 0) {
     userId: ownerUid,
     poemId,
     firstWord: '부끄럼',
-    summary: '요약',
+    summaryKo: '요약',
+    summaryEn: 'Summary',
     interpretation: '해석',
     empathyCount,
     evidenceLines: [2],
@@ -311,7 +312,8 @@ describe('최종 저장: 뱃지와 공개 대화는 저장과 함께만', () => 
     userId: ME,
     poemId: POEM,
     firstWord: '부끄럼',
-    summary: '요약',
+    summaryKo: '요약',
+    summaryEn: 'Summary',
     interpretation: '내 해석',
     empathyCount: 0,
     evidenceLines: [2],
@@ -369,6 +371,17 @@ describe('최종 저장: 뱃지와 공개 대화는 저장과 함께만', () => 
       reading({ isSaved: true, isPublic: true, interpretation: '내 해석' }));
     batch.set(doc(db, 'publicConversations', `${OTHER}_${POEM}`), publicConversation({ userId: OTHER }));
     await assertFails(batch.commit());
+  });
+
+  test('요약은 한국어 · 영어 둘 다 있어야 한다', async () => {
+    for (const overrides of [{ summaryKo: '' }, { summaryEn: '' }]) {
+      const db = dbOf(ME);
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'users', ME, 'readings', POEM),
+        reading({ isSaved: true, isPublic: true, interpretation: '내 해석' }));
+      batch.set(doc(db, 'publicConversations', `${ME}_${POEM}`), publicConversation(overrides));
+      await assertFails(batch.commit());
+    }
   });
 
   test('공감 수를 채운 채로 만들 수 없다', async () => {

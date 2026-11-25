@@ -15,6 +15,7 @@ class FakeSummaryWriter implements SummaryWriter {
       AppStrings.communitySummaryFallback(
         request.firstWord,
         request.questionCount,
+        language: request.language,
       ),
       isFallback: true,
     );

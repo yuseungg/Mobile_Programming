@@ -10,18 +10,19 @@
 
 **지금 문제** — 요약(S09 「2. 대화 과정」)은 저장할 때 **그때 언어로 한 번만** 만들어져 고정된다. 언어를 바꿔도 그대로.
 
-- [ ] **저장** — S06에서 요약을 한국어 · 영어 두 벌 만든다
+- [x] **저장** — S06에서 요약을 한국어 · 영어 두 벌 만든다
   - `lib/features/save/save_screen.dart:127-137` (`summaryWriter ?? await createSummaryWriter()` → `saveInterpretation(..., summary:)`)
   - 재시도: `lib/features/save/pending_saves.dart:161`
+  - 보관도 두 벌로: `pending_saves.dart` 78 · 90행(보관) · 147행(꺼냄). 예전 버전이 `summary` 하나로 보관한 것은 두 언어에 같이 씀
   - 지금도 저장이 1분 넘게 걸림 → 두 벌을 **동시에**(`Future.wait`) 만들거나, 모델 한 번에 두 벌(JSON)로 받기
   - 요약 지시문 · 검사는 `isEnglish`(전역)를 봄 → 언어를 인자로 받게 바꿔야 두 벌을 따로 만들 수 있음
     (`lib/writers/summary_prompt.dart` · `summary_guard.dart` · `fake_summary_writer.dart` · `AppStrings.communitySummaryFallback`)
-- [ ] **데이터** — `PublicConversation.summary` → `summaryKo` · `summaryEn`
+- [x] **데이터** — `PublicConversation.summary` → `summaryKo` · `summaryEn`
   - 모델: `lib/data/models/public_conversation.dart`
   - 저장소: `saveInterpretation` — `lib/data/repositories/reading_repository.dart:46`, `lib/data/firestore/firestore_reading_repository.dart:85`, `lib/data/fakes/fake_reading_repository.dart:47`
   - 보안 규칙: `firestore.rules:216` 허용 필드 `hasOnly([...])` + `summary is string` · `size() > 0` 검사 (`firestore_test/`도)
   - 네이밍규칙 2장 · 5장(Firestore 필드 = Dart 필드 이름)에 줄 추가
-- [ ] **화면** — `isEnglish`로 골라서 보여 주기
+- [x] **화면** — `isEnglish`로 골라서 보여 주기
   - S09: `lib/features/community/community_detail_screen.dart:92`(요약 비었을 때 만드는 곳) · `:297`(보여 주는 곳)
   - S08 카드: `lib/features/community/community_list_screen.dart:354`
 - 예전에 올라간 데이터는 시연 전에 다 지우므로 따로 처리 안 함

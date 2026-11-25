@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yeobaek/agent/cancel_token.dart';
 import 'package:yeobaek/agent/openrouter_client.dart';
 import 'package:yeobaek/agent/transport/http_types.dart';
+import 'package:yeobaek/app/language.dart';
 import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/data/models/chat_message.dart';
 import 'package:yeobaek/data/models/settings.dart';
@@ -67,10 +68,11 @@ void main() {
     firstWord: '별',
     conversation: conversation,
     interpretation: '별은 멀리 있어서 오래 보게 되는 것 같다.',
+    language: AppLanguage.ko,
   );
 
   // 요약을 못 썼을 때 들어가는 사실 문장 (첫 낱말 + AI 질문 수)
-  final fallbackText = AppStrings.communitySummaryFallback('별', 1);
+  final fallbackText = AppStrings.communitySummaryFallback('별', 1, language: AppLanguage.ko);
 
   var callCount = 0;
   OpenRouterSummaryWriter writerWith(_ScriptedTransport transport) {
@@ -111,6 +113,7 @@ void main() {
         firstWord: '별',
         conversation: [], // 공개 문서에는 대화 원본이 없다
         interpretation: '별은 멀리 있어서 오래 보게 되는 것 같다.',
+        language: AppLanguage.ko,
       ),
     );
 

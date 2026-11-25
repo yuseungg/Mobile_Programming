@@ -6,6 +6,7 @@
 // - 그 시의 해석을 저장하지 않았으면 내용 대신 잠금 안내 (기획서 5장)
 import 'package:flutter/material.dart';
 
+import '../../app/language.dart';
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
@@ -25,7 +26,8 @@ class _DetailData {
     required this.conversation,
     required this.poem,
     required this.author,
-    required this.summary,
+    required this.summaryKo,
+    required this.summaryEn,
     required this.isLocked,
   });
 
@@ -33,8 +35,10 @@ class _DetailData {
   final Poem poem;
   final UserProfile author;
 
-  /// 공개 대화에 담긴 요약. 비어 있으면 폴백으로 채운다.
-  final String summary;
+  /// 공개 대화에 담긴 요약 (한국어 · 영어). 비어 있으면 폴백으로 채운다.
+  /// 둘 다 들고 있다가 그릴 때 고른다 — 화면을 연 채로 KR / EN을 바꿔도 따라 바뀐다.
+  final String summaryKo;
+  final String summaryEn;
 
   /// 그 시의 해석을 저장했을 때만 남의 대화를 볼 수 있다 (기획서 5장).
   /// 화면 분기는 우회할 수 있어, 실제 차단은 C의 보안 규칙이 맡는다.
@@ -81,21 +85,28 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       conversation: conversation,
       poem: await source.poemById(conversation.poemId),
       author: await source.profileById(conversation.userId),
-      summary: await _summaryOf(conversation),
+      summaryKo: await _summaryOf(conversation, AppLanguage.ko),
+      summaryEn: await _summaryOf(conversation, AppLanguage.en),
       isLocked: !(reading?.isSaved ?? false),
     );
   }
 
   /// 요약은 저장할 때 한 번 쓰여 문서에 담긴다. 화면이 열릴 때마다 모델을
   /// 부르지 않는다. 그때 못 썼으면(키 없음·실패) 여기서 사실만으로 채운다.
-  Future<String> _summaryOf(PublicConversation conversation) async {
-    if (conversation.summary.trim().isNotEmpty) return conversation.summary;
+  Future<String> _summaryOf(
+    PublicConversation conversation,
+    AppLanguage language,
+  ) async {
+    final stored =
+        conversation.summaryIn(english: language == AppLanguage.en);
+    if (stored.trim().isNotEmpty) return stored;
     final written = await widget.summaryWriter.write(
       SummaryRequest(
         poemId: conversation.poemId,
         firstWord: conversation.firstWord,
         conversation: const [], // 공개 문서에는 대화 원본이 없다
         interpretation: conversation.interpretation,
+        language: language,
       ),
     );
     return written.text;
@@ -294,7 +305,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data.summary,
+                    isEnglish ? data.summaryEn : data.summaryKo,
                     style: AppText.aiMessage,
                   ),
                   if (conversation.evidenceLines.isNotEmpty) ...[

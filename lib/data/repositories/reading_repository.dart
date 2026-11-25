@@ -16,6 +16,13 @@ class InterpretationLockedException implements Exception {
   String toString() => 'InterpretationLockedException($poemId)';
 }
 
+/// 공개 대화를 만들 수 있는 요약인가 — 한국어 · 영어 둘 다 비어 있지 않아야 한다.
+/// 저장소 구현(Firestore · 가짜)이 같은 기준으로 판정하도록 한 곳에 둔다.
+bool isCompleteSummary(({String ko, String en})? summary) =>
+    summary != null &&
+    summary.ko.trim().isNotEmpty &&
+    summary.en.trim().isNotEmpty;
+
 abstract interface class ReadingRepository {
   /// 아직 읽은 적 없는 시면 null.
   Future<Reading?> fetchReading(String userId, String poemId);
@@ -33,10 +40,11 @@ abstract interface class ReadingRepository {
   ///  2. 그 시의 뱃지가 없으면 지급 (시마다 한 번)
   ///  3. reading.isPublic이고 해석이 비어 있지 않고, 이 시의 공개 대화가 아직 없으면 만든다.
   ///     id는 [publicConversationIdOf] (`{userId}_{poemId}`)로 고정 — 시마다 하나뿐이다.
-  ///     [summary]는 D의 요약 생성기가 만든 것.
+  ///     [summary]는 D의 요약 생성기가 만든 한국어(ko) · 영어(en) 두 벌.
+  ///     공개 대화의 summaryKo · summaryEn에 그대로 담긴다.
   ///
   /// [summary]는 반드시 넘긴다. 비공개 저장이면 null. 공개 대화를 새로 만들어야 하는데
-  /// summary가 null이거나 비어 있으면 아무것도 쓰지 않고 [ArgumentError]를 던진다.
+  /// summary가 null이거나 한쪽이라도 비어 있으면 아무것도 쓰지 않고 [ArgumentError]를 던진다.
   ///
   /// 공개는 되돌릴 수 없다 (기획서에 공개 취소 기능 없음). 한 번 공개로 저장한 읽기는
   /// isPublic=false로 다시 저장해도 isPublic이 true로 남고, 공개 대화도 그대로 남는다.
@@ -46,7 +54,7 @@ abstract interface class ReadingRepository {
   Future<String?> saveInterpretation(
     String userId,
     Reading reading, {
-    required String? summary,
+    required ({String ko, String en})? summary,
   });
 
   /// S07을 처음 열 때. hasOpenedComparison을 true로 만든다. 저장 전이면 아무 일도 하지 않는다.

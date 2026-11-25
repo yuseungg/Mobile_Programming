@@ -85,7 +85,7 @@ class FirestoreReadingRepository implements ReadingRepository {
   Future<String?> saveInterpretation(
     String userId,
     Reading reading, {
-    required String? summary,
+    required ({String ko, String en})? summary,
   }) {
     final readingRef = _reading(userId, reading.poemId);
     final userRef = _user(userId);
@@ -108,8 +108,8 @@ class FirestoreReadingRepository implements ReadingRepository {
       final createsConversation = saved.isPublic &&
           !conversationSnap.exists &&
           saved.interpretation.trim().isNotEmpty;
-      if (createsConversation && (summary == null || summary.trim().isEmpty)) {
-        throw ArgumentError.value(summary, 'summary', '공개 저장에는 요약이 필요함');
+      if (createsConversation && !isCompleteSummary(summary)) {
+        throw ArgumentError.value(summary, 'summary', '공개 저장에는 한/영 요약이 모두 필요함');
       }
 
       tx.set(readingRef, readingToDoc(saved));
@@ -127,7 +127,8 @@ class FirestoreReadingRepository implements ReadingRepository {
         'userId': userId,
         'poemId': saved.poemId,
         'firstWord': saved.firstWord,
-        'summary': summary!.trim(),
+        'summaryKo': summary!.ko.trim(),
+        'summaryEn': summary.en.trim(),
         'interpretation': saved.interpretation,
         'empathyCount': 0,
         'evidenceLines': saved.evidenceLines,

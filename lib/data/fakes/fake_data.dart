@@ -257,9 +257,12 @@ class FakeData {
       userId: 'user_star_1',
       poemId: 'seosi',
       firstWord: '부끄러움',
-      summary: '화자가 느끼는 부끄러움의 깊이에 대해 대화했습니다. '
+      summaryKo: '화자가 느끼는 부끄러움의 깊이에 대해 대화했습니다. '
           'AI의 질문을 통해 사소한 흔들림(잎새에 이는 바람)조차 스스로에게 엄격했던 '
           '시인의 결벽에 가까운 순수함을 발견했습니다.',
+      summaryEn: 'The conversation was about how deep the speaker’s shame runs. '
+          'Through the AI’s questions, the reader found a near-scrupulous purity in a poet '
+          'who was strict with himself even over the slightest stir (잎새에 이는 바람).',
       evidenceLines: const [2, 3, 4],
       interpretation: '완벽할 수 없음을 알면서도 스스로에게 부끄럽지 않으려 고뇌했던 '
           '한 젊은이의 고결한 아픔이 느껴졌다. '
@@ -272,9 +275,12 @@ class FakeData {
       userId: 'user_wind_2',
       poemId: 'seosi',
       firstWord: '다짐',
-      summary: '괴로움 이후에 등장하는 태도의 변화를 추적했습니다. '
+      summaryKo: '괴로움 이후에 등장하는 태도의 변화를 추적했습니다. '
           '6행의 "모든 죽어가는 것"이 무엇을 의미하는지 질문을 받으며, '
           '자기 연민을 넘어선 더 넓은 존재들에 대한 사랑과 연대임을 짚어냈습니다.',
+      summaryEn: 'The conversation traced the change in attitude that comes after the suffering. '
+          'Asked what "모든 죽어가는 것" in line 6 points to, the reader saw love and solidarity '
+          'with a wider world beyond self-pity.',
       evidenceLines: const [6, 7, 8],
       interpretation: '괴로움을 통과한 자만이 말할 수 있는 진정한 걸음이다. '
           '거창한 영웅적 결단이 아니라 나한테 주어진 길을 묵묵히 걸어가겠다는 단단한 선언이다.',
@@ -286,9 +292,12 @@ class FakeData {
       userId: 'user_night_3',
       poemId: 'seosi',
       firstWord: '밤',
-      summary: '마지막 10행의 고독한 분위기를 중심으로 대화했습니다. '
+      summaryKo: '마지막 10행의 고독한 분위기를 중심으로 대화했습니다. '
           '다짐을 마쳤음에도 불구하고 왜 여전히 "밤"이고 "바람"이 스치는지 질문하며 '
           '끝나지 않는 현실의 무게를 성찰했습니다.',
+      summaryEn: 'The conversation centered on the lonely mood of the last line, line 10. '
+          'Asking why it is still "밤" and why "바람" still brushes past after the resolution, '
+          'the reader reflected on the weight of a reality that does not end.',
       evidenceLines: const [10],
       interpretation: '다짐했다고 해서 세상이 바로 밝아지는 것은 아니다. '
           '밤은 여전히 춥고 바람은 불지만, 그 속에서도 별을 바라보겠다는 '

@@ -42,7 +42,8 @@ String? badgeToAward({
 PublicConversation? publicConversationToCreate({
   required String userId,
   required Reading reading,
-  required String summary,
+  required ({String ko, String en}) summary, // 한국어 · 영어 두 벌
+
   required DateTime createdAt,
   required bool conversationExists,
 }) {
@@ -56,7 +57,8 @@ PublicConversation? publicConversationToCreate({
     userId: userId,
     poemId: reading.poemId,
     firstWord: reading.firstWord,
-    summary: summary,
+    summaryKo: summary.ko,
+    summaryEn: summary.en,
     interpretation: reading.interpretation,
     empathyCount: 0,
     evidenceLines: List<int>.unmodifiable(reading.evidenceLines),

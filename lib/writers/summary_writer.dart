@@ -8,10 +8,12 @@
 // 그것을 공개 대화 문서에 담는다 — 저장소는 글을 쓰지 않고 받은 것만 넣는다.
 // 공개가 꺼져 있으면 요약이 필요 없으므로 null을 넘긴다.
 //
-// 요약 때문에 저장이 실패하면 안 되므로 write는 예외를 던지지 않는다 (기획서 9장).
+// 요약은 한국어 · 영어 두 벌을 쓴다. 보는 사람이 KR / EN 중 무엇을 고르든 그 말로
+// 읽게 하려는 것이다. 그래서 언어는 화면 언어가 아니라 요청([SummaryRequest.language])이 정한다.
 //
-// A의 OpenRouterClient를 쓰는 구현체는 PR #5가 병합된 뒤에 붙인다.
+// 요약 때문에 저장이 실패하면 안 되므로 write는 예외를 던지지 않는다 (기획서 9장).
 
+import '../app/language.dart';
 import '../data/models/chat_message.dart';
 
 class SummaryRequest {
@@ -20,6 +22,7 @@ class SummaryRequest {
     required this.firstWord,
     required this.conversation,
     required this.interpretation,
+    required this.language,
   });
 
   final String poemId;
@@ -28,6 +31,11 @@ class SummaryRequest {
 
   /// 사용자가 쓴 최종 해석 — 요약이 해석과 어긋나지 않게 함께 넘긴다
   final String interpretation;
+
+  /// 요약을 쓸 언어. 지시문 · 검사 · 대체 문장이 모두 이것을 따른다.
+  final AppLanguage language;
+
+  bool get isEnglish => language == AppLanguage.en;
 
   /// AI가 던진 질문 수 — 폴백 문장이 쓰는 유일한 숫자
   int get questionCount =>

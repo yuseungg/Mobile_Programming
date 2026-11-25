@@ -34,6 +34,7 @@ void main() {
       ChatMessage(role: ChatRole.user, text: 'Line 10. 바람에 스치운다 stayed with me.'),
     ],
     interpretation: '바람 속에서도 별을 본다.',
+    language: AppLanguage.en,
   );
 
   setUp(() => appLanguage.value = AppLanguage.en);
@@ -96,18 +97,37 @@ void main() {
   });
 
   group('대화 요약', () {
-    test('EN이면 영어로 쓰라고 하고 글자 수를 넉넉히 준다', () {
+    test('영어 요청이면 영어로 쓰라고 하고 글자 수를 넉넉히 준다', () {
       final messages =
           buildSummaryMessages(request: summary, poem: seosi, tone: Tone.gentle);
       final system = '${messages.first['content']}';
       final materials = '${messages.last['content']}';
       expect(system, contains('Write in English.'));
-      expect(system, contains('${SummaryGuard.maxChars} characters'));
-      expect(SummaryGuard.maxChars, 280);
+      expect(system, contains('${SummaryGuard.maxCharsEnglish} characters'));
+      expect(SummaryGuard.maxCharsOf(summary), 280);
       expect(materials, contains('User: Line 10.'));
+    });
 
+    test('화면 언어가 아니라 요청의 언어를 따른다 — S06이 한/영 두 벌을 따로 청한다', () {
+      final korean = SummaryRequest(
+        poemId: summary.poemId,
+        firstWord: summary.firstWord,
+        conversation: summary.conversation,
+        interpretation: summary.interpretation,
+        language: AppLanguage.ko,
+      );
+      // 화면은 EN (setUp)이어도 한국어 요청은 한국어로
+      final system = '${buildSummaryMessages(request: korean, poem: seosi, tone: Tone.plain).first['content']}';
+      expect(system, contains('규칙'));
+      expect(system, isNot(contains('Write in English.')));
+      expect(SummaryGuard.maxCharsOf(korean), 150);
+      expect(summaryRewriteInstruction([SummaryViolation.evaluative], korean),
+          contains('해석을 평가하는 말'));
+
+      // 화면이 KR이어도 영어 요청은 영어로
       appLanguage.value = AppLanguage.ko;
-      expect(SummaryGuard.maxChars, 150);
+      final english = '${buildSummaryMessages(request: summary, poem: seosi, tone: Tone.plain).first['content']}';
+      expect(english, contains('Write in English.'));
     });
 
     test('영어 요약 — 통과하는 것과 걸리는 것', () {
@@ -127,7 +147,7 @@ void main() {
     });
 
     test('다시 쓰기 안내도 영어', () {
-      expect(summaryRewriteInstruction([SummaryViolation.evaluative]),
+      expect(summaryRewriteInstruction([SummaryViolation.evaluative], summary),
           contains('it judged the interpretation'));
     });
   });

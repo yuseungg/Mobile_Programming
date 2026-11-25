@@ -6,11 +6,10 @@
 //
 // 걸러내는 쪽은 summary_guard.dart다. 지시문만으로는 새어 나온다.
 //
-// 화면 오른쪽 위 KR / EN을 따라 한국어 · 영어로 쓰게 한다. 공개 대화에는 쓴 사람이
-// 저장할 때 고른 언어로 남는다.
+// 요청의 언어(SummaryRequest.language)로 쓰게 한다. S06은 한국어 · 영어를 한 번씩
+// 따로 청하고, 공개 대화에는 두 벌이 함께 남는다 — 보는 사람의 KR / EN에 맞춰 고른다.
 
 import '../agent/output_guard.dart';
-import '../app/language.dart';
 import '../data/models/poem.dart';
 import '../data/models/settings.dart';
 import 'summary_guard.dart';
@@ -27,8 +26,9 @@ List<Map<String, Object?>> buildSummaryMessages({
       {'role': 'user', 'content': _materials(request, poem)},
     ];
 
-String _systemPrompt(SummaryRequest request, Tone tone) =>
-    isEnglish ? _englishSystemPrompt(request, tone) : _koreanSystemPrompt(request, tone);
+String _systemPrompt(SummaryRequest request, Tone tone) => request.isEnglish
+    ? _englishSystemPrompt(request, tone)
+    : _koreanSystemPrompt(request, tone);
 
 String _englishSystemPrompt(SummaryRequest request, Tone tone) {
   final forbiddenWords = [
@@ -56,7 +56,7 @@ Rules
 - Do not ask questions. Do not use a question mark.
 - Do not state meanings, such as "this means ..." or "this symbolizes ...".
 - Never use words like $forbiddenWords.
-- Finish within ${SummaryGuard.maxSentences} sentences and ${SummaryGuard.maxChars} characters. Write only the summary, nothing else.
+- Finish within ${SummaryGuard.maxSentences} sentences and ${SummaryGuard.maxCharsEnglish} characters. Write only the summary, nothing else.
 $toneRule
 ''';
 }
@@ -83,13 +83,14 @@ String _koreanSystemPrompt(SummaryRequest request, Tone tone) {
 - 질문하지 않는다. 물음표를 쓰지 않는다.
 - "~을 뜻한다", "~을 상징한다"처럼 단정하지 않는다. "~입니다" 대신 "~요"로 적는다.
 - $forbiddenWords 같은 말은 쓰지 않는다.
-- ${SummaryGuard.maxSentences}문장 안에서, ${SummaryGuard.maxChars}자 안에서 끝낸다. 요약만 적고 다른 말을 붙이지 않는다.
+- ${SummaryGuard.maxSentences}문장 안에서, ${SummaryGuard.maxCharsKorean}자 안에서 끝낸다. 요약만 적고 다른 말을 붙이지 않는다.
 $toneRule
 ''';
 }
 
-String _materials(SummaryRequest request, Poem poem) =>
-    isEnglish ? _englishMaterials(request, poem) : _koreanMaterials(request, poem);
+String _materials(SummaryRequest request, Poem poem) => request.isEnglish
+    ? _englishMaterials(request, poem)
+    : _koreanMaterials(request, poem);
 
 String _englishMaterials(SummaryRequest request, Poem poem) {
   final numberedLines = [
@@ -139,10 +140,16 @@ ${request.interpretation.trim().isEmpty ? '(비어 있음)' : request.interpreta
 ''';
 }
 
-/// 걸렸을 때 이유를 알려 주고 다시 쓰게 하는 안내
-String summaryRewriteInstruction(List<SummaryViolation> violations) {
-  final reasons = violations.map(summaryViolationReason).join(', ');
-  if (isEnglish) {
+/// 걸렸을 때 이유를 알려 주고 다시 쓰게 하는 안내 — [request]의 언어로
+String summaryRewriteInstruction(
+  List<SummaryViolation> violations,
+  SummaryRequest request,
+) {
+  final reasons = violations
+      .map((violation) =>
+          summaryViolationReason(violation, english: request.isEnglish))
+      .join(', ');
+  if (request.isEnglish) {
     return '(App note) Your last summary broke the rules: $reasons. '
         'Write it again in English with only what was in the conversation, '
         'within ${SummaryGuard.maxSentences} sentences, without judging.';

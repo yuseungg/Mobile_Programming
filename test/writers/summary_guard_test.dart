@@ -1,6 +1,7 @@
 // 주인: D — 요약 검사 (기획서 F7 · 지침서 제품 원칙 3 「해석의 질로 순위를 주지 않는다」 · 6)
 // 요약은 남이 읽는 글이라 비교 문장보다 엄하다.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeobaek/app/language.dart';
 import 'package:yeobaek/data/models/chat_message.dart';
 import 'package:yeobaek/writers/summary_guard.dart';
 import 'package:yeobaek/writers/summary_writer.dart';
@@ -17,6 +18,7 @@ void main() {
       ChatMessage(role: ChatRole.user, text: '10행이요. 바람에 스치운다는 말이 오래 남았어요.'),
     ],
     interpretation: '별은 멀리 있어서 오래 보게 되는 것 같다.',
+    language: AppLanguage.ko,
   );
 
   List<SummaryViolation> check(String text) =>

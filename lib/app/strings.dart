@@ -314,18 +314,23 @@ class AppStrings {
       _t('2. 대화 과정', '2. How the conversation went');
 
   /// 요약을 모델이 쓰지 못했을 때 (키 없음 · 실패 · 취소). 사실만 적는다.
-  static String communitySummaryFallback(String firstWord, int questionCount) =>
-      questionCount > 0
-          ? _t(
-              '「$firstWord」에서 시작해 질문 $questionCount개를 지난 대화예요.',
-              questionCount == 1
-                  ? 'A conversation that began with “$firstWord” and went through 1 question.'
-                  : 'A conversation that began with “$firstWord” and went through $questionCount questions.',
-            )
-          : _t(
-              '「$firstWord」에서 시작한 대화예요.',
-              'A conversation that began with “$firstWord”.',
-            );
+  /// 요약은 한국어 · 영어 두 벌로 저장되는 글이라, 화면 언어가 아니라 [language]로 쓴다.
+  static String communitySummaryFallback(
+    String firstWord,
+    int questionCount, {
+    required AppLanguage language,
+  }) {
+    final english = language == AppLanguage.en;
+    if (questionCount > 0) {
+      if (!english) return '「$firstWord」에서 시작해 질문 $questionCount개를 지난 대화예요.';
+      return questionCount == 1
+          ? 'A conversation that began with “$firstWord” and went through 1 question.'
+          : 'A conversation that began with “$firstWord” and went through $questionCount questions.';
+    }
+    return english
+        ? 'A conversation that began with “$firstWord”.'
+        : '「$firstWord」에서 시작한 대화예요.';
+  }
   static String get communityDetailSummaryCaption =>
       _t('AI 질문과 사유의 요약', "A summary of AI's questions and the reader's thinking");
   static String communityDetailEvidence(List<int> lines) => _t(

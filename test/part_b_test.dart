@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/data/fakes/fake_data.dart';
 import 'package:yeobaek/data/fakes/fake_reading_repository.dart';
 import 'package:yeobaek/data/fakes/fake_store.dart';
+import 'package:yeobaek/data/firestore/converters.dart';
 import 'package:yeobaek/data/models/poem.dart';
 import 'package:yeobaek/data/models/public_conversation.dart';
 import 'package:yeobaek/data/models/reading.dart';
@@ -46,7 +48,7 @@ class _SlowSaveReadingRepository extends FakeReadingRepository {
   final Completer<void> gate;
 
   @override
-  Future<String?> saveInterpretation(String userId, Reading reading, {required String? summary}) async {
+  Future<String?> saveInterpretation(String userId, Reading reading, {required ({String ko, String en})? summary}) async {
     await gate.future;
     return super.saveInterpretation(userId, reading, summary: summary);
   }
@@ -80,7 +82,7 @@ class _NetworkDownReadingRepository extends FakeReadingRepository {
   _NetworkDownReadingRepository(super.store);
 
   @override
-  Future<String?> saveInterpretation(String userId, Reading reading, {required String? summary}) async {
+  Future<String?> saveInterpretation(String userId, Reading reading, {required ({String ko, String en})? summary}) async {
     throw Exception('network');
   }
 }
@@ -265,7 +267,9 @@ void main() {
       }
     }
     expect(mine, isNotNull);
-    expect(mine!.summary.trim().isNotEmpty, true);
+    // 화면은 한국어여도 요약은 한국어 · 영어 두 벌이 다 생김 (키 없는 테스트라 사실 문장)
+    expect(mine!.summaryKo, contains('에서 시작'));
+    expect(mine.summaryEn, startsWith('A conversation that began with'));
   });
 
   testWidgets('대조 연 뒤에도 비공개였으면 공개로 바꿔 저장됨', (tester) async {
@@ -292,7 +296,7 @@ void main() {
   testWidgets('이미 공개한 시는 공개 못 되돌리고 이유 보여줌', (tester) async {
     Reading reading = (await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae'))!;
     await Repositories.reading.saveInterpretation(FakeData.myUserId,
-        reading.copyWith(interpretation: '이별', isPublic: true), summary: '요약');
+        reading.copyWith(interpretation: '이별', isPublic: true), summary: (ko: '요약', en: 'Summary'));
 
     await tester.pumpWidget(const MaterialApp(home: SaveScreen(poemId: 'jindallae')));
     await tester.pumpAndSettle();
@@ -411,6 +415,39 @@ void main() {
     Reading? after = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
     expect(after!.markedLines, contains(3));
     expect(after.interpretation, '꽃을 밟고 가라는 말이 오히려 붙잡는 말 같음');
+  });
+
+  test('공개 저장 보관분은 한/영 요약을 같이 들고 다시 저장함', () async {
+    Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    await keepPendingSave(FakeData.myUserId,
+        reading!.copyWith(interpretation: '꽃을 밟고 가라는 말이 오히려 붙잡는 말 같음', isPublic: true),
+        (ko: '한국어 요약', en: 'English summary'));
+    expect(await retryPendingSaves(), 1);
+
+    List<PublicConversation> list = await Repositories.publicConversation.fetchForPoem('jindallae');
+    PublicConversation mine = list.firstWhere((c) => c.userId == FakeData.myUserId);
+    expect(mine.summaryKo, '한국어 요약');
+    expect(mine.summaryEn, 'English summary');
+  });
+
+  test('예전 버전이 요약 하나로 보관한 공개 저장도 안 버리고 다시 저장함', () async {
+    Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'jindallae');
+    // 예전 버전 보관 모양: 요약이 'summary' 하나
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pendingSaves', jsonEncode([
+      {
+        'userId': FakeData.myUserId,
+        'poemId': 'jindallae',
+        'reading': readingToDoc(reading!.copyWith(interpretation: '꽃을 밟고 가라는 말이 오히려 붙잡는 말 같음', isPublic: true)),
+        'summary': '예전 요약',
+      }
+    ]));
+    expect(await retryPendingSaves(), 1);
+
+    List<PublicConversation> list = await Repositories.publicConversation.fetchForPoem('jindallae');
+    PublicConversation mine = list.firstWhere((c) => c.userId == FakeData.myUserId);
+    expect(mine.summaryKo, '예전 요약');
+    expect(mine.summaryEn, '예전 요약');
   });
 
   //AI
@@ -538,6 +575,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     List<PublicConversation> list = await Repositories.publicConversation.fetchForPoem('jindallae');
-    expect(list.where((c) => c.userId == FakeData.myUserId && c.summary.trim().isNotEmpty), isNotEmpty);
+    expect(list.where((c) => c.userId == FakeData.myUserId && c.summaryKo.trim().isNotEmpty && c.summaryEn.trim().isNotEmpty), isNotEmpty);
   });
 }
