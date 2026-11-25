@@ -257,10 +257,19 @@ class FakeData {
       userId: 'user_star_1',
       poemId: 'seosi',
       firstWord: '부끄러움',
-      summary: '화자가 느끼는 부끄러움의 깊이에 대해 대화했습니다. '
+      summaryKo: '화자가 느끼는 부끄러움의 깊이에 대해 대화했습니다. '
           'AI의 질문을 통해 사소한 흔들림(잎새에 이는 바람)조차 스스로에게 엄격했던 '
           '시인의 결벽에 가까운 순수함을 발견했습니다.',
+      summaryEn: 'The conversation was about how deep the speaker’s shame runs. '
+          'Through the AI’s questions, the reader found a near-scrupulous purity in a poet '
+          'who was strict with himself even over the slightest stir (잎새에 이는 바람).',
       evidenceLines: const [2, 3, 4],
+      conversation: const [
+        ChatMessage(role: ChatRole.assistant, text: "'부끄러움'이라는 낱말이 남았군요. 어느 행을 읽을 때 그 낱말이 떠올랐나요?"),
+        ChatMessage(role: ChatRole.user, text: '2행이요. 한 점 부끄럼이 없기를 바란다는 말이 오래 남았어요.'),
+        ChatMessage(role: ChatRole.assistant, text: "3행의 '잎새에 이는 바람'은 얼마나 작은 움직임으로 느껴졌나요?"),
+        ChatMessage(role: ChatRole.user, text: '아주 작은 흔들림인데도 괴로워했다는 게, 스스로에게 엄격한 사람 같았어요.'),
+      ],
       interpretation: '완벽할 수 없음을 알면서도 스스로에게 부끄럽지 않으려 고뇌했던 '
           '한 젊은이의 고결한 아픔이 느껴졌다. '
           '그 부끄러움은 나약함이 아니라 가장 정직한 용기다.',
@@ -272,10 +281,19 @@ class FakeData {
       userId: 'user_wind_2',
       poemId: 'seosi',
       firstWord: '다짐',
-      summary: '괴로움 이후에 등장하는 태도의 변화를 추적했습니다. '
+      summaryKo: '괴로움 이후에 등장하는 태도의 변화를 추적했습니다. '
           '6행의 "모든 죽어가는 것"이 무엇을 의미하는지 질문을 받으며, '
           '자기 연민을 넘어선 더 넓은 존재들에 대한 사랑과 연대임을 짚어냈습니다.',
+      summaryEn: 'The conversation traced the change in attitude that comes after the suffering. '
+          'Asked what "모든 죽어가는 것" in line 6 points to, the reader saw love and solidarity '
+          'with a wider world beyond self-pity.',
       evidenceLines: const [6, 7, 8],
+      conversation: const [
+        ChatMessage(role: ChatRole.assistant, text: "'다짐'이라는 낱말이 남았군요. 어느 행에서 다짐이 느껴졌나요?"),
+        ChatMessage(role: ChatRole.user, text: '6행이요. 사랑해야지라는 말이요.'),
+        ChatMessage(role: ChatRole.assistant, text: "6행의 '모든 죽어가는 것'에는 누가 들어 있다고 느꼈나요?"),
+        ChatMessage(role: ChatRole.user, text: '나만이 아니라 세상의 약한 것들 전부요. 그래서 8행의 걸어가야겠다가 무겁게 들렸어요.'),
+      ],
       interpretation: '괴로움을 통과한 자만이 말할 수 있는 진정한 걸음이다. '
           '거창한 영웅적 결단이 아니라 나한테 주어진 길을 묵묵히 걸어가겠다는 단단한 선언이다.',
       empathyCount: 29,
@@ -286,10 +304,19 @@ class FakeData {
       userId: 'user_night_3',
       poemId: 'seosi',
       firstWord: '밤',
-      summary: '마지막 10행의 고독한 분위기를 중심으로 대화했습니다. '
+      summaryKo: '마지막 10행의 고독한 분위기를 중심으로 대화했습니다. '
           '다짐을 마쳤음에도 불구하고 왜 여전히 "밤"이고 "바람"이 스치는지 질문하며 '
           '끝나지 않는 현실의 무게를 성찰했습니다.',
+      summaryEn: 'The conversation centered on the lonely mood of the last line, line 10. '
+          'Asking why it is still "밤" and why "바람" still brushes past after the resolution, '
+          'the reader reflected on the weight of a reality that does not end.',
       evidenceLines: const [10],
+      conversation: const [
+        ChatMessage(role: ChatRole.assistant, text: "'밤'이라는 낱말이 남았군요. 어느 행을 읽을 때 그 낱말이 떠올랐나요?"),
+        ChatMessage(role: ChatRole.user, text: '마지막 10행이요. 다짐을 했는데도 여전히 밤이에요.'),
+        ChatMessage(role: ChatRole.assistant, text: "10행에서 '별'과 '바람'은 어떻게 함께 놓여 있나요?"),
+        ChatMessage(role: ChatRole.user, text: '바람은 그치지 않는데 별은 그 자리에 있는 것 같아요.'),
+      ],
       interpretation: '다짐했다고 해서 세상이 바로 밝아지는 것은 아니다. '
           '밤은 여전히 춥고 바람은 불지만, 그 속에서도 별을 바라보겠다는 '
           '위태롭고도 애틋한 시선이 남는다.',

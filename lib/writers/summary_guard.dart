@@ -9,7 +9,6 @@
 // 쓰지 않는 말 목록은 A의 OutputGuard에서 가져온다 (한 곳에만 적는다).
 
 import '../agent/output_guard.dart';
-import '../app/language.dart';
 import 'quote_check.dart';
 import 'summary_writer.dart';
 
@@ -29,8 +28,13 @@ class SummaryGuard {
   static const maxSentences = 2;
 
   /// S09 카드 안에 들어가는 글이다. 넘치면 화면이 밀린다.
-  /// 영어(화면 EN)는 같은 내용에 글자가 더 들고 한 글자가 좁아서 더 준다.
-  static int get maxChars => isEnglish ? 280 : 150;
+  /// 영어는 같은 내용에 글자가 더 들고 한 글자가 좁아서 더 준다.
+  static const maxCharsKorean = 150;
+  static const maxCharsEnglish = 280;
+
+  /// 그 요청의 언어로 쓴 요약이 넘으면 안 되는 글자 수
+  static int maxCharsOf(SummaryRequest request) =>
+      request.isEnglish ? maxCharsEnglish : maxCharsKorean;
 
   /// 해석의 질을 말하는 낱말. 공개 대화에 붙으면 그게 순위가 된다 (원칙 3).
   static const evaluativeWords = [
@@ -85,7 +89,7 @@ class SummaryGuard {
           OutputGuard.englishAssertive.hasMatch(unquoted))
         SummaryViolation.assertive,
       if (_sentenceCount(unquoted) > maxSentences ||
-          trimmed.length > maxChars)
+          trimmed.length > maxCharsOf(request))
         SummaryViolation.tooLong,
       if (!quotesAreGrounded(trimmed, quotableSources(request)))
         SummaryViolation.unknownQuote,
@@ -98,7 +102,12 @@ class SummaryGuard {
       .length;
 }
 
-String summaryViolationReason(SummaryViolation violation) => isEnglish
+/// 걸린 이유를 모델에게 알려 줄 말. [english]면 영어로 — 영어 요약을 다시 쓰게 할 때.
+String summaryViolationReason(
+  SummaryViolation violation, {
+  required bool english,
+}) =>
+    english
     ? switch (violation) {
         SummaryViolation.empty => 'the summary was empty',
         SummaryViolation.forbiddenWord => 'it used a word the app never uses',
@@ -107,7 +116,7 @@ String summaryViolationReason(SummaryViolation violation) => isEnglish
           'it had a question mark (a summary is not a question)',
         SummaryViolation.assertive => 'it stated a meaning',
         SummaryViolation.tooLong =>
-          'it was longer than ${SummaryGuard.maxSentences} sentences or ${SummaryGuard.maxChars} characters',
+          'it was longer than ${SummaryGuard.maxSentences} sentences or ${SummaryGuard.maxCharsEnglish} characters',
         SummaryViolation.unknownQuote =>
           'it put words that were not in the conversation inside quotation marks',
       }
@@ -117,6 +126,7 @@ String summaryViolationReason(SummaryViolation violation) => isEnglish
       SummaryViolation.evaluative => '해석을 평가하는 말이 있음',
       SummaryViolation.question => '물음표가 있음 (요약은 질문이 아니다)',
       SummaryViolation.assertive => '단정하는 말이 있음',
-      SummaryViolation.tooLong => '두 문장 또는 150자를 넘음',
+      SummaryViolation.tooLong =>
+        '두 문장 또는 ${SummaryGuard.maxCharsKorean}자를 넘음',
       SummaryViolation.unknownQuote => '대화에 없는 말을 따옴표에 넣었음',
     };

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../app/language.dart';
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
@@ -115,22 +116,15 @@ class _SaveScreenState extends State<SaveScreen> {
     Reading toSave = base.copyWith(interpretation: _interpretationController.text.trim(), isPublic: _isPublic);
 
     // 공개일 때만 D 요약기로 요약 만듦 (실패해도 예외 안 던지고 대신 문장 줌)
-    // 비공개면 요약 안 씀
-    String? summary;
+    // 한국어 · 영어 두 벌을 동시에 만듦 — 보는 사람이 고른 KR / EN으로 보여 줌
+    // (하나씩 만들면 저장이 두 배로 오래 걸림). 비공개면 요약 안 씀
+    ({String ko, String en})? summary;
     if (_isPublic) {
-      SummaryRequest request = SummaryRequest(poemId: widget.poemId, firstWord: toSave.firstWord,
-          conversation: toSave.conversation, interpretation: toSave.interpretation);
-      // 요약기는 원래 안 던지지만 혹시 새면 _isSaving이 안 풀려서 화면이 통째로 잠김
-      // 요약 때문에 저장 못 하면 안 되니까 사실 문장으로 대신함
-      SummaryText result;
-      try {
-        SummaryWriter writer =
-            widget.summaryWriter ?? await createSummaryWriter();
-        result = await writer.write(request);
-      } catch (e) {
-        result = await const FakeSummaryWriter().write(request);
-      }
-      summary = result.text;
+      List<String> written = await Future.wait([
+        _writeSummary(toSave, AppLanguage.ko),
+        _writeSummary(toSave, AppLanguage.en),
+      ]);
+      summary = (ko: written[0], en: written[1]);
     }
 
     try {
@@ -163,6 +157,22 @@ class _SaveScreenState extends State<SaveScreen> {
       AppRoutes.comparison(widget.poemId),
       (route) => route.isFirst,
     );
+  }
+
+  // 요약 한 벌 쓰기. 요약기는 원래 안 던지지만 혹시 새면 _isSaving이 안 풀려서 화면이 통째로 잠김
+  // 요약 때문에 저장 못 하면 안 되니까 사실 문장으로 대신함
+  Future<String> _writeSummary(Reading toSave, AppLanguage language) async {
+    SummaryRequest request = SummaryRequest(poemId: widget.poemId, firstWord: toSave.firstWord,
+        conversation: toSave.conversation, interpretation: toSave.interpretation, language: language);
+    SummaryText result;
+    try {
+      SummaryWriter writer =
+          widget.summaryWriter ?? await createSummaryWriter();
+      result = await writer.write(request);
+    } catch (e) {
+      result = await const FakeSummaryWriter().write(request);
+    }
+    return result.text;
   }
 
   void _showMessage(String message) {

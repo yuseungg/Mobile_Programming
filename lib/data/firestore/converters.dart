@@ -20,6 +20,14 @@ List<int> _intsOf(Object? value) =>
 List<String> _stringsOf(Object? value) =>
     value is List ? value.whereType<String>().toList() : [];
 
+/// 대화(`conversation`) — 읽기 기록과 공개 대화가 같은 모양으로 담는다
+List<ChatMessage> _messagesOf(Object? value) => value is List
+    ? value
+        .whereType<Map>()
+        .map((m) => chatMessageFromMap(Map<String, dynamic>.from(m)))
+        .toList()
+    : [];
+
 // ── users/{userId} ─────────────────────────────────────
 
 UserProfile userProfileFromDoc(String userId, Map<String, dynamic> data) =>
@@ -71,10 +79,7 @@ Reading readingFromDoc(String poemId, Map<String, dynamic> data) => Reading(
       poemId: poemId,
       firstWord: data['firstWord'] as String? ?? '',
       markedLines: _intsOf(data['markedLines']),
-      conversation: (data['conversation'] as List? ?? const [])
-          .whereType<Map>()
-          .map((m) => chatMessageFromMap(Map<String, dynamic>.from(m)))
-          .toList(),
+      conversation: _messagesOf(data['conversation']),
       evidenceLines: _intsOf(data['evidenceLines']),
       interpretation: data['interpretation'] as String? ?? '',
       isSaved: data['isSaved'] as bool? ?? false,
@@ -94,10 +99,12 @@ PublicConversation publicConversationFromDoc(
       userId: data['userId'] as String? ?? '',
       poemId: data['poemId'] as String? ?? '',
       firstWord: data['firstWord'] as String? ?? '',
-      summary: data['summary'] as String? ?? '',
+      summaryKo: data['summaryKo'] as String? ?? '',
+      summaryEn: data['summaryEn'] as String? ?? '',
       interpretation: data['interpretation'] as String? ?? '',
       empathyCount: (data['empathyCount'] as num?)?.toInt() ?? 0,
       evidenceLines: _intsOf(data['evidenceLines']),
+      conversation: _messagesOf(data['conversation']),
       createdAt: _dateOf(data['createdAt']),
     );
 

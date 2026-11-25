@@ -1,11 +1,12 @@
 // S09 대화 보기 — 주인: D
 // D의 part-d `S09DialogueDetailScreen`을 이름만 맞춰 옮겼다 (docs/여백-이름대조표.md).
-// - 한 사람의 첫 낱말 → 대화 요약 → 최종 해석
+// - 한 사람의 첫 낱말 → 대화 요약 → 대화 기록 (AI 질문 + 쓴 사람의 답, 처음부터 끝까지)
 // - 닉네임 탭 → S12 남의 프로필
 // - 공감 버튼 (정렬·순위에 쓰지 않음). C의 저장소에 쓰고, 다시 열면 그대로 남는다
 // - 그 시의 해석을 저장하지 않았으면 내용 대신 잠금 안내 (기획서 5장)
 import 'package:flutter/material.dart';
 
+import '../../app/language.dart';
 import '../../app/router.dart';
 import '../../app/strings.dart';
 import '../../app/theme.dart';
@@ -16,6 +17,7 @@ import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
 import '../../writers/fake_summary_writer.dart';
 import '../../writers/summary_writer.dart';
+import '../../shared/widgets/chat_bubble.dart';
 import '../../shared/widgets/language_toggle.dart';
 import 'locked_notice.dart';
 
@@ -25,7 +27,8 @@ class _DetailData {
     required this.conversation,
     required this.poem,
     required this.author,
-    required this.summary,
+    required this.summaryKo,
+    required this.summaryEn,
     required this.isLocked,
   });
 
@@ -33,8 +36,10 @@ class _DetailData {
   final Poem poem;
   final UserProfile author;
 
-  /// 공개 대화에 담긴 요약. 비어 있으면 폴백으로 채운다.
-  final String summary;
+  /// 공개 대화에 담긴 요약 (한국어 · 영어). 비어 있으면 폴백으로 채운다.
+  /// 둘 다 들고 있다가 그릴 때 고른다 — 화면을 연 채로 KR / EN을 바꿔도 따라 바뀐다.
+  final String summaryKo;
+  final String summaryEn;
 
   /// 그 시의 해석을 저장했을 때만 남의 대화를 볼 수 있다 (기획서 5장).
   /// 화면 분기는 우회할 수 있어, 실제 차단은 C의 보안 규칙이 맡는다.
@@ -81,21 +86,30 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       conversation: conversation,
       poem: await source.poemById(conversation.poemId),
       author: await source.profileById(conversation.userId),
-      summary: await _summaryOf(conversation),
+      summaryKo: await _summaryOf(conversation, AppLanguage.ko),
+      summaryEn: await _summaryOf(conversation, AppLanguage.en),
       isLocked: !(reading?.isSaved ?? false),
     );
   }
 
   /// 요약은 저장할 때 한 번 쓰여 문서에 담긴다. 화면이 열릴 때마다 모델을
   /// 부르지 않는다. 그때 못 썼으면(키 없음·실패) 여기서 사실만으로 채운다.
-  Future<String> _summaryOf(PublicConversation conversation) async {
-    if (conversation.summary.trim().isNotEmpty) return conversation.summary;
+  Future<String> _summaryOf(
+    PublicConversation conversation,
+    AppLanguage language,
+  ) async {
+    final stored =
+        conversation.summaryIn(english: language == AppLanguage.en);
+    if (stored.trim().isNotEmpty) return stored;
     final written = await widget.summaryWriter.write(
       SummaryRequest(
         poemId: conversation.poemId,
         firstWord: conversation.firstWord,
-        conversation: const [], // 공개 문서에는 대화 원본이 없다
+        // 대화는 넘기지 않는다 — 대화가 있으면 모델로 쓰는 구현은 모델을 부른다.
+        // 남의 대화를 열 때마다 모델이 돌면 안 된다 (요약은 저장할 때 한 번).
+        conversation: const [],
         interpretation: conversation.interpretation,
+        language: language,
       ),
     );
     return written.text;
@@ -294,7 +308,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data.summary,
+                    isEnglish ? data.summaryEn : data.summaryKo,
                     style: AppText.aiMessage,
                   ),
                   if (conversation.evidenceLines.isNotEmpty) ...[
@@ -328,25 +342,20 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             ),
             const SizedBox(height: 24),
 
-            // 3. 최종 해석
+            // 3. 대화 기록 — AI 질문과 쓴 사람의 답, 처음부터 끝까지 (S05와 같은 말풍선)
             _SectionHeader(
-              title: AppStrings.communityDetailInterpretation,
-              subtitle: AppStrings.communityDetailInterpretationCaption,
+              title: AppStrings.communityDetailTranscript,
+              subtitle: AppStrings.communityDetailTranscriptCaption,
             ),
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: AppColors.accentBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.3)),
-              ),
-              child: Text(
-                conversation.interpretation,
-                style: AppText.interpretationSmall,
-              ),
-            ),
+            if (conversation.conversation.isEmpty)
+              Text(
+                AppStrings.communityDetailTranscriptEmpty,
+                style: AppText.caption,
+              )
+            else
+              for (final message in conversation.conversation)
+                ChatBubble(message: message),
             const SizedBox(height: 32),
 
             // 공감 버튼 (정렬에 쓰이지 않는 순수한 공감)

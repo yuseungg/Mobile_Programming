@@ -74,8 +74,22 @@ bool _isStillKept(SharedPreferences prefs, Map<String, dynamic> item) {
 
 
 //AI
+// 보관분의 요약 두 벌. 비공개로 보관했으면 null
+// 예전 버전은 요약을 'summary' 하나로 보관했음 — 그런 보관분은 그걸 두 언어에 같이 씀
+// (안 그러면 공개 저장인데 요약이 없다고 버려져서 저장이 날아감)
+({String ko, String en})? _summaryOf(Map<String, dynamic> item) {
+  String? old = item['summary'] as String?;
+  String? ko = item['summaryKo'] as String? ?? old;
+  String? en = item['summaryEn'] as String? ?? old;
+  if (ko == null || en == null) {
+    return null;
+  }
+  return (ko: ko, en: en);
+}
+
 // 실패한 저장 보관. 같은 시는 하나만 (또 실패하면 최신 걸로 덮음)
-Future<void> keepPendingSave(String userId, Reading reading, String? summary) async {
+// 요약은 한국어 · 영어 두 벌을 같이 보관 (비공개면 null)
+Future<void> keepPendingSave(String userId, Reading reading, ({String ko, String en})? summary) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   List<Map<String, dynamic>> next = [];
   for (Map<String, dynamic> item in _readAll(prefs)) {
@@ -87,7 +101,8 @@ Future<void> keepPendingSave(String userId, Reading reading, String? summary) as
     'userId': userId,
     'poemId': reading.poemId,
     'reading': readingToDoc(reading),
-    'summary': summary,
+    'summaryKo': summary?.ko,
+    'summaryEn': summary?.en,
   });
   await prefs.setString(_key, jsonEncode(next));
 }
@@ -144,7 +159,7 @@ Future<int> retryPendingSaves() async {
     }
     String poemId = item['poemId'] as String;
     Reading reading = readingFromDoc(poemId, Map<String, dynamic>.from(item['reading'] as Map));
-    String? summary = item['summary'] as String?;
+    ({String ko, String en})? summary = _summaryOf(item);
     try {
       // 최신 기록 바탕으로 하고 해석 · 공개 · 근거 행만 보관분에서 가져옴
       // (보관한 뒤에 S04에서 멈춘 행 바꿨거나 설정에서 대화 지웠으면 지금 값이 맞음)

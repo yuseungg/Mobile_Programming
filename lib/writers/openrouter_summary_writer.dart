@@ -71,7 +71,10 @@ class OpenRouterSummaryWriter implements SummaryWriter {
         if (attempt > 0) {
           messages.addAll([
             if (text.isNotEmpty) {'role': 'assistant', 'content': text},
-            {'role': 'user', 'content': summaryRewriteInstruction(violations)},
+            {
+              'role': 'user',
+              'content': summaryRewriteInstruction(violations, request),
+            },
           ]);
         }
         _countModelCall();
@@ -88,7 +91,10 @@ class OpenRouterSummaryWriter implements SummaryWriter {
         if (violations.isEmpty) return SummaryText(text);
       }
 
-      final reasons = violations.map(summaryViolationReason).join(', ');
+      // 개발자가 보는 로그라 한국어로 적는다 (요약 언어와 무관)
+      final reasons = violations
+          .map((violation) => summaryViolationReason(violation, english: false))
+          .join(', ');
       return await _giveUp(request, '검사 — $reasons');
     } catch (error) {
       return _giveUp(request, '$error');

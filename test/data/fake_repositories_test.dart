@@ -5,6 +5,7 @@ import 'package:yeobaek/data/fakes/fake_public_conversation_repository.dart';
 import 'package:yeobaek/data/fakes/fake_reading_repository.dart';
 import 'package:yeobaek/data/fakes/fake_store.dart';
 import 'package:yeobaek/data/fakes/fake_user_repository.dart';
+import 'package:yeobaek/data/models/chat_message.dart';
 import 'package:yeobaek/data/models/reading.dart';
 import 'package:yeobaek/data/nickname_words.dart';
 import 'package:yeobaek/data/reading_day.dart';
@@ -82,6 +83,10 @@ void main() {
       const reading = Reading(
         poemId: 'seosi',
         firstWord: '부끄럼',
+        conversation: [
+          ChatMessage(role: ChatRole.assistant, text: '어느 행이었나요?'),
+          ChatMessage(role: ChatRole.user, text: '2행이요.'),
+        ],
         interpretation: '해석',
         evidenceLines: [2, 4],
         isPublic: true,
@@ -89,15 +94,17 @@ void main() {
       final before = store.conversations.length;
 
       final id = await readings.saveInterpretation('u1', reading,
-          summary: '요약');
+          summary: (ko: '요약', en: 'Summary'));
       expect(id, 'u1_seosi'); // 사용자 · 시마다 하나로 고정된 id
       final created = store.conversations[id]!;
       expect(created.userId, 'u1');
-      expect(created.summary, '요약');
+      expect(created.summaryKo, '요약');
+      expect(created.summaryEn, 'Summary');
       expect(created.evidenceLines, [2, 4]);
+      expect(created.conversation, reading.conversation); // 대화 전체가 공개 문서로
       expect(created.empathyCount, 0);
 
-      expect(await readings.saveInterpretation('u1', reading, summary: '요약'),
+      expect(await readings.saveInterpretation('u1', reading, summary: (ko: '요약', en: 'Summary')),
           isNull);
       expect(store.conversations.length, before + 1);
     });
@@ -121,22 +128,26 @@ void main() {
       const reading =
           Reading(poemId: 'seosi', interpretation: '해석', isPublic: true);
       final before = store.conversations.length;
-      await readings.saveInterpretation('u1', reading, summary: '요약');
+      await readings.saveInterpretation('u1', reading, summary: (ko: '요약', en: 'Summary'));
 
       final again = await readings.saveInterpretation(
           'u1', reading.copyWith(isPublic: false),
-          summary: '요약');
+          summary: (ko: '요약', en: 'Summary'));
       expect(again, isNull);
       expect((await readings.fetchReading('u1', 'seosi'))!.isPublic, isTrue);
       expect(store.conversations.length, before + 1);
     });
 
-    test('공개 저장인데 요약이 없으면 아무것도 쓰지 않고 오류', () async {
+    test('공개 저장인데 요약이 없거나 한쪽 언어가 비면 아무것도 쓰지 않고 오류', () async {
       const reading =
           Reading(poemId: 'seosi', interpretation: '해석', isPublic: true);
       final before = store.conversations.length;
 
-      for (final summary in [null, '  ']) {
+      for (final summary in <({String ko, String en})?>[
+        null,
+        (ko: '  ', en: 'Summary'),
+        (ko: '요약', en: '  '),
+      ]) {
         await expectLater(
           readings.saveInterpretation('u1', reading, summary: summary),
           throwsA(isA<ArgumentError>()),
@@ -150,7 +161,7 @@ void main() {
     test('공개로 저장한 뒤 중간 저장(saveProgress)을 해도 공개가 꺼지지 않는다', () async {
       const reading =
           Reading(poemId: 'seosi', interpretation: '해석', isPublic: true);
-      await readings.saveInterpretation('u1', reading, summary: '요약');
+      await readings.saveInterpretation('u1', reading, summary: (ko: '요약', en: 'Summary'));
       await readings.saveProgress('u1', reading.copyWith(isPublic: false));
 
       final saved = await readings.fetchReading('u1', 'seosi');
@@ -167,7 +178,7 @@ void main() {
       final id = await readings.saveInterpretation(
         'u1',
         const Reading(poemId: 'seosi', interpretation: '내 해석', isPublic: true),
-        summary: '요약',
+        summary: (ko: '요약', en: 'Summary'),
       );
       expect(id, 'u1_seosi');
       expect(store.conversations['u1_seosi']!.interpretation, '내 해석');

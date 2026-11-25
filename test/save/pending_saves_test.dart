@@ -39,7 +39,7 @@ class _StillFailingReadingRepository extends FakeReadingRepository {
   Future<String?> saveInterpretation(
     String userId,
     Reading reading, {
-    required String? summary,
+    required ({String ko, String en})? summary,
   }) async {
     throw Exception('network');
   }

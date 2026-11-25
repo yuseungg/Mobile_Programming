@@ -68,7 +68,7 @@ void main() {
         publicConversationToCreate(
           userId: 'u1',
           reading: savedReading(isPublic: false),
-          summary: '요약',
+          summary: (ko: '요약', en: 'Summary'),
           createdAt: createdAt,
           conversationExists: false,
         ),
@@ -81,7 +81,7 @@ void main() {
         publicConversationToCreate(
           userId: 'u1',
           reading: savedReading(isPublic: true, isSaved: false),
-          summary: '요약',
+          summary: (ko: '요약', en: 'Summary'),
           createdAt: createdAt,
           conversationExists: false,
         ),
@@ -94,7 +94,7 @@ void main() {
         publicConversationToCreate(
           userId: 'u1',
           reading: savedReading(isPublic: true, interpretation: '   '),
-          summary: '요약',
+          summary: (ko: '요약', en: 'Summary'),
           createdAt: createdAt,
           conversationExists: false,
         ),
@@ -106,7 +106,7 @@ void main() {
       final doc = publicConversationToCreate(
         userId: 'u1',
         reading: savedReading(isPublic: true),
-        summary: '대화 요약',
+        summary: (ko: '대화 요약', en: 'Conversation summary'),
         createdAt: createdAt,
         conversationExists: false,
       )!;
@@ -114,7 +114,8 @@ void main() {
       expect(doc.userId, 'u1');
       expect(doc.poemId, 'seosi');
       expect(doc.firstWord, '다짐');
-      expect(doc.summary, '대화 요약');
+      expect(doc.summaryKo, '대화 요약');
+      expect(doc.summaryEn, 'Conversation summary');
       expect(doc.interpretation, '내 해석');
       expect(doc.empathyCount, 0);
       expect(doc.evidenceLines, [6]);
@@ -127,7 +128,7 @@ void main() {
       final doc = publicConversationToCreate(
         userId: 'u1',
         reading: savedReading(isPublic: true),
-        summary: '요약',
+        summary: (ko: '요약', en: 'Summary'),
         createdAt: past,
         conversationExists: false,
       )!;
@@ -140,7 +141,7 @@ void main() {
         publicConversationToCreate(
           userId: 'u1',
           reading: savedReading(isPublic: true),
-          summary: '요약',
+          summary: (ko: '요약', en: 'Summary'),
           createdAt: createdAt,
           conversationExists: true,
         ),
@@ -152,7 +153,7 @@ void main() {
       final doc = publicConversationToCreate(
         userId: 'u1',
         reading: savedReading(isPublic: true),
-        summary: '요약',
+        summary: (ko: '요약', en: 'Summary'),
         createdAt: createdAt,
         conversationExists: false,
       );
@@ -165,7 +166,7 @@ void main() {
       final first = publicConversationToCreate(
         userId: 'u1',
         reading: savedReading(isPublic: true, interpretation: ''),
-        summary: '요약',
+        summary: (ko: '요약', en: 'Summary'),
         createdAt: createdAt,
         conversationExists: false,
       );
@@ -174,7 +175,7 @@ void main() {
       final second = publicConversationToCreate(
         userId: 'u1',
         reading: savedReading(isPublic: true, interpretation: '이제 쓴 해석'),
-        summary: '요약',
+        summary: (ko: '요약', en: 'Summary'),
         createdAt: createdAt,
         conversationExists: false, // 1차에서 만들지 않았으므로 아직 없다
       );
@@ -187,7 +188,7 @@ void main() {
       final doc = publicConversationToCreate(
         userId: 'u1',
         reading: savedReading(isPublic: true, evidenceLines: const []),
-        summary: '요약',
+        summary: (ko: '요약', en: 'Summary'),
         createdAt: createdAt,
         conversationExists: false,
       )!;

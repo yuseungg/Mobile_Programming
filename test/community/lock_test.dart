@@ -7,9 +7,11 @@ import 'package:yeobaek/features/community/community_detail_screen.dart';
 import 'package:yeobaek/features/community/community_list_screen.dart';
 import 'package:yeobaek/features/community/locked_notice.dart';
 import 'package:yeobaek/data/fakes/fake_data.dart';
+import 'package:yeobaek/data/models/chat_message.dart';
 import 'package:yeobaek/data/models/public_conversation.dart';
 import 'package:yeobaek/data/models/reading.dart';
 import 'package:yeobaek/data/repositories.dart';
+import 'package:yeobaek/shared/widgets/chat_bubble.dart';
 
 import '../support/stub_reading_source.dart';
 
@@ -100,7 +102,10 @@ void main() {
 
       expect(find.byType(LockedNotice), findsNothing);
       expect(find.text(AppStrings.communityDetailFirstWord), findsOneWidget);
-      expect(find.text(AppStrings.communityDetailInterpretation),
+      expect(find.text(AppStrings.communityDetailTranscript), findsOneWidget);
+      // 3. 대화 기록 — 공개할 때 복사된 대화가 말풍선으로 처음부터 끝까지
+      expect(find.byType(ChatBubble), findsNWidgets(4));
+      expect(find.text('2행이요. 한 점 부끄럼이 없기를 바란다는 말이 오래 남았어요.'),
           findsOneWidget);
     });
   });
@@ -111,9 +116,14 @@ void main() {
           userId: 'user_1',
           poemId: poemId,
           firstWord: '다짐',
-          summary: '요약',
+          summaryKo: '요약',
+          summaryEn: 'Summary',
           interpretation: '남의 해석',
           empathyCount: 3,
+          conversation: const [
+            ChatMessage(role: ChatRole.assistant, text: '남의 대화 속 질문'),
+            ChatMessage(role: ChatRole.user, text: '남의 대화 속 답'),
+          ],
           createdAt: DateTime.utc(2026, 11, 1),
         );
 
@@ -134,7 +144,10 @@ void main() {
 
       expect(find.byType(LockedNotice), findsOneWidget);
       expect(find.text('남의 해석'), findsNothing);
-      expect(find.text(AppStrings.communityDetailInterpretation), findsNothing);
+      expect(find.text(AppStrings.communityDetailTranscript), findsNothing);
+      // 대화 전체가 공개되므로 더 중요하다 — 저장하지 않은 사람에게는 한 줄도 보이지 않는다
+      expect(find.text('남의 대화 속 질문'), findsNothing);
+      expect(find.text('남의 대화 속 답'), findsNothing);
     });
 
     testWidgets('저장했으면 열린다', (tester) async {
@@ -155,7 +168,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(LockedNotice), findsNothing);
-      expect(find.text('남의 해석'), findsOneWidget);
+      // S09 「3. 대화 기록」 — 공개할 때 복사된 대화가 보인다
+      expect(find.text('남의 대화 속 질문'), findsOneWidget);
+      expect(find.text('남의 대화 속 답'), findsOneWidget);
     });
   });
 
@@ -170,7 +185,8 @@ void main() {
               userId: 'user_1', // 세 장 모두 같은 사람
               poemId: 'seosi',
               firstWord: '낱말$i',
-              summary: '요약',
+              summaryKo: '요약',
+              summaryEn: 'Summary',
               interpretation: '해석',
               empathyCount: 0,
               createdAt: DateTime.utc(2026, 11, i),

@@ -47,7 +47,7 @@ class FakeReadingRepository implements ReadingRepository {
   Future<String?> saveInterpretation(
     String userId,
     Reading reading, {
-    required String? summary,
+    required ({String ko, String en})? summary,
   }) async {
     _checkLock(userId, reading);
     final before = _of(userId)[reading.poemId];
@@ -65,8 +65,8 @@ class FakeReadingRepository implements ReadingRepository {
     final createsConversation = saved.isPublic &&
         !_store.conversations.containsKey(conversationId) &&
         saved.interpretation.trim().isNotEmpty;
-    if (createsConversation && (summary == null || summary.trim().isEmpty)) {
-      throw ArgumentError.value(summary, 'summary', '공개 저장에는 요약이 필요함');
+    if (createsConversation && !isCompleteSummary(summary)) {
+      throw ArgumentError.value(summary, 'summary', '공개 저장에는 한/영 요약이 모두 필요함');
     }
 
     // 여기서부터 Firestore에서는 한 트랜잭션
@@ -84,10 +84,12 @@ class FakeReadingRepository implements ReadingRepository {
       userId: userId,
       poemId: saved.poemId,
       firstWord: saved.firstWord,
-      summary: summary!.trim(),
+      summaryKo: summary!.ko.trim(),
+      summaryEn: summary.en.trim(),
       interpretation: saved.interpretation,
       empathyCount: 0,
       evidenceLines: List<int>.unmodifiable(saved.evidenceLines),
+      conversation: List.unmodifiable(saved.conversation), // S09 「3. 대화 기록」
       createdAt: _store.now(),
     );
     return conversationId;

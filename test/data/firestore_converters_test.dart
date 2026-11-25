@@ -80,16 +80,34 @@ void main() {
         'userId': 'u1',
         'poemId': 'seosi',
         'firstWord': '부끄럼',
-        'summary': '요약',
+        'summaryKo': '요약',
+        'summaryEn': 'Summary',
         'interpretation': '해석',
         'empathyCount': 4,
         'evidenceLines': [2, 10],
+        'conversation': [
+          {'role': 'assistant', 'text': '어느 행이었나요?'},
+          {'role': 'user', 'text': '2행이요.'},
+        ],
         'createdAt': Timestamp.fromDate(createdAt),
       });
       expect(conversation.conversationId, 'u1_seosi');
+      expect(conversation.summaryKo, '요약');
+      expect(conversation.summaryEn, 'Summary');
       expect(conversation.empathyCount, 4);
       expect(conversation.evidenceLines, [2, 10]);
+      expect(conversation.conversation.map((m) => m.isUser), [false, true]);
+      expect(conversation.conversation.last.text, '2행이요.');
       expect(conversation.createdAt.toUtc(), createdAt);
+    });
+
+    test('대화가 없는 문서는 빈 대화로 읽는다', () {
+      final conversation = publicConversationFromDoc('u1_seosi', {
+        'userId': 'u1',
+        'poemId': 'seosi',
+      });
+      expect(conversation.conversation, isEmpty);
+      expect(conversation.summaryKo, isEmpty);
     });
   });
 
