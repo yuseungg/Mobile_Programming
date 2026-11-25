@@ -28,6 +28,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
   Map<int, int> _stopCounts = {};
   bool _hasConversation = false; // 하던 대화 있으면 버튼을 '대화 이어 하기'로
   bool _isSavingWord = false; // 첫 낱말 저장 중엔 버튼 막음 (두 번 눌러서 S05 두 번 열리는 거 방지)
+  bool _loadFailed = false; // 기록 못 불러왔으면 안내 + 버튼 막음
   final TextEditingController _firstWordController = TextEditingController();
 
   @override
@@ -49,14 +50,28 @@ class _ReadingScreenState extends State<ReadingScreen> {
 
   Future<void> _load() async {
     // 전에 읽던 시면 멈춘 행이랑 첫 낱말 그대로 불러옴
-    Reading? saved = await Repositories.reading.fetchReading(_userId, widget.poemId);
-    Map<int, int> counts = await Repositories.reading.fetchStopCounts(widget.poemId);
+    Reading? saved;
+    Map<int, int> counts;
+    try {
+      saved = await Repositories.reading.fetchReading(_userId, widget.poemId);
+      counts = await Repositories.reading.fetchStopCounts(widget.poemId);
+    } catch (e) {
+      // 오프라인에서 처음 여는 시는 여기서 실패함. 그냥 두면 빈 화면이라
+      // 하던 대화가 있어도 첫 낱말을 새로 쓰게 됨 → 불러올 때까지 버튼 막음
+      if (mounted) {
+        setState(() {
+          _loadFailed = true;
+        });
+      }
+      return;
+    }
     // print(counts);
 
     if (!mounted) {
       return;
     }
     setState(() {
+      _loadFailed = false;
       if (saved != null) {
         _markedLines.addAll(saved.markedLines);
         _firstWordController.text = saved.firstWord;
@@ -202,6 +217,13 @@ class _ReadingScreenState extends State<ReadingScreen> {
             AppStrings.readingAuthorYear(poem.author, poem.year),
             style:AppText.bodySub,
           ),
+          if (_loadFailed)
+            Row(
+              children: [
+                Expanded(child: Text(AppStrings.noticeUnavailable, style: AppText.bodySub)),
+                TextButton(onPressed: _load, child: Text(AppStrings.noticeUnavailableAction)),
+              ],
+            ),
           const SizedBox(height: 24),
           PoemView(
             poem: poem,
@@ -214,6 +236,9 @@ class _ReadingScreenState extends State<ReadingScreen> {
             AppStrings.readingStopGuide,
             style: AppText.bodySub, // caption은 작고 흐려서 잘 안 보임
           ),
+          // 못 불러왔으면 하던 대화가 있는지 몰라서 칸 · 버튼 아예 안 그림
+          // (그리면 처음 읽는 시처럼 「대화 시작하기」가 떠서 헷갈림)
+          if (!_loadFailed) ...[
           const SizedBox(height: 32),
           Text(
             AppStrings.readingFirstWordLabel,
@@ -246,6 +271,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
             onPressed: (!hasFirstWord || _isSavingWord) ? null : _endWithWord,
             child: Text(AppStrings.readingEndWithWord),
           ),
+          ],
         ],
       ),
       ),
