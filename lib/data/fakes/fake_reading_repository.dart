@@ -66,11 +66,14 @@ class FakeReadingRepository implements ReadingRepository {
     final createsConversation = saved.isPublic &&
         existing == null &&
         saved.interpretation.trim().isNotEmpty;
-    // 처음부터 다시 해서 해석이 바뀌었으면 있던 공개 대화를 새 것으로 바꿈
+    // 처음부터 다시 해서 해석 · 첫 낱말 · 근거 행 중 하나라도 바뀌었으면 있던 공개 대화를 새 것으로 바꿈
+    // (해석만 보면 같은 해석에 첫 낱말만 바꿔 저장했을 때 S09에 옛 낱말이 남음)
     final replacesConversation = saved.isPublic &&
         existing != null &&
         saved.interpretation.trim().isNotEmpty &&
-        existing.interpretation != saved.interpretation;
+        (existing.interpretation != saved.interpretation ||
+            existing.firstWord != saved.firstWord ||
+            existing.evidenceLines.join(',') != saved.evidenceLines.join(','));
     if ((createsConversation || replacesConversation) &&
         (summary == null || summary.trim().isEmpty)) {
       throw ArgumentError.value(summary, 'summary', '공개 저장에는 요약이 필요함');

@@ -132,4 +132,47 @@ void main() {
     expect(mine.firstWord, '숲');
     expect(list.where((c) => c.userId == me).length, 1); // 시마다 하나 그대로
   });
+
+  testWidgets('초기화하고 첫 낱말 안 쓰고 나왔다가 다시 누르면 고르는 거 없이 S04로', (tester) async {
+    await tester.pumpWidget(homeApp());
+    await tester.pumpAndSettle();
+
+    await tapPoem(tester, '서시');
+    await tester.tap(find.widgetWithText(OutlinedButton, AppStrings.homeReset));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, AppStrings.homeReset));
+    await tester.pumpAndSettle();
+    expect(find.byType(ReadingScreen), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tapPoem(tester, '서시');
+
+    // 이어 읽기가 뜨면 빈 대화로 S05가 열림
+    expect(find.text(AppStrings.homeReset), findsNothing);
+    expect(find.byType(ReadingScreen), findsOneWidget);
+  });
+
+  test('초기화하고 해석은 같은데 첫 낱말 · 근거 행만 바꿔 저장해도 공개 대화가 바뀜', () async {
+    const poemId = 'theroadnottaken';
+    Reading first = (await Repositories.reading.fetchReading(me, poemId)) ?? const Reading(poemId: poemId);
+    await Repositories.reading.saveInterpretation(
+      me,
+      first.copyWith(firstWord: '길', interpretation: '같은 해석', isPublic: true, evidenceLines: const [3]),
+      summary: '옛 요약',
+    );
+    await Repositories.reading.resetReading(me, poemId);
+
+    Reading reset = (await Repositories.reading.fetchReading(me, poemId))!;
+    await Repositories.reading.saveInterpretation(
+      me,
+      reset.copyWith(firstWord: '숲', interpretation: '같은 해석', isPublic: true, evidenceLines: const [5]),
+      summary: '새 요약',
+    );
+    List<PublicConversation> list = await Repositories.publicConversation.fetchForPoem(poemId);
+    PublicConversation mine = list.firstWhere((c) => c.userId == me);
+    expect(mine.firstWord, '숲');
+    expect(mine.evidenceLines, [5]);
+    expect(mine.summary, '새 요약');
+  });
 }

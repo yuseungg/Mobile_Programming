@@ -104,9 +104,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 읽기 화면에서 돌아오면 누적일수랑 읽음 표시 다시 불러옴
   // 대화했거나 저장한 시는 이어 읽을지 초기화할지 먼저 고르게 함 (11/25 회의)
+  // 초기화하면 대화는 비고 저장은 남아서 해석까지 봄. 안 그러면 빈 대화로 S05가 열림
   void openReading(String poemId) {
     Reading? reading = _readings[poemId];
-    if (reading != null && (reading.conversation.isNotEmpty || reading.isSaved)) {
+    if (reading != null &&
+        (reading.conversation.isNotEmpty || (reading.isSaved && reading.interpretation.isNotEmpty))) {
       _askContinueOrReset(poemId);
       return;
     }

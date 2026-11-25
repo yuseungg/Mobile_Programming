@@ -108,11 +108,14 @@ class FirestoreReadingRepository implements ReadingRepository {
       final createsConversation = saved.isPublic &&
           !conversationSnap.exists &&
           saved.interpretation.trim().isNotEmpty;
-      // 처음부터 다시 해서 해석이 바뀌었으면 있던 공개 대화를 새 것으로 바꿈
+      // 처음부터 다시 해서 해석 · 첫 낱말 · 근거 행 중 하나라도 바뀌었으면 있던 공개 대화를 새 것으로 바꿈
+      final old = conversationSnap.data();
       final replacesConversation = saved.isPublic &&
           conversationSnap.exists &&
           saved.interpretation.trim().isNotEmpty &&
-          conversationSnap.data()?['interpretation'] != saved.interpretation;
+          (old?['interpretation'] != saved.interpretation ||
+              old?['firstWord'] != saved.firstWord ||
+              (old?['evidenceLines'] as List? ?? const []).join(',') != saved.evidenceLines.join(','));
       if ((createsConversation || replacesConversation) &&
           (summary == null || summary.trim().isEmpty)) {
         throw ArgumentError.value(summary, 'summary', '공개 저장에는 요약이 필요함');
