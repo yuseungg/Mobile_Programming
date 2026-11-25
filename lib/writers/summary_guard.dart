@@ -9,6 +9,7 @@
 // 쓰지 않는 말 목록은 A의 OutputGuard에서 가져온다 (한 곳에만 적는다).
 
 import '../agent/output_guard.dart';
+import '../app/language.dart';
 import 'quote_check.dart';
 import 'summary_writer.dart';
 
@@ -28,7 +29,8 @@ class SummaryGuard {
   static const maxSentences = 2;
 
   /// S09 카드 안에 들어가는 글이다. 넘치면 화면이 밀린다.
-  static const maxChars = 150;
+  /// 영어(화면 EN)는 같은 내용에 글자가 더 들고 한 글자가 좁아서 더 준다.
+  static int get maxChars => isEnglish ? 280 : 150;
 
   /// 해석의 질을 말하는 낱말. 공개 대화에 붙으면 그게 순위가 된다 (원칙 3).
   static const evaluativeWords = [
@@ -43,6 +45,14 @@ class SummaryGuard {
     '수준',
     '모범',
   ];
+
+  /// 같은 쓰임의 영어. 대소문자를 가리지 않는다.
+  static final _evaluativeEnglish = RegExp(
+    r'\b(excellent|outstanding|brilliant|superb|exemplary|impressive|insightful|'
+    r'profound|deep reading|shallow|lacking|insufficient|disappointing|mediocre|'
+    r'well done|great reading)\b',
+    caseSensitive: false,
+  );
 
   static final _assertive =
       RegExp(r'(뜻|의미|상징|암시|은유)(한다|합니다|하는 것)|나타낸다|나타냅니다');
@@ -65,11 +75,15 @@ class SummaryGuard {
     final unquoted = withoutQuotes(trimmed);
 
     return [
-      if (OutputGuard.forbiddenWords.any(trimmed.contains))
+      if (OutputGuard.hasForbiddenWord(trimmed))
         SummaryViolation.forbiddenWord,
-      if (evaluativeWords.any(trimmed.contains)) SummaryViolation.evaluative,
+      if (evaluativeWords.any(trimmed.contains) ||
+          _evaluativeEnglish.hasMatch(trimmed))
+        SummaryViolation.evaluative,
       if (_questionMark.hasMatch(unquoted)) SummaryViolation.question,
-      if (_assertive.hasMatch(unquoted)) SummaryViolation.assertive,
+      if (_assertive.hasMatch(unquoted) ||
+          OutputGuard.englishAssertive.hasMatch(unquoted))
+        SummaryViolation.assertive,
       if (_sentenceCount(unquoted) > maxSentences ||
           trimmed.length > maxChars)
         SummaryViolation.tooLong,
@@ -84,8 +98,20 @@ class SummaryGuard {
       .length;
 }
 
-String summaryViolationReason(SummaryViolation violation) =>
-    switch (violation) {
+String summaryViolationReason(SummaryViolation violation) => isEnglish
+    ? switch (violation) {
+        SummaryViolation.empty => 'the summary was empty',
+        SummaryViolation.forbiddenWord => 'it used a word the app never uses',
+        SummaryViolation.evaluative => 'it judged the interpretation',
+        SummaryViolation.question =>
+          'it had a question mark (a summary is not a question)',
+        SummaryViolation.assertive => 'it stated a meaning',
+        SummaryViolation.tooLong =>
+          'it was longer than ${SummaryGuard.maxSentences} sentences or ${SummaryGuard.maxChars} characters',
+        SummaryViolation.unknownQuote =>
+          'it put words that were not in the conversation inside quotation marks',
+      }
+    : switch (violation) {
       SummaryViolation.empty => '요약이 비어 있음',
       SummaryViolation.forbiddenWord => '쓰지 않는 말이 있음',
       SummaryViolation.evaluative => '해석을 평가하는 말이 있음',

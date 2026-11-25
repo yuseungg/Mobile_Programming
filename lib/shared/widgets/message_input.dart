@@ -60,7 +60,7 @@ class MessageInput extends StatelessWidget {
                     padding: buttonPadding,
                   ),
                   onPressed: onStop,
-                  child: const Text(AppStrings.chatStopButton),
+                  child: Text(AppStrings.chatStopButton),
                 )
               : ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
@@ -70,7 +70,7 @@ class MessageInput extends StatelessWidget {
                       padding: buttonPadding,
                     ),
                     onPressed: value.text.trim().isEmpty ? null : onSend,
-                    child: const Text(AppStrings.chatSendButton),
+                    child: Text(AppStrings.chatSendButton),
                   ),
                 ),
         ),

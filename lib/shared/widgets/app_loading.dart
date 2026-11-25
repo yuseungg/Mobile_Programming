@@ -1,0 +1,333 @@
+// 주인: D — 로딩 (기다리는 동안 「멈춘 게 아니다」를 보여 준다)
+//
+// ── 쓰는 자리는 한 곳이다 ──
+// S06에서 저장을 누르고 S07 대조가 열리기까지, 그 사이에만 쓴다
+// (lib/features/compare/comparison_screen.dart). 이 앱에서 가장 긴 기다림이라
+// 그렇다 — 저장소 쓰기가 끝나고, 그 위에 모델이 비교 문장을 쓴다(모델에 따라
+// 한 턴 16~25초). 그 자리를 메우려고 만든 것이다.
+//
+// **다른 화면의 CircularProgressIndicator를 이것으로 바꾸지 않는다.** 짧게
+// 끝나는 읽기에 마스코트가 한 바퀴도 못 돌고 사라지면 깜빡임만 남는다.
+// 다른 긴 기다림이 생기면 그때 이 주석에 그 자리를 함께 적는다.
+//
+// 두 가지를 같이 둔다.
+//  - [AppLoading]  — 자리만 차지하는 위젯. 화면 안에 그대로 끼운다.
+//  - [LoadingPage] — 화면 하나를 채우는 쪽. S07이 데이터를 기다릴 때 쓴다.
+//
+// ── 마스코트 ──
+// assets/mascot/mascot_01.png ~ mascot_16.png. 앉아서 책을 읽는 병아리다.
+// 그림 16장을 차례로 넘겨 움직인다 — 코드로 흔들거나 기울이지 않는다.
+// 움직임은 그림 쪽에 들어 있으므로 여기서는 번호만 센다.
+//
+// 16장이 하나의 고리다. 자르기는 **모든 장을 덮는 하나의 bbox**로 했다 —
+// 장마다 따로 자르면 넘길 때 그림이 들썩인다.
+//
+// 다른 그림으로 바꾸려면 `AppLoading(mascot: ...)`에 위젯을 넘긴다.
+//
+// ── 테스트에서 ──
+// 끝나지 않는 애니메이션이므로 pumpAndSettle은 시간 초과된다 (스피너도 같다).
+// test/support/pump.dart의 pumpUntilLoaded를 쓴다 — 그 helper는 스피너와
+// 이 위젯을 둘 다 기다린다.
+// 애니메이션을 끈 기기(MediaQuery.disableAnimations)에서는 아예 돌지 않고
+// 멈춘 모습으로 그린다. 그 경우에는 pumpAndSettle도 끝난다.
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import '../../app/strings.dart';
+import '../../app/theme.dart';
+import 'language_toggle.dart';
+
+/// 기다리는 동안 보여 주는 위젯. 마스코트가 앉아서 책을 읽고, 아래 글자가
+/// 한 글자씩 파도치듯 튄다. [message]를 주면 그 아래에 한 줄이 더 붙는다.
+class AppLoading extends StatefulWidget {
+  const AppLoading({
+    super.key,
+    this.label = AppStrings.loadingLabel,
+    this.message,
+    this.mascot,
+    this.size = 96,
+  });
+
+  /// 마스코트 그림 장수.
+  static const frameCount = 16;
+
+  /// [i]번째 장 (0부터). 쓰는 쪽에서 바꿀 일이 없으면 둘 필요 없다.
+  static String frameAsset(int i) =>
+      'assets/mascot/mascot_${(i + 1).toString().padLeft(2, '0')}.png';
+
+  /// 글자. 한 글자씩 튄다. 비우면 마스코트만 남는다.
+  final String label;
+
+  /// 글자 아래 한 줄 — 무엇을 기다리는지 적는다. 비워 두면 그리지 않는다.
+  /// 움직이지 않는다 (파도치는 글자 옆에서 함께 움직이면 읽기 어렵다).
+  final String? message;
+
+  /// 마스코트. 비우면 [frameAsset]의 그림 16장.
+  final Widget? mascot;
+
+  /// 마스코트 한 변의 길이.
+  final double size;
+
+  /// 기본 마스코트에 붙는 키. 테스트에서 어느 장인지 짚을 때 쓴다.
+  static const defaultMascotKey = Key('appLoadingMascot');
+
+  @override
+  State<AppLoading> createState() => _AppLoadingState();
+}
+
+class _AppLoadingState extends State<AppLoading>
+    with SingleTickerProviderStateMixin {
+  /// 한 바퀴. 이 안에 그림 16장과 글자 파도 한 번이 들어간다
+  /// (장당 87.5밀리초, 초당 약 11장).
+  static const _period = Duration(milliseconds: 1400);
+
+  late final AnimationController _controller =
+      AnimationController(vsync: this, duration: _period);
+
+  bool _isRunning = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _precacheFrames();
+
+    // 애니메이션을 끈 기기에서는 돌리지 않는다. 멈춘 그림으로도 뜻은 전해지고,
+    // 돌려 두면 그 설정을 쓰는 사람과 pumpAndSettle이 둘 다 막힌다.
+    final shouldRun = !MediaQuery.disableAnimationsOf(context);
+    if (shouldRun == _isRunning) return;
+    _isRunning = shouldRun;
+    if (shouldRun) {
+      _controller.repeat();
+    } else {
+      _controller
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  bool _didPrecache = false;
+
+  /// 16장을 미리 읽어 둔다. 안 하면 첫 바퀴에서 아직 안 읽힌 장이 비어 보인다.
+  /// (`gaplessPlayback`이 앞 장을 붙들어 주지만, 첫 바퀴는 넘김이 끊긴다.)
+  /// 실패는 삼킨다 — 그림이 없어도 글자는 계속 파도쳐야 한다.
+  void _precacheFrames() {
+    if (_didPrecache || widget.mascot != null) return;
+    _didPrecache = true;
+    for (var i = 0; i < AppLoading.frameCount; i++) {
+      precacheImage(AssetImage(AppLoading.frameAsset(i)), context)
+          .catchError((_) {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final message = widget.message;
+    // 읽어 주는 쪽에는 무엇을 기다리는지가 먼저다. 글자(LOADING......)는
+    // 한 글자씩 떨어져 있어 소리로는 뜻이 되지 않는다.
+    final spoken = message?.isNotEmpty == true
+        ? message
+        : (widget.label.isEmpty ? null : widget.label);
+
+    return Semantics(
+      label: spoken,
+      liveRegion: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 움직이는 부분만 여기 안에 둔다 — 아래 한 줄은 프레임마다 다시
+          // 그릴 이유가 없다
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final t = _controller.value;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _Mascot(
+                    t: t,
+                    size: widget.size,
+                    child: widget.mascot,
+                  ),
+                  if (widget.label.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    _WaveLabel(t: t, label: widget.label),
+                  ],
+                ],
+              );
+            },
+          ),
+          if (message != null && message.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                message,
+                style: AppText.bodySub,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── 마스코트 ──────────────────────────────────────────
+
+/// 그림 16장을 차례로 넘긴다. 흔들거나 기울이지 않는다 — 움직임은 그림에 있다.
+class _Mascot extends StatelessWidget {
+  const _Mascot({required this.t, required this.size, this.child});
+
+  final double t;
+  final double size;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    final mascot = child;
+    if (mascot != null) return SizedBox.square(dimension: size, child: mascot);
+
+    // t는 [0,1)이지만 1에 닿는 프레임이 있을 수 있어 마지막 장으로 눌러 둔다
+    final frame =
+        (t * AppLoading.frameCount).floor().clamp(0, AppLoading.frameCount - 1);
+
+    return Image.asset(
+      AppLoading.frameAsset(frame),
+      key: AppLoading.defaultMascotKey,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      // 다음 장이 아직 안 읽혔으면 앞 장을 그대로 둔다 (넘길 때 비지 않게)
+      gaplessPlayback: true,
+      // 그림이 없거나 깨져도 기다리는 중인 것은 보여야 한다
+      errorBuilder: (context, error, stackTrace) => Icon(
+        Icons.hourglass_empty_rounded,
+        size: size * 0.6,
+        color: AppColors.textFaint,
+      ),
+    );
+  }
+}
+
+// ── 글자 파도 ─────────────────────────────────────────
+
+/// 「LOADING......」을 한 글자씩 띄워 두고, 앞에서 뒤로 차례로 튀어 오르게 한다.
+class _WaveLabel extends StatelessWidget {
+  const _WaveLabel({required this.t, required this.label});
+
+  final double t;
+  final String label;
+
+  /// 글자 사이의 시간 차. 이 값이 파도의 기울기다.
+  static const _stagger = 0.045;
+
+  /// 한 글자가 튀어 올라 돌아오는 데 쓰는 시간 (한 바퀴 중의 비율)
+  static const _hop = 0.3;
+
+  static const _height = 7.0;
+
+  /// 고딕 작은 글씨에 자간만 벌렸다. 글자마다 따로 그리므로 Row가 붙여 주는
+  /// 간격이 없어서, 자간을 조금 주지 않으면 글자가 달라붙는다.
+  /// theme.dart에 새 스타일을 넣지 않는다 — 그 파일은 주인 외 금지다.
+  static const _style = TextStyle(
+    fontFamily: AppFonts.gothic,
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textSub,
+    letterSpacing: 1.5,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    // split('')은 UTF-16 코드 유닛 단위다. 라틴 글자와 완성형 한글은 한 글자씩
+    // 끊기므로 이 문구에는 맞다. 이모지를 넣으려면 characters 패키지가 필요하다.
+    final chars = label.split('');
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (var i = 0; i < chars.length; i++)
+          Transform.translate(
+            offset: Offset(0, _dyOf(i)),
+            child: Text(chars[i], style: _style),
+          ),
+      ],
+    );
+  }
+
+  double _dyOf(int index) {
+    // 내 차례가 오기까지 기다린다. 1을 넘으면 앞으로 돌아온다
+    final local = (t - index * _stagger) % 1;
+    if (local >= _hop) return 0; // 튀어 오를 때가 아니면 제자리
+    return -math.sin(local / _hop * math.pi) * _height;
+  }
+}
+
+// ── 화면 하나를 채우는 쪽 ─────────────────────────────
+
+/// 화면 하나를 채우는 로딩 화면.
+///
+/// 지금 쓰는 자리는 하나다 — S07 대조가 데이터를 기다리는 동안의 body
+/// (`comparison_screen.dart`). 시 제목은 아직 읽히지 않았으므로 제목 없이 띄우고,
+/// 그러면 오른쪽 위 KR / EN 토글만 있는 앱바가 붙는다 (#55 — 모든 화면에 있다).
+///
+/// ```dart
+/// if (data == null) {
+///   return LoadingPage(message: AppStrings.loadingSavingConversation);
+/// }
+/// ```
+///
+/// 문구가 KR / EN을 따라 바뀌므로 `const`로 쓰지 않는다.
+///
+/// 화면 전환 자체를 가로채지는 않는다 — 그것은 `lib/app/router.dart`가 할 일이고
+/// 그 파일은 주인 외 금지다. 여기서는 **부를 수 있는 화면**만 둔다.
+class LoadingPage extends StatelessWidget {
+  const LoadingPage({
+    super.key,
+    this.title,
+    this.label,
+    this.message,
+    this.mascot,
+  });
+
+  /// 앱바에 넣을 제목. 비우면 제목 없이 KR / EN 토글만 있는 앱바를 둔다 (가는 중인 화면의 제목을 모를 때).
+  final String? title;
+
+  /// [AppLoading.label]로 넘긴다.
+  final String? label;
+
+  /// [AppLoading.message]로 넘긴다 — 무엇을 기다리는지 적는 한 줄.
+  final String? message;
+
+  /// [AppLoading.mascot]으로 넘긴다.
+  final Widget? mascot;
+
+  @override
+  Widget build(BuildContext context) {
+    final heading = title;
+    // 오른쪽 위 KR / EN은 모든 화면에 있다 — 제목이 없어도 토글만 있는 앱바를 둔다.
+    return Scaffold(
+      appBar: heading == null
+          ? const LanguageToggleAppBar()
+          : AppBar(
+              title: Text(heading, style: AppText.screenTitle),
+              actions: const [LanguageToggle()],
+            ),
+      body: Center(
+        child: AppLoading(
+          label: label ?? AppStrings.loadingLabel,
+          message: message,
+          mascot: mascot,
+        ),
+      ),
+    );
+  }
+}

@@ -15,6 +15,7 @@ import '../../data/models/poem.dart';
 import '../../data/models/public_conversation.dart';
 import '../../ports/repository_reading_source.dart';
 import '../../ports/reading_source.dart';
+import '../../shared/widgets/language_toggle.dart';
 import 'locked_notice.dart';
 
 /// 시 칩 줄에 필요한 것 — 한 번만 읽는다
@@ -184,7 +185,10 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text(AppStrings.communityTitle)),
+      appBar: AppBar(
+        title: Text(AppStrings.communityTitle),
+        actions: const [LanguageToggle()],
+      ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         children: [
@@ -235,7 +239,7 @@ class _CommunityListScreenState extends State<CommunityListScreen> {
                 return LockedNotice(poemId: _selectedPoemId);
               }
               if (list.conversations.isEmpty) {
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.symmetric(vertical: 48),
                   child: Center(
                     child: Text(
