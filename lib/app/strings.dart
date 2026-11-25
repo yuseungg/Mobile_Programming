@@ -157,6 +157,17 @@ class AppStrings {
         '‘$firstWord’에서 시작한 대화를 이어 가요',
         'Continue the conversation that began with ‘$firstWord’',
       );
+  // 대화한 시를 누르면 뜨는 선택 (이어 읽기는 homeContinueTitle 그대로 씀)
+  static String get homeReset => _t('초기화', 'Reset');
+  static String get homeResetMessage => _t(
+        '초기화하면 이전 대화와 저장한 해석이 모두 사라지고, 처음부터 다시 읽을 수 있어요.',
+        'Resetting removes your previous conversation and saved interpretation, so you can read this poem again from the start.',
+      );
+  static String get homeResetCancel => _t('취소', 'Cancel');
+  static String get homeResetFailed => _t(
+        '초기화하지 못했어요. 잠시 뒤에 다시 해 주세요.',
+        "Couldn't reset. Please try again in a moment.",
+      );
 
   // ── S04 읽기 ──────────────────────────────────
   static String readingAppBarTitle(String author, String title) =>

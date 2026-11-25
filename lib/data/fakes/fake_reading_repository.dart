@@ -62,10 +62,17 @@ class FakeReadingRepository implements ReadingRepository {
     );
     // 공개 대화 id는 사용자 · 시마다 하나로 고정 — 있으면 다시 만들지 않는다
     final conversationId = publicConversationIdOf(userId, saved.poemId);
+    final existing = _store.conversations[conversationId];
     final createsConversation = saved.isPublic &&
-        !_store.conversations.containsKey(conversationId) &&
+        existing == null &&
         saved.interpretation.trim().isNotEmpty;
-    if (createsConversation && (summary == null || summary.trim().isEmpty)) {
+    // 처음부터 다시 해서 해석이 바뀌었으면 있던 공개 대화를 새 것으로 바꿈
+    final replacesConversation = saved.isPublic &&
+        existing != null &&
+        saved.interpretation.trim().isNotEmpty &&
+        existing.interpretation != saved.interpretation;
+    if ((createsConversation || replacesConversation) &&
+        (summary == null || summary.trim().isEmpty)) {
       throw ArgumentError.value(summary, 'summary', '공개 저장에는 요약이 필요함');
     }
 
@@ -78,6 +85,19 @@ class FakeReadingRepository implements ReadingRepository {
       );
     }
 
+    if (replacesConversation) {
+      _store.conversations[conversationId] = PublicConversation(
+        conversationId: conversationId,
+        userId: userId,
+        poemId: saved.poemId,
+        firstWord: saved.firstWord,
+        summary: summary!.trim(),
+        interpretation: saved.interpretation,
+        empathyCount: existing.empathyCount, // 공감 수 · 만든 때는 그대로
+        evidenceLines: List<int>.unmodifiable(saved.evidenceLines),
+        createdAt: existing.createdAt,
+      );
+    }
     if (!createsConversation) return null;
     _store.conversations[conversationId] = PublicConversation(
       conversationId: conversationId,
@@ -97,7 +117,21 @@ class FakeReadingRepository implements ReadingRepository {
   Future<void> openComparison(String userId, String poemId) async {
     final saved = _of(userId)[poemId];
     if (saved == null || !saved.isSaved) return;
+    // 처음부터 다시 해서 해석이 비었으면 잠그지 않음 (빈 해석으로 잠기면 새 해석을 못 씀)
+    if (saved.interpretation.trim().isEmpty) return;
     _of(userId)[poemId] = saved.copyWith(hasOpenedComparison: true);
+  }
+
+  @override
+  Future<void> resetReading(String userId, String poemId) async {
+    final saved = _of(userId)[poemId] ?? Reading(poemId: poemId);
+    _of(userId)[poemId] = saved.copyWith(
+      firstWord: '',
+      conversation: const [],
+      evidenceLines: const [],
+      interpretation: '',
+      hasOpenedComparison: false,
+    );
   }
 
   @override

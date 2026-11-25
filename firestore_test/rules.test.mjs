@@ -193,6 +193,33 @@ describe('읽기 기록: 나만, 잠금은 되돌릴 수 없다', () => {
     await assertSucceeds(updateDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM), { conversation: [] }));
   });
 
+  // S03 「초기화」 (11/25 결정) — 비울 때만 대조 잠금이 풀린다
+  test('대조를 연 뒤에도 대화 · 근거 · 해석을 다 비우면 초기화할 수 있다', async () => {
+    const locked = { isSaved: true, hasOpenedComparison: true, isPublic: true, interpretation: '옛 해석' };
+    await seed((db) =>
+      setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ ...locked, firstWord: '부끄럼', markedLines: [2], evidenceLines: [2],
+          conversation: [{ role: 'user', text: '가' }] })));
+    await assertSucceeds(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
+      reading({ isSaved: true, isPublic: true, markedLines: [2] })));
+  });
+
+  test('해석을 남긴 채로는 대조 열람을 끌 수 없다', async () => {
+    await seed((db) =>
+      setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ isSaved: true, hasOpenedComparison: true, interpretation: '옛 해석' })));
+    await assertFails(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
+      reading({ isSaved: true, interpretation: '옛 해석' })));
+  });
+
+  test('초기화해도 저장 · 공개는 되돌릴 수 없다', async () => {
+    await seed((db) =>
+      setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ isSaved: true, hasOpenedComparison: true, isPublic: true, interpretation: '옛 해석' })));
+    await assertFails(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM), reading({ isPublic: true })));
+    await assertFails(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM), reading({ isSaved: true })));
+  });
+
   test('대화 · 멈춘 줄 목록이 너무 길면 막힌다', async () => {
     await assertFails(setDoc(doc(dbOf(ME), 'users', ME, 'readings', POEM),
       reading({ conversation: Array.from({ length: 201 }, () => ({ role: 'user', text: '가' })) })));
@@ -369,6 +396,44 @@ describe('최종 저장: 뱃지와 공개 대화는 저장과 함께만', () => 
       reading({ isSaved: true, isPublic: true, interpretation: '내 해석' }));
     batch.set(doc(db, 'publicConversations', `${OTHER}_${POEM}`), publicConversation({ userId: OTHER }));
     await assertFails(batch.commit());
+  });
+
+  // 초기화한 뒤 공개 저장 (11/25 결정) — 같은 글을 새 내용으로 바꾼다
+  test('내 공개 대화는 새 해석으로 바꿀 수 있다 (읽기와 함께, 공감 수는 그대로)', async () => {
+    await seed(async (db) => {
+      await setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ isSaved: true, isPublic: true, interpretation: '해석' }));
+      await seedConversation(db, ME, POEM, 4);
+    });
+    const db = dbOf(ME);
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'users', ME, 'readings', POEM),
+      reading({ isSaved: true, isPublic: true, firstWord: '별', interpretation: '새 해석' }));
+    batch.update(doc(db, 'publicConversations', `${ME}_${POEM}`),
+      { firstWord: '별', summary: '새 요약', interpretation: '새 해석', evidenceLines: [5] });
+    await assertSucceeds(batch.commit());
+  });
+
+  test('내 읽기와 다른 해석으로는 공개 대화를 바꿀 수 없다', async () => {
+    await seed(async (db) => {
+      await setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ isSaved: true, isPublic: true, interpretation: '해석' }));
+      await seedConversation(db, ME, POEM);
+    });
+    await assertFails(updateDoc(doc(dbOf(ME), 'publicConversations', `${ME}_${POEM}`),
+      { summary: '새 요약', interpretation: '딴 해석' }));
+  });
+
+  test('바꿀 때 공감 수 · 요약 빈칸은 막힌다', async () => {
+    await seed(async (db) => {
+      await setDoc(doc(db, 'users', ME, 'readings', POEM),
+        reading({ isSaved: true, isPublic: true, interpretation: '해석' }));
+      await seedConversation(db, ME, POEM, 4);
+    });
+    await assertFails(updateDoc(doc(dbOf(ME), 'publicConversations', `${ME}_${POEM}`),
+      { summary: '새 요약', empathyCount: 100 }));
+    await assertFails(updateDoc(doc(dbOf(ME), 'publicConversations', `${ME}_${POEM}`),
+      { summary: '' }));
   });
 
   test('공감 수를 채운 채로 만들 수 없다', async () => {

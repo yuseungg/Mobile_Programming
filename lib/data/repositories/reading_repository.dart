@@ -34,6 +34,8 @@ abstract interface class ReadingRepository {
   ///  3. reading.isPublic이고 해석이 비어 있지 않고, 이 시의 공개 대화가 아직 없으면 만든다.
   ///     id는 [publicConversationIdOf] (`{userId}_{poemId}`)로 고정 — 시마다 하나뿐이다.
   ///     [summary]는 D의 요약 생성기가 만든 것.
+  ///     이미 있는데 해석이 바뀌었으면 (처음부터 다시 한 뒤) 첫 낱말 · 요약 · 해석 · 근거 행을
+  ///     새 것으로 바꾼다. 공감 수 · 만든 때는 그대로.
   ///
   /// [summary]는 반드시 넘긴다. 비공개 저장이면 null. 공개 대화를 새로 만들어야 하는데
   /// summary가 null이거나 비어 있으면 아무것도 쓰지 않고 [ArgumentError]를 던진다.
@@ -41,7 +43,7 @@ abstract interface class ReadingRepository {
   /// 공개는 되돌릴 수 없다 (기획서에 공개 취소 기능 없음). 한 번 공개로 저장한 읽기는
   /// isPublic=false로 다시 저장해도 isPublic이 true로 남고, 공개 대화도 그대로 남는다.
   /// → S06은 공개로 저장한 뒤에는 공개 토글을 **켜진 상태로 비활성화**해서 보여준다.
-  /// 만든 공개 대화의 conversationId를 돌려준다. 만들지 않았으면 null.
+  /// 만든 공개 대화의 conversationId를 돌려준다. 만들지 않았으면(바꾼 것 포함) null.
   /// 대조를 연 뒤에 해석이 바뀌어 있으면 [InterpretationLockedException].
   Future<String?> saveInterpretation(
     String userId,
@@ -50,7 +52,14 @@ abstract interface class ReadingRepository {
   });
 
   /// S07을 처음 열 때. hasOpenedComparison을 true로 만든다. 저장 전이면 아무 일도 하지 않는다.
+  /// 처음부터 다시 해서 해석이 비어 있을 때도 안 한다 (빈 해석으로 잠기면 새 해석을 못 씀).
   Future<void> openComparison(String userId, String poemId);
+
+  /// S03 「초기화」 (B, 11/25 결정). 그 시를 처음부터 다시 읽게 한다.
+  /// 첫 낱말 · 대화 · 근거 행 · 해석을 비우고 대조 열람도 풀어서 새 해석을 저장할 수 있게 한다.
+  /// 멈춘 행(집계랑 같이 움직임) · 저장 여부 · 공개 여부 · 뱃지는 그대로 (되돌릴 수 없다).
+  /// 공개 대화는 여기서 안 건드리고, 새 해석을 공개 저장할 때 바뀐다 ([saveInterpretation]).
+  Future<void> resetReading(String userId, String poemId);
 
   /// S04 멈춘 행 표시를 켜고 끈다. 내 markedLines와 lineStops 집계를 한 번에 바꾼다.
   Future<void> setMarkedLine(
