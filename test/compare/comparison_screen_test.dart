@@ -7,6 +7,7 @@ import 'package:yeobaek/app/strings.dart';
 import 'package:yeobaek/data/fakes/fake_data.dart';
 import 'package:yeobaek/data/models/expert_interpretation.dart';
 import 'package:yeobaek/features/compare/comparison_screen.dart';
+import 'package:yeobaek/shared/widgets/app_loading.dart';
 
 import '../support/pump.dart';
 import '../support/stub_reading_source.dart';
@@ -56,6 +57,36 @@ void main() {
       find.text(AppStrings.comparisonRelationDifferentLines(const [10])),
       findsOneWidget,
     );
+  });
+
+  // 저장을 누르고 이 화면이 열리기까지가 가장 긴 기다림이다 — 저장소 쓰기가
+  // 끝나고 그 위에 모델이 비교 문장을 쓴다. 스피너로는 멈춘 것과 구분되지
+  // 않아서 로딩 화면을 쓴다. 이 로딩을 쓰는 자리는 지금 여기 하나뿐이다.
+  testWidgets('기다리는 동안 로딩 화면과 무엇을 기다리는지가 보인다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ComparisonScreen(
+          poemId: 'seosi',
+          source: StubReadingSource(
+            readings: {'seosi': FakeData.myReadings['seosi']!},
+            experts: {'seosi': FakeData.expertInterpretations['seosi']!},
+            comparisonTexts: {'seosi': FakeData.comparisonTexts['seosi']!},
+          ),
+        ),
+      ),
+    );
+
+    // 첫 프레임 — 아직 데이터가 없다
+    expect(find.byType(LoadingPage), findsOneWidget);
+    expect(find.text(AppStrings.loadingSavingConversation), findsOneWidget);
+    // 날것 스피너로 돌아가면 여기서 잡힌다
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await pumpUntilLoaded(tester);
+
+    // 데이터가 오면 안내도 함께 사라진다
+    expect(find.byType(LoadingPage), findsNothing);
+    expect(find.text(AppStrings.loadingSavingConversation), findsNothing);
   });
 
   testWidgets('전문가 해석 둘이 라벨과 함께 나온다', (tester) async {
