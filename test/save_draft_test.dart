@@ -90,17 +90,17 @@ void main() {
     expect(saveTap(tester), isNotNull);
   });
 
-  testWidgets('20초 넘으면 안 기다리고 모은 말 그대로', (tester) async {
+  testWidgets('10초 넘으면 안 기다리고 모은 말 그대로', (tester) async {
     await tester.pumpWidget(saveApp(_DraftWriter('늦은 초안', delay: const Duration(seconds: 30))));
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.pump(const Duration(seconds: 21));
+    await tester.pump(const Duration(seconds: 11));
 
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(fieldText(tester), myWords);
     expect(saveTap(tester), isNotNull);
 
     // 늦게 온 초안이 고치던 칸을 덮으면 안 됨
-    await tester.pump(const Duration(seconds: 10));
+    await tester.pump(const Duration(seconds: 20));
     expect(fieldText(tester), myWords);
   });
 

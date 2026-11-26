@@ -99,7 +99,7 @@ class _SaveScreenState extends State<SaveScreen> {
 
   //AI
   // 모델이 내 말만 가지고 초안 다듬음 (#64). 새 말 지어내는 건 D 쪽 검사가 막고 걸리면 isFallback
-  // 20초 넘거나 못 쓰면 모은 말 그대로 둠 (S06 열 때 기다리는 자리라 오래 못 끎)
+  // 10초 넘거나 못 쓰면 모은 말 그대로 둠 (S06 열 때 기다리는 자리라 오래 못 끎. 추론 끄면 한 번에 1~4초, #70)
   Future<void> _writeDraft(Reading loaded) async {
     SummaryWriter? writer = widget.draftWriter;
     if (writer == null) {
@@ -112,7 +112,7 @@ class _SaveScreenState extends State<SaveScreen> {
     try {
       result = await writer.write(SummaryRequest(poemId: widget.poemId, firstWord: loaded.firstWord,
               conversation: loaded.conversation, interpretation: ''))
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 10));
     } catch (e) {
       result = null;
     }
