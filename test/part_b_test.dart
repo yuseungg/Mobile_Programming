@@ -118,7 +118,13 @@ void main() {
     final seosiTile = find.widgetWithText(ListTile,'서시');
     await tester.scrollUntilVisible(seosiTile, 200, scrollable: find.byType(Scrollable).first);
 
+    // 서시는 가짜 데이터에 대화 · 저장한 해석이 있어서 이어 읽기 / 초기화 고르는 창이 뜸
+    // → 초기화하고 처음부터 (11/25 회의)
     await tester.tap(seosiTile);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, AppStrings.homeReset));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, AppStrings.homeReset));
     await tester.pumpAndSettle();
 
     expect(find.text('12명'), findsNothing);
@@ -126,19 +132,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('13명'), findsOneWidget); // 다른 사람 12 + 나
 
-    // 서시는 가짜 데이터에 '부끄러움'으로 시작한 대화가 있어서 첫 낱말은 못 고치고 버튼이 '대화 이어 하기'
-    await tester.scrollUntilVisible(
-      find.text('대화 이어 하기'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.text('대화 이어 하기'));
+    // 초기화해서 첫 낱말 칸이 비어 있고 새로 씀
+    await tester.scrollUntilVisible(find.text('이 낱말로 대화 시작'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(find.byType(TextField), '별');
+    await tester.pump();
+    await tester.tap(find.text('이 낱말로 대화 시작'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1)); // 가짜 에이전트 첫 질문 (700ms)
     await tester.pumpAndSettle();
 
-    // 첫 낱말은 대화 시작한 그대로 (S05가 여기서 꺼내 씀)
+    // 첫 낱말은 새로 쓴 걸로 (S05가 여기서 꺼내 씀)
     Reading? reading = await Repositories.reading.fetchReading(FakeData.myUserId, 'seosi');
-    expect(reading!.firstWord, '부끄러움');
+    expect(reading!.firstWord, '별');
     expect(reading.markedLines, contains(2));
+
+    // 새 대화라 내가 한 말이 있어야 S06 초안이 생김
+    await tester.enterText(find.byType(TextField), '별이 바람에 스치는 게 마음에 남음');
+    await tester.pump(); // 글자 들어가야 보내기 버튼이 켜짐
+    await tester.tap(find.text('보내기'));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('내 해석 정리하기'));
     await tester.pumpAndSettle();
@@ -222,9 +235,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('지금까지 12일 시를 읽었어요'), findsOneWidget);
 
-    Finder seosiTile = find.widgetWithText(ListTile, '서시');
-    await tester.scrollUntilVisible(seosiTile, 200, scrollable: find.byType(Scrollable).first);
-    await tester.tap(seosiTile);
+    // 대화한 시는 고르는 창이 먼저 떠서 처음 읽는 시로
+    Finder poemTile = find.widgetWithText(ListTile, '봄은 고양이로다');
+    await tester.scrollUntilVisible(poemTile, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(poemTile);
     await tester.pumpAndSettle();
     await tester.pageBack();
     await tester.pumpAndSettle();

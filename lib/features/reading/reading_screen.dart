@@ -263,12 +263,12 @@ class _ReadingScreenState extends State<ReadingScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: (!hasFirstWord || _isSavingWord) ? null : _startChat,
+            onPressed: (!hasFirstWord || _isSavingWord || _loadFailed) ? null : _startChat,
             child: Text(_hasConversation ? AppStrings.readingContinueChat : AppStrings.readingStartChat),
           ),
           const SizedBox(height: 8),
           OutlinedButton(
-            onPressed: (!hasFirstWord || _isSavingWord) ? null : _endWithWord,
+            onPressed: (!hasFirstWord || _isSavingWord || _loadFailed) ? null : _endWithWord,
             child: Text(AppStrings.readingEndWithWord),
           ),
           ],

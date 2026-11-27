@@ -38,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   UserProfile? _me;
   Set<String> _readPoemIds = {};
+  Map<String, Reading> _readings = {}; // 시 누를 때 이어 읽기 / 초기화 고를지 보려고
   // 대화하다 저장 안 하고 나간 시 (이어 읽기, 기획서 F2)
   List<Reading> _inProgress = [];
   bool _loadFailed = false;
@@ -80,9 +81,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     Set<String> ids = {};
+    Map<String, Reading> byPoem = {};
     List<Reading> inProgress = [];
     for (Reading reading in readings) {
       ids.add(reading.poemId);
+      byPoem[reading.poemId] = reading;
       if (!reading.isSaved && reading.conversation.isNotEmpty) {
         inProgress.add(reading);
       }
@@ -94,12 +97,102 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadFailed = false;
       _me = me;
       _readPoemIds = ids;
+      _readings = byPoem;
       _inProgress = inProgress;
     });
   }
 
   // 읽기 화면에서 돌아오면 누적일수랑 읽음 표시 다시 불러옴
+  // 대화했거나 저장한 시는 이어 읽을지 초기화할지 먼저 고르게 함 (11/25 회의)
+  // 초기화하면 대화는 비고 저장은 남아서 해석까지 봄. 안 그러면 빈 대화로 S05가 열림
   void openReading(String poemId) {
+    Reading? reading = _readings[poemId];
+    if (reading != null &&
+        (reading.conversation.isNotEmpty || (reading.isSaved && reading.interpretation.isNotEmpty))) {
+      _askContinueOrReset(poemId);
+      return;
+    }
+    Navigator.of(context).pushNamed(AppRoutes.reading(poemId)).then((_) => _load());
+  }
+
+  Future<void> _askContinueOrReset(String poemId) async {
+    bool? reset = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(FakeData.poemById(poemId).title, style: AppText.poemTitleSmall),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(AppStrings.homeContinueTitle),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(AppStrings.homeReset),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || reset == null) {
+      return;
+    }
+    if (!reset) {
+      // 이어 읽기는 S04 안 거치고 바로 대화로
+      openChat(poemId);
+      return;
+    }
+    if (await _confirmReset()) {
+      await _reset(poemId);
+    }
+  }
+
+  Future<bool> _confirmReset() async {
+    bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(AppStrings.homeResetMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(AppStrings.homeResetCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(AppStrings.homeReset),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
+  // 지우고 나면 대화가 비어서 S04에서 첫 낱말부터 다시 씀
+  Future<void> _reset(String poemId) async {
+    try {
+      await Repositories.reading.resetReading(_userId, poemId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.homeResetFailed)));
+      }
+      return;
+    }
+    // 예전 해석을 기기에 보관해 둔 게 있으면 다음 재시도 때 지운 걸 되살리니까 같이 지움
+    try {
+      await removePendingSave(_userId, poemId);
+    } catch (e) {
+      // print(e);
+    }
+    if (!mounted) {
+      return;
+    }
     Navigator.of(context).pushNamed(AppRoutes.reading(poemId)).then((_) => _load());
   }
 

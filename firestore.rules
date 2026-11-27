@@ -136,10 +136,19 @@ service cloud.firestore {
             || (r.impressiveLine is int && r.impressiveLine in r.markedLines));
     }
 
+    // S03 「초기화」 — 대화 · 근거 행 · 해석을 다 비우고 대조 열람도 끈 상태.
+    // 이렇게 비울 때만 대조 잠금을 풀 수 있다 (새 대화로 새 해석을 저장하게, 11/25 결정).
+    function isFreshStart(r) {
+      return r.conversation.size() == 0
+        && r.evidenceLines.size() == 0
+        && r.interpretation == ''
+        && r.hasOpenedComparison == false;
+    }
+
     function keepsLocks(old, r) {
       return (!old.isSaved || r.isSaved)                                        // 저장은 되돌릴 수 없다
-        && (!old.hasOpenedComparison || r.hasOpenedComparison)                  // 대조 열람도
-        && (!old.hasOpenedComparison || r.interpretation == old.interpretation) // 대조 후 해석 고정
+        && (!old.hasOpenedComparison || r.hasOpenedComparison || isFreshStart(r))  // 대조 열람도 (처음부터만 예외)
+        && (!old.hasOpenedComparison || r.interpretation == old.interpretation || isFreshStart(r)) // 대조 후 해석 고정
         && (!(old.isSaved && old.isPublic) || r.isPublic);                      // 공개는 되돌릴 수 없다
     }
 
@@ -235,6 +244,17 @@ service cloud.firestore {
             && exists(myEmpathyPath(conversationId))
             && !existsAfter(myEmpathyPath(conversationId)))
         );
+      // 내 공개 대화를 새 해석으로 바꾸기 (처음부터 다시 한 뒤 공개 저장, 11/25 결정)
+      // 공감 수 · 만든 때 · 주인은 그대로. 같이 저장되는 내 읽기와 해석이 같아야 한다
+      allow update: if signedIn()
+        && conversationId == request.auth.uid + '_' + resource.data.poemId
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['firstWord', 'summary', 'interpretation', 'evidenceLines'])
+        && request.resource.data.summary is string
+        && request.resource.data.summary.size() > 0
+        && getAfter(readingPath(request.auth.uid, resource.data.poemId)).data.isPublic == true
+        && getAfter(readingPath(request.auth.uid, resource.data.poemId)).data.interpretation
+             == request.resource.data.interpretation;
       allow delete: if false;
 
       match /empathies/{userId} {

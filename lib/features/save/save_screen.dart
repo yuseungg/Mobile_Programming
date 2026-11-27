@@ -64,8 +64,9 @@ class _SaveScreenState extends State<SaveScreen> {
     if (pending != null) {
       // 저장 실패해서 보관해 둔 해석이 제일 최신
       text = pending.interpretation;
-    } else if (loaded.isSaved) {
+    } else if (loaded.isSaved && loaded.interpretation.isNotEmpty) {
       // 이미 저장한 해석 있으면 그거 보여줌
+      // (홈에서 초기화한 시는 저장은 돼 있어도 해석이 비어서 아래로 감)
       text = loaded.interpretation;
     } else {
       // 없으면 대화에서 내가 한 말만 모아서 초안

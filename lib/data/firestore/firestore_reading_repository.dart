@@ -108,7 +108,16 @@ class FirestoreReadingRepository implements ReadingRepository {
       final createsConversation = saved.isPublic &&
           !conversationSnap.exists &&
           saved.interpretation.trim().isNotEmpty;
-      if (createsConversation && (summary == null || summary.trim().isEmpty)) {
+      // 처음부터 다시 해서 해석 · 첫 낱말 · 근거 행 중 하나라도 바뀌었으면 있던 공개 대화를 새 것으로 바꿈
+      final old = conversationSnap.data();
+      final replacesConversation = saved.isPublic &&
+          conversationSnap.exists &&
+          saved.interpretation.trim().isNotEmpty &&
+          (old?['interpretation'] != saved.interpretation ||
+              old?['firstWord'] != saved.firstWord ||
+              (old?['evidenceLines'] as List? ?? const []).join(',') != saved.evidenceLines.join(','));
+      if ((createsConversation || replacesConversation) &&
+          (summary == null || summary.trim().isEmpty)) {
         throw ArgumentError.value(summary, 'summary', '공개 저장에는 요약이 필요함');
       }
 
@@ -122,6 +131,14 @@ class FirestoreReadingRepository implements ReadingRepository {
         });
       }
 
+      if (replacesConversation) {
+        tx.update(conversationRef, {
+          'firstWord': saved.firstWord,
+          'summary': summary!.trim(),
+          'interpretation': saved.interpretation,
+          'evidenceLines': saved.evidenceLines,
+        });
+      }
       if (!createsConversation) return null;
       tx.set(conversationRef, {
         'userId': userId,
@@ -143,7 +160,27 @@ class FirestoreReadingRepository implements ReadingRepository {
     return _db.runTransaction((tx) async {
       final saved = _readingOf(poemId, await tx.get(ref));
       if (saved == null || !saved.isSaved || saved.hasOpenedComparison) return;
+      if (saved.interpretation.trim().isEmpty) return;
       tx.update(ref, {'hasOpenedComparison': true});
+    });
+  }
+
+  @override
+  Future<void> resetReading(String userId, String poemId) {
+    final ref = _reading(userId, poemId);
+    return _db.runTransaction((tx) async {
+      final saved = _readingOf(poemId, await tx.get(ref)) ?? Reading(poemId: poemId);
+      // 보안 규칙 isFreshStart — 넷 다 비워야 대조 잠금이 풀림
+      tx.set(
+        ref,
+        readingToDoc(saved.copyWith(
+          firstWord: '',
+          conversation: const [],
+          evidenceLines: const [],
+          interpretation: '',
+          hasOpenedComparison: false,
+        )),
+      );
     });
   }
 
