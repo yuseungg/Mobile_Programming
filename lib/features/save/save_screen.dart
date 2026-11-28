@@ -17,12 +17,14 @@ import '../../shared/widgets/language_toggle.dart';
 import 'pending_saves.dart';
 
 class SaveScreen extends StatefulWidget {
-  const SaveScreen({super.key, required this.poemId, this.summaryWriter});
+  const SaveScreen({super.key, required this.poemId, this.summaryWriter, this.draftWriter});
 
   final String poemId;
   // 공개 저장할 때 요약 쓰는 거 (D 담당). 비워 두면 키가 있을 때 모델이 쓰고,
   // 없거나 실패하면 사실 문장으로 채움 (createSummaryWriter)
   final SummaryWriter? summaryWriter;
+  // 내 말만 가지고 초안 다듬는 거 (D 담당, #64). 비워 두면 내가 한 말 모은 그대로
+  final SummaryWriter? draftWriter;
 
   @override
   State<SaveScreen> createState() => _SaveScreenState();
@@ -36,6 +38,8 @@ class _SaveScreenState extends State<SaveScreen> {
   bool _isPublic = false;
   bool _wasPublic = false; // 공개로 한 번 저장하면 못 되돌림
   bool _isSaving = false;
+  bool _isDrafting = false; // 모델이 초안 쓰는 중
+  String? _modelDraft; // 모델이 쓴 초안. 이거 그대로는 저장 못 함 (명세서 3장 손댄 문장)
   final TextEditingController _interpretationController = TextEditingController();
 
   @override
@@ -61,6 +65,7 @@ class _SaveScreenState extends State<SaveScreen> {
     Reading loaded = reading ?? pending!;
 
     String text;
+    bool needsDraft = false;
     if (pending != null) {
       // 저장 실패해서 보관해 둔 해석이 제일 최신
       text = pending.interpretation;
@@ -69,7 +74,7 @@ class _SaveScreenState extends State<SaveScreen> {
       // (홈에서 초기화한 시는 저장은 돼 있어도 해석이 비어서 아래로 감)
       text = loaded.interpretation;
     } else {
-      // 없으면 대화에서 내가 한 말만 모아서 초안
+      // 없으면 대화에서 내가 한 말만 모아서 칸에 먼저 넣어 두고 모델이 다듬음
       List<String> myMessages = [];
       for (ChatMessage message in loaded.conversation) {
         if (message.role == ChatRole.user) {
@@ -77,6 +82,7 @@ class _SaveScreenState extends State<SaveScreen> {
         }
       }
       text = myMessages.join('\n');
+      needsDraft = myMessages.isNotEmpty;
     }
 
     setState(() {
@@ -85,6 +91,43 @@ class _SaveScreenState extends State<SaveScreen> {
       _isPublic = pending != null ? pending.isPublic : loaded.isPublic;
       _wasPublic = loaded.isSaved && loaded.isPublic;
       _interpretationController.text = text;
+    });
+    if (needsDraft) {
+      _writeDraft(loaded);
+    }
+  }
+
+
+  //AI
+  // 모델이 내 말만 가지고 초안 다듬음 (#64). 새 말 지어내는 건 D 쪽 검사가 막고 걸리면 isFallback
+  // 10초 넘거나 못 쓰면 모은 말 그대로 둠 (S06 열 때 기다리는 자리라 오래 못 끎. 추론 끄면 한 번에 1~4초, #70)
+  Future<void> _writeDraft(Reading loaded) async {
+    SummaryWriter? writer = widget.draftWriter;
+    if (writer == null) {
+      return;
+    }
+    setState(() {
+      _isDrafting = true;
+    });
+    SummaryText? result;
+    try {
+      result = await writer.write(SummaryRequest(poemId: widget.poemId, firstWord: loaded.firstWord,
+              conversation: loaded.conversation, interpretation: ''))
+          .timeout(const Duration(seconds: 10));
+    } catch (e) {
+      result = null;
+    }
+    if (!mounted) {
+      return;
+    }
+    String draft = result == null || result.isFallback ? '' : result.text.trim();
+    setState(() {
+      _isDrafting = false;
+      // 500자 넘으면 칸 제한을 넘어서 저장되니까 안 씀
+      if (draft.isNotEmpty && draft.length <= 500) {
+        _modelDraft = draft;
+        _interpretationController.text = draft;
+      }
     });
   }
 
@@ -195,13 +238,22 @@ class _SaveScreenState extends State<SaveScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            _isLocked ? AppStrings.saveLockedNotice : AppStrings.saveDraftNotice,
+            _isLocked
+                ? AppStrings.saveLockedNotice
+                : _isDrafting
+                    ? AppStrings.saveDrafting
+                    : _modelDraft != null ? AppStrings.saveDraftWrittenNotice : AppStrings.saveDraftNotice,
             style: AppText.bodySub,
           ),
+          if (_isDrafting) ...[
+            const SizedBox(height: 8),
+            const LinearProgressIndicator(),
+          ],
           const SizedBox(height: 16),
           TextField(
             controller: _interpretationController,
-            readOnly: _isLocked || _isSaving,
+            // 초안 쓰는 동안 고치면 초안 올 때 덮여서 막음
+            readOnly: _isLocked || _isSaving || _isDrafting,
             maxLength: 500,
             // 웹 기본값은 한글 조합 중엔 제한을 풀어서 500자 넘어감
             maxLengthEnforcement:MaxLengthEnforcement.enforced, //AI
@@ -262,8 +314,11 @@ class _SaveScreenState extends State<SaveScreen> {
             FilledButton(
               // 잠금을 여는 버튼은 와인색 (화면설계 PDF)
               style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
-              onPressed:
-                  (_interpretationController.text.trim().isEmpty || _isSaving) ? null : _save,
+              // 모델 초안 그대로면 못 누름. 한 글자라도 고쳐야 내 문장
+              onPressed: (_interpretationController.text.trim().isEmpty || _isSaving || _isDrafting
+                      || _interpretationController.text.trim() == _modelDraft)
+                  ? null
+                  : _save,
               child: Text(AppStrings.saveButton),
             ),
             const SizedBox(height: 8),

@@ -213,6 +213,14 @@ class AppStrings {
         '대화에서 나온 내 말을 모았습니다. 고쳐서 저장하세요 — 저장하는 문장은 당신 것이어야 합니다.',
         'We gathered your own words from the conversation. Edit them and save — the sentences you save should be yours.',
       );
+  static String get saveDrafting => _t(
+        '내가 한 말로 초안을 다듬고 있어요. 잠깐만 기다려 주세요.',
+        'Tidying your own words into a draft. Just a moment.',
+      );
+  static String get saveDraftWrittenNotice => _t(
+        'AI가 내가 한 말만 모아 다듬은 초안이에요. 내 문장으로 고쳐야 저장할 수 있어요.',
+        'AI tidied only your own words into this draft. Edit it into your own sentences to save.',
+      );
   static String get saveEvidenceLabel =>
       _t('내가 근거로 삼은 구절', 'Lines I based it on');
   static String get savePublicLabel =>
