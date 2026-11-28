@@ -55,6 +55,24 @@ void main() {
         expect(drawNickname(except: first), isNot(first));
       }
     });
+
+    test('영어로 지으면 영어 형용사 + 영어 명사, 기본은 한국어', () {
+      for (var i = 0; i < 50; i++) {
+        final [adjective, noun] = drawNickname(english: true).split(' ');
+        expect(nicknameAdjectivesEn, contains(adjective));
+        expect(nicknameNounsEn, contains(noun));
+        final [koAdjective, koNoun] = drawNickname().split(' ');
+        expect(nicknameAdjectives, contains(koAdjective));
+        expect(nicknameNouns, contains(koNoun));
+      }
+    });
+
+    test('영어 새로고침도 직전과 다른 닉네임이 나온다', () {
+      for (var i = 0; i < 50; i++) {
+        final first = drawNickname(english: true);
+        expect(drawNickname(english: true, except: first), isNot(first));
+      }
+    });
   });
 
   group('최종 저장 (읽기 · 뱃지 · 공개 대화를 한 번에)', () {
