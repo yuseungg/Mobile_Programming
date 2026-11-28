@@ -4,20 +4,25 @@
 import 'package:flutter/material.dart';
 
 /// 디자인 토큰 — 색
+/// 하늘색 · 병아리 시안 (docs/여백-테마설계.md 3장). 이름은 그대로 두고 값만 바꿈
+/// background · card는 시마다 다름 → 여기엔 기본 테마 값, 계절 값은 poem_theme.dart
 class AppColors {
   AppColors._();
 
-  static const background = Color(0xFFE8EAE2); // 배경
-  static const card = Color(0xFFFBFBF7); // 카드
-  static const input = Color(0xFFF1F2EC); // 입력 배경
-  static const text = Color(0xFF1E3038); // 본문
-  static const textSub = Color(0xFF5D6F74); // 보조 텍스트
-  static const textFaint = Color(0xFF8B9A9C); // 흐린 텍스트
-  static const border = Color(0xFFC9CFC3); // 테두리
-  static const accent = Color(0xFF8A3A50); // 사용자 · 강조 (와인)
-  static const accentBg = Color(0xFFF3E6E9); // 사용자 배경
-  static const confirmed = Color(0xFF3D6B52); // 확인됨 (초록)
-  static const info = Color(0xFF3B5470); // 정보
+  static const background = Color(0xFFFDF7EE); // 배경 (기본 테마)
+  static const card = Color(0xFFFFFFFF); // 카드 (기본 테마)
+  static const input = Color(0xFFFFFDF8); // 입력 배경
+  static const text = Color(0xFF0B4F4C); // 본문 · 제목 (짙은 청록)
+  static const textSub = Color(0xFF5E7572); // 보조 텍스트
+  static const textFaint = Color(0xFF93A3A0); // 흐린 텍스트 · 행 번호
+  static const border = Color(0xFFE3DACB); // 테두리 · 구분선
+  static const accent = Color(0xFFEE5A24); // 주요 버튼 · 사용자 강조 (주황)
+  static const accentDark = Color(0xFFD2481A); // 주황 버튼 아래 두께
+  static const accentBg = Color(0xFFFDE8DE); // 내 말풍선 · 선택된 탭 배경
+  // 시안은 #1AA89F인데 흰 카드 위 선 대비가 2.94라 3:1 못 넘어서 조금 어둡게 (3.6)
+  static const confirmed = Color(0xFF0F8C85); // 확인된 근거 행 · 입력 칸 강조 테두리 (청록)
+  static const info = Color(0xFF036963); // 보조 버튼 · 정보
+  static const link = Color(0xFFE5482A); // 「가입하기」 같은 글 링크
 }
 
 /// 디자인 토큰 — 글꼴
@@ -325,17 +330,36 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: radius12,
-        borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.confirmed, width: 2),
       ),
     ),
-    // 주 버튼은 먹색(본문색). 와인은 '저장하기'처럼 잠금을 여는 순간에만 쓴다 (목업 기준).
+    // 주요 버튼은 주황 + 아래 두께 (테마설계 3장)
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.text,
-        foregroundColor: AppColors.card,
+        backgroundColor: AppColors.accent,
+        foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(52),
         textStyle: AppText.button,
         shape: RoundedRectangleBorder(borderRadius: radius12),
+      ).copyWith(
+        // 아래 두께는 버튼 안 아래쪽에 깔아서 그림 (shape로는 아래만 두껍게가 안 됨)
+        // 두께 색이 주황 고정이라 화면에서 버튼 색을 딴 색으로 바꾸면 안 맞음 (지금은 다 주황)
+        backgroundBuilder: (context, states, child) {
+          if (states.contains(WidgetState.disabled)) {
+            return child ?? const SizedBox();
+          }
+          return ClipRRect(
+            borderRadius: radius12,
+            child: Stack(
+              fit: StackFit.passthrough, // 안 하면 글자가 위로 붙음
+              children: [
+                ?child,
+                const Positioned(left: 0, right: 0, bottom: 0, height: 4,
+                    child: ColoredBox(color: AppColors.accentDark)),
+              ],
+            ),
+          );
+        },
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -360,7 +384,7 @@ ThemeData buildAppTheme() {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: AppColors.accent,
+        foregroundColor: AppColors.link,
         textStyle: AppText.button,
       ),
     ),
