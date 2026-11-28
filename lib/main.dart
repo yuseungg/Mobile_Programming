@@ -2,6 +2,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app/language.dart';
 import 'app/router.dart';
@@ -22,6 +23,9 @@ bool get _canUseFirebase =>
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 세로로 고정한다 — 가로로 돌리면 S05(위 시 · 아래 입력창 · 키보드)처럼 칸이 넘치는 화면이 있다.
+  // 태블릿도 세로로 쓴다. AndroidManifest의 screenOrientation과 같은 뜻.
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   if (_useFirebaseFlag && _canUseFirebase) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

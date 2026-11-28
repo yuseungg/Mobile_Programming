@@ -2,6 +2,7 @@
 //
 // 이메일: gmail.com 주소만 · 공백은 입력 자체가 안 됨
 // 비밀번호: 6자 이상 · 영문 소문자와 숫자만. 공백 · 대문자 · 한글 · 특수기호는 입력 자체가 안 됨
+// 길이: 이메일 64자 · 비밀번호 32자까지만 입력된다 (긴 글을 붙여 넣어도 칸이 넘치지 않게)
 
 import 'package:flutter/services.dart';
 
@@ -9,18 +10,22 @@ import '../../app/strings.dart';
 import '../../data/repositories.dart';
 
 const minPasswordLength = 6;
+const maxEmailLength = 64;
+const maxPasswordLength = 32;
 
 final _gmailPattern = RegExp(r'^[a-z0-9._%+-]+@gmail\.com$');
 final _passwordPattern = RegExp(r'^[a-z0-9]+$');
 
-/// 이메일 칸 — 공백을 막는다.
+/// 이메일 칸 — 공백을 막고 [maxEmailLength]자까지만 받는다.
 final emailInputFormatters = <TextInputFormatter>[
   FilteringTextInputFormatter.deny(RegExp(r'\s')),
+  LengthLimitingTextInputFormatter(maxEmailLength),
 ];
 
-/// 비밀번호 칸 — 영문 소문자와 숫자 말고는 입력되지 않는다.
+/// 비밀번호 칸 — 영문 소문자와 숫자만, [maxPasswordLength]자까지만 받는다.
 final passwordInputFormatters = <TextInputFormatter>[
   FilteringTextInputFormatter.allow(RegExp(r'[a-z0-9]')),
+  LengthLimitingTextInputFormatter(maxPasswordLength),
 ];
 
 bool isValidGmail(String email) =>
