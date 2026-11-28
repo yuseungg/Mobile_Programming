@@ -149,6 +149,7 @@ void main() {
 
     testWidgets('EN으로 열면 닉네임이 영어 단어로 지어진다', (tester) async {
       appLanguage.value = AppLanguage.en;
+      addTearDown(() => appLanguage.value = AppLanguage.ko);
       await tester.pumpWidget(_app(const SignUpScreen()));
       final noun = _nicknameShown(tester).split(' ').last;
       expect(nicknameNounsEn, contains(noun));
