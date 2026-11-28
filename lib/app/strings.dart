@@ -248,9 +248,16 @@ class AppStrings {
       _t('$poemTitle — 대조', '$poemTitle — comparison');
   static String comparisonPoemInfo(String title, String author, int year) =>
       '$title · $author ($year)';
-  static String comparisonMyEvidence(List<int> lines) =>
-      _t('내 근거: ${lineList(lines)}', 'My evidence: ${lineList(lines)}');
-  static String get comparisonMine => _t('내 해석', 'My interpretation');
+  /// 내 카드의 꼬리표. 전문가 카드의 「같은 줄에서 출발했어요」와 **짝이 되게
+  /// 「줄」로 말한다.** 「내 해석」이라고만 쓰면 무엇과 같은 줄인지 화면에
+  /// 가리킬 곳이 없다 (2026-11-25 사용자 피드백).
+  /// 고른 줄이 없으면 줄을 말할 수 없으므로 그때만 해석이라고 쓴다.
+  static String comparisonMine(List<int> lines) => lines.isEmpty
+      ? _t('내가 쓴 해석', 'What I wrote')
+      : _t(
+          '내가 출발한 줄: ${lineList(lines)}',
+          'I started from ${_englishLines(lines)}',
+        );
   static String get comparisonMineCaption =>
       _t('내가 직접 다듬어 저장한 생각', 'Thoughts I refined and saved myself');
   static String get comparisonRelationSameLines =>

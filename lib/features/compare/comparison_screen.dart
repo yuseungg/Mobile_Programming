@@ -239,19 +239,13 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                       style: AppText.label,
                     ),
                   ),
-                  // 근거 행이 없으면 「내 근거:」만 덩그러니 남는다 — 아예 뺀다.
-                  // S05에서 시를 인용하지 않고 대화를 마치면 실제로 빈다.
-                  if (myEvidenceLines.isNotEmpty)
-                    Text(
-                      AppStrings.comparisonMyEvidence(myEvidenceLines),
-                      style: AppText.evidenceTag,
-                    ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
 
-            // 1. 내 해석 (가장 위, 가장 무겁게)
+            // 1. 내가 쓴 것 (가장 위, 가장 무겁게). 꼬리표가 출발한 줄을 말하므로
+            //    시 정보 카드에 있던 「내 근거: 6행」은 뺐다 — 같은 말이 두 번이었다
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -273,7 +267,9 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          AppStrings.comparisonMine,
+                          // 전문가 카드의 관계 한 줄(「같은 줄에서 출발했어요」)이
+                          // 가리킬 곳이 여기다 — 그래서 꼬리표가 줄을 말한다
+                          AppStrings.comparisonMine(myEvidenceLines),
                           style: AppText.tagOnAccent,
                         ),
                       ),
