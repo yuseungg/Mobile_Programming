@@ -16,6 +16,7 @@ class OpenRouterClient {
     String? apiKey,
     PostJson? postJson,
     this.timeout = const Duration(seconds: 60),
+    this.reasoningOff = true,
   })  : apiKey = apiKey ?? const String.fromEnvironment('OPENROUTER_API_KEY'),
         _postJson = postJson ?? platform.postJson,
         _canPost = postJson != null || platform.isHttpSupported;
@@ -28,20 +29,33 @@ class OpenRouterClient {
   final PostJson _postJson;
   final bool _canPost;
 
+  /// 모델에게 속으로 생각하지(reasoning) 말라고 청한다 — 질문 · 힌트 · 비교 문장 · 요약 모두.
+  /// 무료 모델은 답하기 전에 생각 토큰을 수천 개 써서 한 번에 15~65초가 걸렸다 (실측).
+  /// 끄면 같은 힌트가 1~4초 (nemotron-3.5-super-vl).
+  final bool reasoningOff;
+
+  /// 생각을 끌 수 없는 모델 (끄라고 하면 400). 한 번 겪으면 그 모델에는 다시 청하지 않는다.
+  final _modelsThatMustReason = <String>{};
+
   /// 키가 있고, 이 플랫폼에서 요청을 보낼 수 있는가 (웹은 아직 못 보낸다)
   bool get isAvailable => apiKey.isNotEmpty && _canPost;
 
   /// 채팅 완성 한 번. [toolChoice]에 'none'을 주면 툴 없이 답하게 한다.
+  /// [timeout]을 주면 이 호출만 그 시간까지 기다린다 (없으면 [OpenRouterClient.timeout]).
   Future<ChatCompletion> complete({
     required String model,
     required List<Map<String, Object?>> messages,
     List<Map<String, Object?>>? tools,
     String? toolChoice,
+    Duration? timeout,
     CancelToken? cancelToken,
   }) async {
     if (cancelToken?.isCancelled ?? false) {
       return const ChatCompletion.failed(OpenRouterFailure.cancelled());
     }
+    final asksReasoningOff =
+        reasoningOff && !_modelsThatMustReason.contains(model);
+    final ChatCompletion completion;
     try {
       final response = await _postJson(
         _endpoint,
@@ -51,17 +65,35 @@ class OpenRouterClient {
           'messages': messages,
           'tools': ?tools,
           'tool_choice': ?toolChoice,
+          if (asksReasoningOff) 'reasoning': {'enabled': false},
         }),
-        timeout: timeout,
+        timeout: timeout ?? this.timeout,
         cancelToken: cancelToken,
       );
-      return ChatCompletion.fromResponse(response);
+      completion = ChatCompletion.fromResponse(response);
     } catch (error) {
       if (cancelToken?.isCancelled ?? false) {
         return const ChatCompletion.failed(OpenRouterFailure.cancelled());
       }
       return ChatCompletion.failed(OpenRouterFailure(message: '$error'));
     }
+
+    // 생각을 끌 수 없는 모델이면 켠 채로 한 번 더 (예: ernie — "Reasoning is mandatory")
+    final failure = completion.failure;
+    final isReasoningRefused = asksReasoningOff &&
+        failure != null &&
+        failure.statusCode == 400 &&
+        failure.message.toLowerCase().contains('reasoning');
+    if (!isReasoningRefused) return completion;
+    _modelsThatMustReason.add(model);
+    return complete(
+      model: model,
+      messages: messages,
+      tools: tools,
+      toolChoice: toolChoice,
+      timeout: timeout,
+      cancelToken: cancelToken,
+    );
   }
 }
 

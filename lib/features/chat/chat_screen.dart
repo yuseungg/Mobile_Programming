@@ -4,6 +4,8 @@
 // 에이전트는 lib/agent/chat_agent.dart — 키가 있으면 OpenRouter, 없으면 가짜 에이전트가 답한다.
 // 설정(모델 · 말투)과 읽기 기록은 저장소에서 불러오고, 대화 · 근거 행이 바뀔 때마다
 // saveProgress로 저장한다. S06은 저장소에서 이 대화를 읽어 초안을 만든다.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../agent/cancel_token.dart';
@@ -40,8 +42,15 @@ class _ChatScreenState extends State<ChatScreen> {
   final String _userId = Repositories.userId;
   late ChatAgent _agent;
   bool _isLoading = true; // 설정 · 읽기 기록을 불러오는 동안
-  bool _canSave = true; // 읽기 기록을 못 불러왔으면 저장된 대화를 덮어쓰지 않게 막는다
+  // 읽기 기록을 못 불러왔으면 대화를 시작하지 않는다 — 시작하면 저장된 대화를 덮어쓰거나,
+  // 이 대화가 저장되지 않는다. 안내 + 다시 시도 (S04와 같은 모양)
+  bool _loadFailed = false;
   Future<void> _saving = Future.value(); // 저장을 보낸 순서대로 잇는다
+  // 마지막 저장이 실패했다 — 입력창 위에 안내를 남긴다 (잠깐 뜨는 알림은 아래 버튼을 가렸다).
+  // 저장은 늘 대화 전체를 쓰므로 다음 저장이 성공하면 풀린다
+  bool _saveFailed = false;
+  bool _leaveBlocked = false; // 정리하기를 눌렀는데 저장이 안 돼서 못 넘어갔다
+  bool _isLeaving = false; // 정리하기를 누르고 저장을 기다리는 동안 — 두 번 누르지 않게
   final List<ChatMessage> _conversation = [];
   final Set<int> _evidenceLines = {};
   int? _pointingLine;
@@ -66,8 +75,13 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       reading = await Repositories.reading.fetchReading(_userId, widget.poemId);
     } catch (error) {
-      _canSave = false;
-      debugPrint('[chat] 읽기 기록을 불러오지 못해 이번 대화는 저장하지 않음: $error');
+      debugPrint('[chat] 읽기 기록을 불러오지 못해 대화를 시작하지 않음: $error');
+      if (!mounted) return;
+      setState(() {
+        _loadFailed = true;
+        _isLoading = false;
+      });
+      return;
     }
     if (!mounted) return;
 
@@ -106,10 +120,20 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  /// 다시 시도 — 읽기 기록을 못 불러왔을 때
+  void _retryLoad() {
+    setState(() {
+      _loadFailed = false;
+      _isLoading = true;
+    });
+    _load();
+  }
+
   /// 대화 · 근거 행만 바꿔 저장한다. 첫 낱말 · 멈춘 행 등 다른 화면이 쓴 값은
   /// 저장 직전에 다시 읽어서 그대로 둔다.
+  /// 실패하면 한 번 알린다. 저장은 늘 대화 전체를 쓰므로 다음 말을 보낼 때 저절로 다시 저장된다.
   void _saveProgress() {
-    if (!_canSave) return;
+    if (_loadFailed) return;
     final conversation = List<ChatMessage>.of(_conversation);
     final evidenceLines = _evidenceLines.toList()..sort();
     _saving = _saving.then((_) async {
@@ -124,16 +148,38 @@ class _ChatScreenState extends State<ChatScreen> {
             evidenceLines: evidenceLines,
           ),
         );
+        _setSaveFailed(false);
       } catch (error) {
         debugPrint('[chat] 대화를 저장하지 못함: $error');
+        _setSaveFailed(true);
       }
     });
   }
 
-  /// 정리하기 — 마지막 저장이 끝난 뒤에 S06으로 간다 (S06이 저장소에서 대화를 읽는다)
-  Future<void> _goToSave() async {
-    await _saving;
+  void _setSaveFailed(bool failed) {
     if (!mounted) return;
+    setState(() {
+      _saveFailed = failed;
+      if (!failed) _leaveBlocked = false;
+    });
+  }
+
+  /// 정리하기 — 마지막 저장이 끝난 뒤에 S06으로 간다 (S06이 저장소에서 대화를 읽는다).
+  /// 저장이 실패한 채로 가면 S06이 옛 대화로 초안을 만들고, 공개하면 옛 대화가 올라간다.
+  /// 그래서 한 번 더 저장해 보고, 그래도 안 되면 넘어가지 않고 알린다.
+  Future<void> _goToSave() async {
+    setState(() => _isLeaving = true);
+    await _saving;
+    if (_saveFailed) {
+      _saveProgress();
+      await _saving;
+    }
+    if (!mounted) return;
+    setState(() {
+      _isLeaving = false;
+      _leaveBlocked = _saveFailed; // 안내가 「넘어갈 수 없어요」로 바뀐다
+    });
+    if (_saveFailed) return;
     Navigator.of(context).pushNamed(AppRoutes.save(_poem.poemId));
   }
 
@@ -240,6 +286,23 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             const Divider(),
+            // 읽기 기록을 못 불러왔으면 대화 대신 안내 + 다시 시도 (S04와 같은 문구)
+            if (_loadFailed)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(AppStrings.noticeUnavailable, style: AppText.bodySub),
+                      TextButton(
+                        onPressed: _retryLoad,
+                        child: Text(AppStrings.noticeUnavailableAction),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else ...[
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
@@ -264,6 +327,14 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               child: Column(
                 children: [
+                  if (_saveFailed) ...[
+                    _SaveNotice(
+                      text: _leaveBlocked
+                          ? AppStrings.chatSaveBlocked
+                          : AppStrings.chatSaveFailed,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   MessageInput(
                     controller: _messageController,
                     isResponding: _isResponding || _isLoading,
@@ -283,7 +354,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _isLoading ? null : _goToSave,
+                          onPressed:
+                              _isLoading || _isLeaving ? null : _goToSave,
                           child: Text(AppStrings.chatSummarizeButton),
                         ),
                       ),
@@ -292,8 +364,36 @@ class _ChatScreenState extends State<ChatScreen> {
                 ],
               ),
             ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 대화를 저장하지 못했다는 안내 — 저장이 될 때까지 입력창 위에 남는다
+class _SaveNotice extends StatelessWidget {
+  const _SaveNotice({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true, // 화면 읽기 프로그램도 바로 읽게
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.cloud_off_outlined, size: 16, color: AppColors.accent),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: AppText.caption.copyWith(color: AppColors.accent),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -320,13 +420,57 @@ class _HintSheet extends StatelessWidget {
               future: hint,
               builder: (context, snapshot) {
                 final reply = snapshot.data;
-                if (reply == null) return const LinearProgressIndicator();
+                if (reply == null) return const _HintWaiting();
                 return Text(reply.text, style: AppText.bodyStrong);
               },
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 힌트를 기다리는 동안 — 진행 막대만 있으면 멈춘 것으로 보였다 (실기기).
+/// 무엇을 하는 중인지 적고, 길어지면 준비한 힌트로 대신한다는 것도 알린다.
+class _HintWaiting extends StatefulWidget {
+  const _HintWaiting();
+
+  /// 이만큼 지나면 「조금 걸리고 있어요」로 바꾼다 (힌트는 15초 안에 온다)
+  static const slowAfter = Duration(seconds: 6);
+
+  @override
+  State<_HintWaiting> createState() => _HintWaitingState();
+}
+
+class _HintWaitingState extends State<_HintWaiting> {
+  Timer? _timer;
+  bool _isSlow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(_HintWaiting.slowAfter, () => setState(() => _isSlow = true));
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LinearProgressIndicator(),
+        const SizedBox(height: 10),
+        Text(
+          _isSlow ? AppStrings.chatHintWaitingLong : AppStrings.chatHintWaiting,
+          style: AppText.bodySub,
+        ),
+      ],
     );
   }
 }

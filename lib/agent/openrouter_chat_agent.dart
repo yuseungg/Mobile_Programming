@@ -5,6 +5,7 @@
 // - 출력 필터에 걸리면 이유를 알려 주고 다시 쓰게 한다. 2회까지. 그래도 안 되면 준비된 관찰 질문
 // - 모델 호출이 실패해도 준비된 관찰 질문으로 대신한다 (기획서 7장)
 // S05는 질문 모델 하나로 툴 호출과 질문을 함께 한다. 비교 모델은 D가 S07 · S09에서 쓴다.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -35,10 +36,16 @@ class OpenRouterChatAgent implements ChatAgent {
     this.loadExperts,
     this.onComparisonOpened,
     this.onModelCall,
+    this.hintDeadline = defaultHintDeadline,
   });
 
   static const maxToolRounds = 5;
   static const maxRewrites = 2;
+
+  /// 힌트는 이 안에 오지 않으면 직전 질문의 짝 힌트(fallback_questions.dart)로 대신한다.
+  /// 힌트를 누른 사람은 막혀 있는 사람이다 — 실기기에서 30초~1분 기다리면 멈춘 것으로 보였다.
+  static const defaultHintDeadline = Duration(seconds: 15);
+  final Duration hintDeadline;
 
   final OpenRouterClient client;
   final String model; // 질문 모델 — 설정(S10 · S11)의 questionModel
@@ -85,10 +92,12 @@ class OpenRouterChatAgent implements ChatAgent {
     }
   }
 
+  /// 모델을 한 번 부른다. 속으로 생각하지 말라는 청은 클라이언트가 늘 붙인다 (OpenRouterClient.reasoningOff).
   Future<ChatCompletion> _complete({
     required List<Map<String, Object?>> messages,
-    required List<Map<String, Object?>> tools,
+    List<Map<String, Object?>>? tools,
     String? toolChoice,
+    Duration? timeout,
     CancelToken? cancelToken,
   }) {
     _countModelCall();
@@ -97,6 +106,7 @@ class OpenRouterChatAgent implements ChatAgent {
       messages: messages,
       tools: tools,
       toolChoice: toolChoice,
+      timeout: timeout,
       cancelToken: cancelToken,
     );
   }
@@ -139,19 +149,37 @@ class OpenRouterChatAgent implements ChatAgent {
     );
   }
 
+  /// 힌트는 빨라야 한다 (누른 사람은 막혀 있는 사람이다). 그래서 두 가지가 질문과 다르다.
+  ///  - 툴 없이 한 번에 답하게 한다 — 툴 라운드만큼 호출이 늘어난다
+  ///  - [hintDeadline] 안에 안 오면 요청을 끊고 직전 질문의 짝 힌트를 보여 준다
   @override
   Future<AgentReply> hint({
     required Poem poem,
     required List<ChatMessage> conversation,
     CancelToken? cancelToken,
-  }) {
-    return _respond(
-      poem: poem,
-      conversation: conversation,
-      instruction: hintInstruction(lastAgentQuestion(conversation)),
-      fallbackText: fallbackHint(poem.poemId, conversation),
-      cancelToken: cancelToken,
-    );
+  }) async {
+    // 화면이 시트를 닫아도, 시간이 다 돼도 같은 토큰으로 요청을 끊는다
+    final hintToken = CancelToken();
+    void cancelFromScreen() => hintToken.cancel();
+    cancelToken?.addListener(cancelFromScreen);
+    final deadline = Timer(hintDeadline, hintToken.cancel);
+    try {
+      final reply = await _respond(
+        poem: poem,
+        conversation: conversation,
+        instruction: hintInstruction(lastAgentQuestion(conversation)),
+        fallbackText: fallbackHint(poem.poemId, conversation),
+        isHint: true,
+        cancelToken: hintToken,
+      );
+      if (hintToken.isCancelled && !(cancelToken?.isCancelled ?? false)) {
+        debugPrint('[agent] 힌트가 ${hintDeadline.inSeconds}초 안에 오지 않아 짝 힌트로 대신함');
+      }
+      return reply;
+    } finally {
+      deadline.cancel();
+      cancelToken?.removeListener(cancelFromScreen);
+    }
   }
 
   Future<AgentReply> _respond({
@@ -159,6 +187,7 @@ class OpenRouterChatAgent implements ChatAgent {
     required List<ChatMessage> conversation,
     String? instruction, // 화면에 보이지 않는 앱 안내 (첫 질문 · 힌트)
     required String fallbackText,
+    bool isHint = false, // 툴 없이 · 짧게 (hint 참고)
     CancelToken? cancelToken,
   }) async {
     var tools = AgentTools(
@@ -211,8 +240,9 @@ class OpenRouterChatAgent implements ChatAgent {
         final isLastRound = round == maxToolRounds;
         final completion = await _complete(
           messages: messages,
-          tools: tools.definitions,
-          toolChoice: isLastRound ? 'none' : null,
+          tools: isHint ? null : tools.definitions,
+          toolChoice: isHint || !isLastRound ? null : 'none',
+          timeout: isHint ? hintDeadline : null,
           cancelToken: cancelToken,
         );
         final failure = completion.failure;
@@ -267,8 +297,9 @@ class OpenRouterChatAgent implements ChatAgent {
         ]);
         final completion = await _complete(
           messages: messages,
-          tools: tools.definitions,
-          toolChoice: 'none',
+          tools: isHint ? null : tools.definitions,
+          toolChoice: isHint ? null : 'none',
+          timeout: isHint ? hintDeadline : null,
           cancelToken: cancelToken,
         );
         final failure = completion.failure;
